@@ -1,6 +1,6 @@
 # DAO-AI Workshop
 
-Self-paced, hands-on workshop for building declarative AI agents on Databricks with the [DAO-AI](https://github.com/natefleming/dao-ai) framework. Designed for solution architects, data engineers, and analysts who want to go from zero to a deployed, governed agent. By the end you'll have built, tested, and deployed a multi-agent system that combines tool use, NL-to-SQL, vector search, memory, guardrails, and orchestration -- all defined in YAML and running as a Databricks App.
+Self-paced, hands-on workshop for building declarative AI agents on Databricks with the [DAO-AI](https://github.com/natefleming/dao-ai) framework. Designed for solution architects, data engineers, and analysts who want to go from zero to a deployed, governed agent. By the end you'll have built, tested, and deployed a multi-agent system that combines tool use, NL-to-SQL, vector search, memory + chat-history summarization, prompts + guardrails, and orchestration -- all defined in YAML and running as a Databricks App.
 
 ## Companion projects
 
@@ -40,7 +40,7 @@ L100 also ships two **lectures** before the labs: [Setting the Stage](L100-found
 |---|---|---|---|
 | **Lab 5** | External Integrations via REST | REST factory tools | [`L200-real-agents/lab-5-rest/`](L200-real-agents/lab-5-rest/) |
 | **Lab 6** | Knowledge-base Retrieval with Vector Search | Vector store + cross-encoder reranker | [`L200-real-agents/lab-6-vector-search/`](L200-real-agents/lab-6-vector-search/) |
-| **Lab 7** | Persistent Memory | Lakebase checkpointer + store + extraction | [`L200-real-agents/lab-7-memory/`](L200-real-agents/lab-7-memory/) |
+| **Lab 7** | Persistent Memory + Chat Summarization | Lakebase checkpointer + long-term store + extraction, plus `app.chat_history` auto-summarization | [`L200-real-agents/lab-7-memory/`](L200-real-agents/lab-7-memory/) |
 | **Lab 8** | Production Prompts and Guardrails | Prompt Registry + judge guardrail | [`L200-real-agents/lab-8-prompts-guardrails/`](L200-real-agents/lab-8-prompts-guardrails/) |
 | **Lab 9** | Multi-agent Orchestration | Supervisor + swarm | [`L200-real-agents/lab-9-orchestration/`](L200-real-agents/lab-9-orchestration/) |
 

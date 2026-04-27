@@ -13,7 +13,7 @@ The second level of the DAO-AI workshop. Goal: by the end you'll have built a Sa
 | 1 | [building-real-agents.md](building-real-agents.md) | Lecture | What separates a demo from production. The five patterns L200 covers. |
 | 2 | [lab-5-rest/](lab-5-rest/) | Lab | **Lab 5 -- External Integrations via REST.** Wrap a public HTTP API as a tool. |
 | 3 | [lab-6-vector-search/](lab-6-vector-search/) | Lab | **Lab 6 -- Knowledge-base Retrieval with Vector Search.** ANN + cross-encoder reranking. |
-| 4 | [lab-7-memory/](lab-7-memory/) | Lab | **Lab 7 -- Persistent Memory.** Lakebase checkpointer + long-term store + extraction. |
+| 4 | [lab-7-memory/](lab-7-memory/) | Lab | **Lab 7 -- Persistent Memory + Chat Summarization.** Lakebase checkpointer + long-term store + extraction, plus `app.chat_history` auto-summarization for long conversations. |
 | 5 | [lab-8-prompts-guardrails/](lab-8-prompts-guardrails/) | Lab | **Lab 8 -- Production Prompts and Guardrails.** Prompt Registry + judge LLM. |
 | 6 | [lab-9-orchestration/](lab-9-orchestration/) | Lab | **Lab 9 -- Multi-agent Orchestration.** Tier-1 / tier-2 / escalation specialists. |
 | 7 | [debrief.md](debrief.md) | Debrief | Reflection on production patterns; pointer to Wrap / L300. |
