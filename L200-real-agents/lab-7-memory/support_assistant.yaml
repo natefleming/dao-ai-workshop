@@ -39,27 +39,37 @@ parameters:
   max_tokens_after_summary:
     description: Target token budget kept verbatim after summarization.
     default: "2048"
-  # Service-principal credentials for Lakebase. Notebook runs use the
-  # caller's PAT (ambient auth), but the deployed Databricks App needs
-  # an SP that's been granted Lakebase access -- the SP's client_id is
-  # provided as an env var, the secret is in a Databricks secret scope.
-  sp_client_id_env:
-    description: Env var name holding the Lakebase service principal client_id.
-    default: DAO_AI_SP_CLIENT_ID
+  # Service-principal credentials for Lakebase. The notebook runs as
+  # the calling user (PAT/ambient auth) and works without these. The
+  # deployed Databricks App runs as a service principal that needs
+  # explicit Lakebase access. Lakebase isn't an App "resource" -- it
+  # uses the `postgres` API scope and identity auth -- so we provide
+  # client_id/client_secret directly on the database.
   sp_secret_scope:
-    description: Databricks secret scope holding the Lakebase SP client_secret.
+    description: Databricks secret scope holding the Lakebase SP credentials.
     default: dao_ai_workshop
-  sp_secret_key:
-    description: Secret key within the scope for the Lakebase SP client_secret.
-    default: lakebase_client_secret
+  sp_client_id_secret:
+    description: Secret key within the scope for the SP client_id.
+    default: DAO_AI_SP_CLIENT_ID
+  sp_client_secret_secret:
+    description: Secret key within the scope for the SP client_secret.
+    default: DAO_AI_SP_CLIENT_SECRET
 
 variables:
-  # Workspace host: prefer the env var the Apps runtime injects, fall back to
-  # the on-disk DATABRICKS_HOST. Composite variables resolve top-down.
-  workspace_host: &workspace_host
+  # Composite variables try sources in order, return the first non-None.
+  # Secret scope wins; falls back to a process env var so notebook runs
+  # can supply ambient credentials without Databricks secret access.
+  client_id: &client_id
     options:
-      - env: DATABRICKS_HOST
-      - env: DATABRICKS_HOSTNAME
+      - scope: ${var.sp_secret_scope}
+        secret: ${var.sp_client_id_secret}
+      - env: DAO_AI_SP_CLIENT_ID
+
+  client_secret: &client_secret
+    options:
+      - scope: ${var.sp_secret_scope}
+        secret: ${var.sp_client_secret_secret}
+      - env: DAO_AI_SP_CLIENT_SECRET
 
 resources:
   llms:
@@ -83,15 +93,11 @@ resources:
       name: ${var.lakebase_name}
       project: ${var.lakebase_project}
       description: "Lakebase used by the workshop for persistent memory."
-      # Service-principal auth for the deployed app. The notebook runs
-      # under the caller's PAT and ignores these (ambient auth wins).
-      # The deployed app picks them up to authenticate to Postgres.
-      client_id:
-        env: ${var.sp_client_id_env}
-      client_secret:
-        scope: ${var.sp_secret_scope}
-        secret: ${var.sp_secret_key}
-      workspace_host: *workspace_host
+      # SP auth for the deployed app. Notebook runs ignore these
+      # (ambient auth wins); the deployed app uses them.
+      client_id: *client_id
+      client_secret: *client_secret
+      on_behalf_of_user: false
 
 agents:
   support_agent: &support_agent
