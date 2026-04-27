@@ -65,6 +65,15 @@ tools:
           - edit
           - reject
 
+# HITL needs a checkpointer at the top-level graph: `Command(resume=...)`
+# only works when the workflow can hydrate state from a saved snapshot.
+# Omitting `database:` here means dao-ai uses an in-memory checkpointer
+# (state lost on restart) -- fine for the lab, swap to a Lakebase
+# `database: *workshop_db` reference for production (see Lab 7).
+memory:
+  checkpointer:
+    name: hitl_checkpointer
+
 agents:
   support_agent: &support_agent
     name: support_agent
