@@ -148,13 +148,13 @@ print(resp["messages"][-1].content)
 # COMMAND ----------
 
 thread_id: str = f"lab7-summary-{username}"
+# Four turns is enough to cross the 1500-token summarization threshold given
+# typical prompt+response sizes -- enough to show the message-count drop after
+# summarization fires, without hammering FMAPI per-minute token rate limits.
 turns = [
     "Hi, I'm Jordan. I'm getting intermittent 500 errors from your /v1/conversations endpoint.",
     "The errors started this morning around 09:00 UTC, after we deployed our 4.2 release.",
     "We're seeing maybe 1 in 20 requests fail. The successful ones look normal.",
-    "Our retry logic handles it for now, but it's making our dashboards look noisy.",
-    "Could this be related to the recent api-gateway upgrade you mentioned in the changelog?",
-    "What logs should I pull from our side to help you investigate?",
     "Summarize what we've covered so far, and what the next step is.",
 ]
 
