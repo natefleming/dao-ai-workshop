@@ -6,8 +6,8 @@ Self-paced, hands-on workshop for building declarative AI agents on Databricks w
 
 | Repo | What it is | When to reach for it |
 |---|---|---|
-| **[`natefleming/dao-ai`](https://github.com/natefleming/dao-ai)** | The DAO-AI framework itself: schema, runtime, deploy primitives. Every lab in this workshop installs it via `pip install "dao-ai>=0.1.59"`. | Read the framework source, file issues, contribute features, or check the canonical examples under [`config/examples/`](https://github.com/natefleming/dao-ai/tree/main/config/examples). |
-| **[`natefleming/dao-ai-builder`](https://github.com/natefleming/dao-ai-builder)** | Visual builder for DAO-AI configs -- forms and dropdowns instead of hand-written YAML. Exports a ready-to-deploy `dao_ai.yaml`. | Once you've finished L100 and want a faster authoring loop for new agents, or to hand the config surface to non-developer collaborators. |
+| **[`dao-ai`](https://github.com/natefleming/dao-ai)** | The DAO-AI framework itself: schema, runtime, deploy primitives. Every lab in this workshop installs it via `pip install "dao-ai>=0.1.59"`. | Read the framework source, file issues, contribute features, or check the canonical examples under [`config/examples/`](https://github.com/natefleming/dao-ai/tree/main/config/examples). |
+| **[`dao-ai-builder`](https://github.com/natefleming/dao-ai-builder)** | Visual builder for DAO-AI configs -- forms and dropdowns instead of hand-written YAML. Exports a ready-to-deploy `dao_ai.yaml`. | Once you've finished L100 and want a faster authoring loop for new agents, or to hand the config surface to non-developer collaborators. |
 
 If you're wondering "where do these agents actually live in code?" the answer is `dao-ai`. If you're wondering "is there a UI for this?" the answer is `dao-ai-builder`.
 
