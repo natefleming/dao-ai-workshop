@@ -6,7 +6,7 @@ Self-paced, hands-on workshop for building declarative AI agents on Databricks w
 
 | Repo | What it is | When to reach for it |
 |---|---|---|
-| **[`dao-ai`](https://github.com/natefleming/dao-ai)** | The DAO-AI framework itself: schema, runtime, deploy primitives. Every lab in this workshop installs it via `pip install "dao-ai>=0.1.60"`. | Read the framework source, file issues, contribute features, or check the canonical examples under [`config/examples/`](https://github.com/natefleming/dao-ai/tree/main/config/examples). |
+| **[`dao-ai`](https://github.com/natefleming/dao-ai)** | The DAO-AI framework itself: schema, runtime, deploy primitives. Every lab in this workshop installs it via `pip install "dao-ai>=0.1.61"`. | Read the framework source, file issues, contribute features, or check the canonical examples under [`config/examples/`](https://github.com/natefleming/dao-ai/tree/main/config/examples). |
 | **[`dao-ai-builder`](https://github.com/natefleming/dao-ai-builder)** | Visual builder for DAO-AI configs -- forms and dropdowns instead of hand-written YAML. Exports a ready-to-deploy `dao_ai.yaml`. | Once you've finished L100 and want a faster authoring loop for new agents, or to hand the config surface to non-developer collaborators. |
 
 If you're wondering "where do these agents actually live in code?" the answer is `dao-ai`. If you're wondering "is there a UI for this?" the answer is `dao-ai-builder`.
@@ -102,7 +102,7 @@ print(f"Deployed app: {config.app.name}")
 | Requirement | Detail |
 |---|---|
 | Python | 3.11+ |
-| DAO-AI | `pip install "dao-ai>=0.1.60"` (the labs install this in the notebook) |
+| DAO-AI | `pip install "dao-ai>=0.1.61"` (the labs install this in the notebook) |
 | Databricks CLI | v0.230+ with a configured profile |
 | Compute | Databricks Serverless v5 |
 | Foundation models | `databricks-claude-sonnet-4-5` (always); `databricks-gte-large-en` (Lab 6 + Lab 11 + Lab 12); `databricks-claude-haiku-4-5` and `databricks-meta-llama-3-1-8b-instruct` (Lab 11 + Lab 7) |
@@ -121,10 +121,6 @@ Workshop convention: each student works in `workshop_<your-sanitized-username>.d
 databricks sync . /Users/<you>@databricks.com/dao-ai-workshop \
   --profile <profile> --full
 ```
-
-## Known issues
-
-- **Lab 7 (Persistent Memory)** — when the agent's `manage_memory` tool runs and writes a record without an explicit TTL, DAO-AI 0.1.58 forwards the `NotProvided` sentinel to the langgraph postgres store, which calls `float(op.ttl)` and raises `TypeError: float() argument must be a string or a real number, not 'NotProvided'`. The lab's config and provisioning are correct; the failure is in the DAO-AI → langgraph integration. Tracking upstream; the lab is left as-is so the fix lands automatically when DAO-AI patches it.
 
 ## Self-paced vs instructor-led
 

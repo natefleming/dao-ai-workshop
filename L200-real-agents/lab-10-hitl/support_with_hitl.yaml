@@ -52,8 +52,7 @@ tools:
     name: issue_refund
     function:
       type: unity_catalog
-      schema: *workshop_schema
-      name: issue_refund
+      resource: *issue_refund
       human_in_the_loop:
         review_prompt: |
           The agent is requesting to issue a refund. Review the proposed
