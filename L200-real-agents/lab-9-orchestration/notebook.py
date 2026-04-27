@@ -146,6 +146,35 @@ print(response["messages"][-1].content)
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC ### Streamed swarm: see each handoff arrive as it happens
+# MAGIC
+# MAGIC `config.as_responses_agent()` + `process_messages_stream` lets us
+# MAGIC observe the swarm work in real time -- you'll see tier-1 triage,
+# MAGIC the handoff event, the tier-2 (or escalation) specialist, and any
+# MAGIC follow-up handoff arrive as separate stream events instead of
+# MAGIC waiting for the full conversation. This is the same shape the
+# MAGIC deployed app's `/invocations` endpoint produces under
+# MAGIC `?stream=true` / SSE.
+
+# COMMAND ----------
+
+from dao_ai.models import process_messages_stream
+from mlflow.types.responses import ResponsesAgent, ResponsesAgentStreamEvent
+
+swarm_responses: ResponsesAgent = swarm_config.as_responses_agent()
+event: ResponsesAgentStreamEvent
+for event in process_messages_stream(
+    swarm_responses,
+    [{"role": "user", "content": "How do I export my data, and can I get a discount for the trouble?"}],
+):
+    delta: str | None = getattr(event, "delta", None)
+    if delta:
+        print(delta, end="", flush=True)
+print()
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC ## Step 3 -- Deploy as a Databricks App
 # MAGIC
 # MAGIC Deploys the supervisor variant. Swap `config` for `swarm_config`

@@ -88,6 +88,35 @@ print(response["messages"][-1].content)
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC ### 4a. Stream the same answer (ResponsesAgent + `process_messages_stream`)
+# MAGIC
+# MAGIC `config.as_responses_agent()` returns the same OpenAI-style
+# MAGIC ResponsesAgent the deployed app exposes at `/invocations`.
+# MAGIC `process_messages_stream(...)` from `dao_ai.models` runs it in
+# MAGIC streaming mode and yields incremental events as the agent thinks
+# MAGIC and the REST tool returns. Useful when the upstream call (here:
+# MAGIC GitHub Status) takes a moment and you want to surface partial
+# MAGIC progress in a UI.
+
+# COMMAND ----------
+
+from dao_ai.models import process_messages_stream
+from mlflow.types.responses import ResponsesAgent, ResponsesAgentStreamEvent
+
+responses_agent: ResponsesAgent = config.as_responses_agent()
+event: ResponsesAgentStreamEvent
+for event in process_messages_stream(
+    responses_agent,
+    [{"role": "user", "content": "Walk me through the latest GitHub status incidents in 2 sentences."}],
+):
+    delta: str | None = getattr(event, "delta", None)
+    if delta:
+        print(delta, end="", flush=True)
+print()
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC ## Step 5 -- Deploy as a Databricks App
 
 # COMMAND ----------

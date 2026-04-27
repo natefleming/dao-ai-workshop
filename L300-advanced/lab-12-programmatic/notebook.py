@@ -260,6 +260,33 @@ print(response["messages"][-1].content)
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC ### Stream the same agent in ResponsesAgent shape
+# MAGIC
+# MAGIC The Python-built `AppConfig` exposes the same alternate paths
+# MAGIC as a YAML-loaded one. `as_responses_agent()` returns the
+# MAGIC OpenAI-style ResponsesAgent the deployed app exposes;
+# MAGIC `process_messages_stream(...)` from `dao_ai.models` runs it in
+# MAGIC streaming mode so partial deltas surface as the agent thinks.
+
+# COMMAND ----------
+
+from dao_ai.models import process_messages_stream
+from mlflow.types.responses import ResponsesAgent, ResponsesAgentStreamEvent
+
+responses_agent: ResponsesAgent = config.as_responses_agent()
+event: ResponsesAgentStreamEvent
+for event in process_messages_stream(
+    responses_agent,
+    [{"role": "user", "content": "Recommend two power tools under $100 and explain why."}],
+):
+    delta: str | None = getattr(event, "delta", None)
+    if delta:
+        print(delta, end="", flush=True)
+print()
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC ## Step 6 -- Deploy as a Databricks App
 # MAGIC
 # MAGIC `deploy_agent` doesn't care whether the `AppConfig` came from YAML or Python -- it serializes the in-memory object either way.

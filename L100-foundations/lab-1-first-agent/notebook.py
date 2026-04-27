@@ -171,6 +171,10 @@ except Exception as e:
 
 # MAGIC %md
 # MAGIC ## Step 4 -- Test locally
+# MAGIC
+# MAGIC `config.as_graph()` returns a LangGraph `CompiledStateGraph`. You
+# MAGIC can drive it directly with `agent.ainvoke(...)`, which is what
+# MAGIC every previous example uses.
 
 # COMMAND ----------
 
@@ -178,6 +182,31 @@ response: dict[str, Any] = await agent.ainvoke(
     {"messages": [{"role": "user", "content": "Hi! Is this thing on?"}]},
 )
 print(response["messages"][-1].content)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### 4a. Same agent, ResponsesAgent shape
+# MAGIC
+# MAGIC `config.as_responses_agent()` wraps the same compiled graph as
+# MAGIC the OpenAI-style **ResponsesAgent** that the deployed app exposes
+# MAGIC at `/invocations`. Pair it with `process_messages(...)` from
+# MAGIC `dao_ai.models` to get a normalized payload (chat-completions
+# MAGIC list, MLflow message dicts, or plain `{"input": [...]}` all work).
+# MAGIC This is the easiest way to mirror the production endpoint while
+# MAGIC iterating in a notebook.
+
+# COMMAND ----------
+
+from dao_ai.models import process_messages
+from mlflow.types.responses import ResponsesAgent, ResponsesAgentResponse
+
+responses_agent: ResponsesAgent = config.as_responses_agent()
+result: ResponsesAgentResponse = process_messages(
+    responses_agent,
+    [{"role": "user", "content": "In one sentence, what's a DAO-AI agent?"}],
+)
+print(result.output[-1].content[0].text)
 
 # COMMAND ----------
 
