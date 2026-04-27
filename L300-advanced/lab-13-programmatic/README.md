@@ -1,4 +1,4 @@
-# Lab 12 -- Programmatic Construction
+# Lab 13 -- Programmatic Construction
 
 **Level:** L300 (advanced)
 
@@ -20,7 +20,7 @@ A `programmatic-<your-username>` agent that does **everything Lab 4's MCP agent 
 
 ## Side-by-side mapping
 
-| Lab 4 YAML construct | Lab 12 Python equivalent |
+| Lab 4 YAML construct | Lab 13 Python equivalent |
 |---|---|
 | `parameters: { catalog: ..., schema: ..., llm_endpoint: ... }` | `dbutils.widgets.text(...)` + Python variables resolved before building the config |
 | `schemas: workshop_schema: &workshop_schema` | `workshop_schema = SchemaModel(catalog_name=..., schema_name=...)` |

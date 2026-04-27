@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
 #
-# Lab 11 -- Genie Context-Aware Caching (L300)
+# Lab 12 -- Genie Context-Aware Caching (L300)
 # --------------------------------------------
 # A Genie-backed analyst with **two** layers of caching over the
 # Genie tool. The same question (or a near-duplicate) is served from
@@ -135,7 +135,7 @@ agents:
 
 app:
   name: cached-analyst-${var.username}
-  description: "Lab 11 (L300): Genie with L1 LRU + L2 context-aware caches"
+  description: "Lab 12 (L300): Genie with L1 LRU + L2 context-aware caches"
   log_level: INFO
   deployment_target: apps
 

@@ -1,6 +1,6 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Lab 10 -- Instructed Retrieval
+# MAGIC # Lab 11 -- Instructed Retrieval
 # MAGIC
 # MAGIC **Level:** L300 (advanced)
 # MAGIC
@@ -193,4 +193,4 @@ print(f"Deployed app: {config.app.name}")
 # MAGIC %md
 # MAGIC ## Next
 # MAGIC
-# MAGIC [Lab 11 -- Genie Context-Aware Caching](../lab-11-genie-caching/) -- demonstrate the L1 (LRU) and L2 (similarity) caches over a Genie tool.
+# MAGIC [Lab 12 -- Genie Context-Aware Caching](../lab-12-genie-caching/) -- demonstrate the L1 (LRU) and L2 (similarity) caches over a Genie tool.

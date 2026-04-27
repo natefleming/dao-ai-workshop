@@ -16,7 +16,8 @@ The second level of the DAO-AI workshop. Goal: by the end you'll have built a Sa
 | 4 | [lab-7-memory/](lab-7-memory/) | Lab | **Lab 7 -- Persistent Memory + Chat Summarization.** Lakebase checkpointer + long-term store + extraction, plus `app.chat_history` auto-summarization for long conversations. |
 | 5 | [lab-8-prompts-guardrails/](lab-8-prompts-guardrails/) | Lab | **Lab 8 -- Production Prompts and Guardrails.** Prompt Registry + judge LLM. |
 | 6 | [lab-9-orchestration/](lab-9-orchestration/) | Lab | **Lab 9 -- Multi-agent Orchestration.** Tier-1 / tier-2 / escalation specialists. |
-| 7 | [debrief.md](debrief.md) | Debrief | Reflection on production patterns; pointer to Wrap / L300. |
+| 7 | [lab-10-hitl/](lab-10-hitl/) | Lab | **Lab 10 -- Human in the Loop.** Tool-level approval gating: agent pauses, surfaces an interrupt, resumes on approve / edit / reject. |
+| 8 | [debrief.md](debrief.md) | Debrief | Reflection on production patterns; pointer to L300. |
 
 ## Prerequisites
 
@@ -31,4 +32,4 @@ Per-lab additional requirements:
 
 ## When to move on
 
-After Lab 9, you'll have a multi-agent support coordinator that works end-to-end. [L300 Advanced](../L300-advanced/) covers two more production patterns: **Lab 10 -- Instructed Retrieval** (decomposition + multi-stage rerank) and **Lab 11 -- Genie Context-Aware Caching** (L1 LRU + L2 similarity over a Genie tool).
+After Lab 9, you'll have a multi-agent support coordinator that works end-to-end. [L300 Advanced](../L300-advanced/) covers two more production patterns: **Lab 11 -- Instructed Retrieval** (decomposition + multi-stage rerank) and **Lab 12 -- Genie Context-Aware Caching** (L1 LRU + L2 similarity over a Genie tool).

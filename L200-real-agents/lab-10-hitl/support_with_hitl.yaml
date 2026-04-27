@@ -1,0 +1,117 @@
+# yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
+#
+# Lab 10 -- Human in the Loop (saas_helpdesk continuation)
+# --------------------------------------------------------
+# A support agent that can issue refunds, but the refund tool is
+# HITL-gated: when the LLM decides to call `issue_refund`, the workflow
+# pauses, surfaces the proposed arguments to a human reviewer, and
+# resumes only on approve / edit / reject.
+#
+# HITL requires a checkpointer to persist agent state across the
+# interrupt. We rely on dao-ai's automatic InMemorySaver fallback by
+# omitting an explicit memory.checkpointer database -- production
+# deployments typically wire this to Lakebase (see Lab 7).
+
+parameters:
+  username:
+    description: Per-student username for unique deployment names. Auto-set by the notebook.
+    # No default => required.
+  catalog:
+    description: Unity Catalog catalog containing the workshop tables/functions.
+    # No default => required.
+  schema:
+    description: Schema within the catalog for workshop assets.
+    default: dao_ai
+  llm_endpoint:
+    description: Databricks LLM serving endpoint name.
+    default: databricks-claude-sonnet-4-5
+
+schemas:
+  workshop_schema: &workshop_schema
+    catalog_name: ${var.catalog}
+    schema_name: ${var.schema}
+
+resources:
+  llms:
+    default_llm: &default_llm
+      name: ${var.llm_endpoint}
+      temperature: 0.1
+      max_tokens: 4096
+
+  functions:
+    issue_refund: &issue_refund
+      schema: *workshop_schema
+      name: issue_refund
+
+tools:
+  # The HITL-gated tool. The `human_in_the_loop:` block tells dao-ai to
+  # wrap this tool with the LangChain HumanInTheLoopMiddleware: the agent
+  # call is interrupted before the tool runs, the proposed arguments are
+  # surfaced to the human, and the run resumes on the human's decision.
+  issue_refund_tool: &issue_refund_tool
+    name: issue_refund
+    function:
+      type: unity_catalog
+      schema: *workshop_schema
+      name: issue_refund
+      human_in_the_loop:
+        review_prompt: |
+          The agent is requesting to issue a refund. Review the proposed
+          arguments (order_id, amount, reason) and choose:
+            - approve: issue the refund as proposed
+            - edit:    adjust the amount or reason before issuing
+            - reject:  block the refund and tell the agent why
+        allowed_decisions:
+          - approve
+          - edit
+          - reject
+
+agents:
+  support_agent: &support_agent
+    name: support_agent
+    description: Tier-1 SaaS support assistant with a HITL-gated refund tool.
+    model: *default_llm
+    tools:
+      - *issue_refund_tool
+    prompt: |
+      You are a tier-1 support assistant for a SaaS product. Customers
+      can ask about their account, charges, or features.
+
+      When a customer requests a refund, gather:
+        - the order ID,
+        - the amount,
+        - a one-line reason.
+
+      Call the `issue_refund` tool with those arguments. **Do not** tell
+      the customer the refund has been issued until the tool returns --
+      a human reviewer must approve the action first. If the reviewer
+      rejects, explain that the refund needs additional review and ask
+      what else you can do.
+
+app:
+  name: hitl-refund-${var.username}
+  description: "Lab 10: HITL-gated refund tool over a tier-1 support agent"
+  log_level: INFO
+  deployment_target: apps
+
+  agents:
+    - *support_agent
+
+  orchestration:
+    swarm:
+      default_agent: *support_agent
+
+  input_example:
+    messages:
+      - role: user
+        content: "Hi, I was charged $49.99 twice for order ORD-1234 -- I'd like a refund of $49.99 for the duplicate."
+
+# Self-contained provisioning: just the issue_refund UC function.
+unity_catalog_functions:
+  - function: *issue_refund
+    ddl: ./functions/issue_refund.sql
+    test:
+      parameters:
+        order_id: "ORD-0001"
+        amount: 9.99
+        reason: "test"

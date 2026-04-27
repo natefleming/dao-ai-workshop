@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
 #
-# Lab 10 -- Instructed Retrieval (L300)
+# Lab 11 -- Instructed Retrieval (L300)
 # -------------------------------------
 # An advanced retriever that decomposes natural-language queries into
 # filter constraints + a residual semantic query, then reranks via an
@@ -177,7 +177,7 @@ agents:
 
 app:
   name: instructed-search-${var.username}
-  description: "Lab 10 (L300): instructed retrieval over the products catalog"
+  description: "Lab 11 (L300): instructed retrieval over the products catalog"
   log_level: INFO
   deployment_target: apps
 

@@ -1,4 +1,4 @@
-# Lab 11 -- Genie Context-Aware Caching
+# Lab 12 -- Genie Context-Aware Caching
 
 **Level:** L300 (advanced)
 

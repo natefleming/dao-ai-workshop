@@ -1,6 +1,6 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Lab 11 -- Genie Context-Aware Caching
+# MAGIC # Lab 12 -- Genie Context-Aware Caching
 # MAGIC
 # MAGIC **Level:** L300 (advanced)
 # MAGIC

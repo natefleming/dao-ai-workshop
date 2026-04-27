@@ -24,8 +24,8 @@ You've finished L200. Take a few minutes to consolidate.
 
 L200 covered the production patterns one at a time. [**L300 Advanced**](../L300-advanced/) adds two more, each as its own focused lab:
 
-- **Lab 10 -- Instructed Retrieval**: filter-aware retrieval with query decomposition + cross-encoder rerank + LLM-based instruction rerank.
-- **Lab 11 -- Genie Context-Aware Caching**: L1 LRU exact-match cache + L2 similarity cache over a Genie tool.
+- **Lab 11 -- Instructed Retrieval**: filter-aware retrieval with query decomposition + cross-encoder rerank + LLM-based instruction rerank.
+- **Lab 12 -- Genie Context-Aware Caching**: L1 LRU exact-match cache + L2 similarity cache over a Genie tool.
 
 (Chat-history summarization, the fourth advanced pattern, is already covered in Lab 7 alongside Lakebase memory.)
 

@@ -18,7 +18,7 @@ The workshop is organized as **L100 → L200 → L300**, mirroring the level sys
 | Section | Path | Use case | Labs |
 |---|---|---|---|
 | **L100 Foundations** | [`L100-foundations/`](L100-foundations/) | hardware_store (consumer retail) | 4 labs |
-| **L200 Building Real Agents** | [`L200-real-agents/`](L200-real-agents/) | saas_helpdesk (support ops) | 5 labs |
+| **L200 Building Real Agents** | [`L200-real-agents/`](L200-real-agents/) | saas_helpdesk (support ops) | 6 labs |
 | **L300 Advanced** | [`L300-advanced/`](L300-advanced/) | hardware_store++ (extended) | 3 labs |
 
 ## Lab index
@@ -43,6 +43,7 @@ L100 also ships two **lectures** before the labs: [Setting the Stage](L100-found
 | **Lab 7** | Persistent Memory + Chat Summarization | Lakebase checkpointer + long-term store + extraction, plus `app.chat_history` auto-summarization | [`L200-real-agents/lab-7-memory/`](L200-real-agents/lab-7-memory/) |
 | **Lab 8** | Production Prompts and Guardrails | Prompt Registry + judge guardrail | [`L200-real-agents/lab-8-prompts-guardrails/`](L200-real-agents/lab-8-prompts-guardrails/) |
 | **Lab 9** | Multi-agent Orchestration | Supervisor + swarm | [`L200-real-agents/lab-9-orchestration/`](L200-real-agents/lab-9-orchestration/) |
+| **Lab 10** | Human in the Loop | Tool-level approval gating with `human_in_the_loop:` (approve / edit / reject) | [`L200-real-agents/lab-10-hitl/`](L200-real-agents/lab-10-hitl/) |
 
 L200 starts with the [Building Real Agents](L200-real-agents/building-real-agents.md) lecture.
 
@@ -50,9 +51,9 @@ L200 starts with the [Building Real Agents](L200-real-agents/building-real-agent
 
 | Lab | Title | DAO-AI concept | Path |
 |---|---|---|---|
-| **Lab 10** | Instructed Retrieval | Query decomposition + cross-encoder + LLM-based instruction rerank | [`L300-advanced/lab-10-instructed-retrieval/`](L300-advanced/lab-10-instructed-retrieval/) |
-| **Lab 11** | Genie Context-Aware Caching | L1 LRU exact-match + L2 similarity cache over a Genie tool | [`L300-advanced/lab-11-genie-caching/`](L300-advanced/lab-11-genie-caching/) |
-| **Lab 12** | Programmatic Construction | Build the same `AppConfig` in pure Python instead of YAML | [`L300-advanced/lab-12-programmatic/`](L300-advanced/lab-12-programmatic/) |
+| **Lab 11** | Instructed Retrieval | Query decomposition + cross-encoder + LLM-based instruction rerank | [`L300-advanced/lab-11-instructed-retrieval/`](L300-advanced/lab-11-instructed-retrieval/) |
+| **Lab 12** | Genie Context-Aware Caching | L1 LRU exact-match + L2 similarity cache over a Genie tool | [`L300-advanced/lab-12-genie-caching/`](L300-advanced/lab-12-genie-caching/) |
+| **Lab 13** | Programmatic Construction | Build the same `AppConfig` in pure Python instead of YAML | [`L300-advanced/lab-13-programmatic/`](L300-advanced/lab-13-programmatic/) |
 
 See the [L300 README](L300-advanced/README.md) for production-deployment guidance.
 
@@ -77,9 +78,10 @@ Resulting deployed names are short and theme-specific:
 | Lab 7 | `support-history-jane-doe` |
 | Lab 8 | `safe-support-jane-doe` |
 | Lab 9 | `tier-routing-jane-doe` |
-| Lab 10 | `instructed-search-jane-doe` |
-| Lab 11 | `cached-analyst-jane-doe` |
-| Lab 12 | `programmatic-jane-doe` |
+| Lab 10 | `hitl-refund-jane-doe` |
+| Lab 11 | `instructed-search-jane-doe` |
+| Lab 12 | `cached-analyst-jane-doe` |
+| Lab 13 | `programmatic-jane-doe` |
 
 All names fit within the 30-character Databricks Apps limit.
 
@@ -103,10 +105,10 @@ print(f"Deployed app: {config.app.name}")
 | DAO-AI | `pip install "dao-ai>=0.1.60"` (the labs install this in the notebook) |
 | Databricks CLI | v0.230+ with a configured profile |
 | Compute | Databricks Serverless v5 |
-| Foundation models | `databricks-claude-sonnet-4-5` (always); `databricks-gte-large-en` (Lab 6 + Lab 10 + Lab 11); `databricks-claude-haiku-4-5` and `databricks-meta-llama-3-1-8b-instruct` (Lab 10 + Lab 7) |
-| Genie Space | One pointed at `products` (Lab 3 + Lab 11) |
-| Vector Search endpoint | Used by Lab 6 + Lab 10 |
-| SQL warehouse | Used by Lab 11 (Genie cache replay) |
+| Foundation models | `databricks-claude-sonnet-4-5` (always); `databricks-gte-large-en` (Lab 6 + Lab 11 + Lab 12); `databricks-claude-haiku-4-5` and `databricks-meta-llama-3-1-8b-instruct` (Lab 11 + Lab 7) |
+| Genie Space | One pointed at `products` (Lab 3 + Lab 12) |
+| Vector Search endpoint | Used by Lab 6 + Lab 11 |
+| SQL warehouse | Used by Lab 12 (Genie cache replay) |
 | Lakebase access | Used by Lab 7 (in-memory fallback exists) |
 
 ## Per-student catalog isolation
@@ -154,9 +156,9 @@ dao-ai-workshop/
 │   └── debrief.md            (debrief)
 ├── L300-advanced/            L300 -- advanced patterns
 │   ├── README.md
-│   ├── lab-10-instructed-retrieval/ (Lab 10)
-│   ├── lab-11-genie-caching/        (Lab 11)
-│   └── lab-12-programmatic/         (Lab 12 -- build the same agent in pure Python)
+│   ├── lab-11-instructed-retrieval/ (Lab 11)
+│   ├── lab-12-genie-caching/        (Lab 12)
+│   └── lab-13-programmatic/         (Lab 13 -- build the same agent in pure Python)
 └── setup/                    (workshop setup scripts)
 ```
 

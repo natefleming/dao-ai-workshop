@@ -46,6 +46,6 @@ Open `notebook.py`. The notebook walks both patterns side by side.
 
 Deployed app name: `tier-routing-<your-username>`.
 
-## Congratulations
+## Next
 
-You've finished L200. [L300 Advanced](../../L300-advanced/) covers instructed retrieval (Lab 10) and Genie context-aware caching with L1 LRU + L2 similarity layers (Lab 11).
+[Lab 10 -- Human in the Loop](../lab-10-hitl/) -- gate the refund tool with `human_in_the_loop:` and resume the workflow on a human's approve / edit / reject decision.

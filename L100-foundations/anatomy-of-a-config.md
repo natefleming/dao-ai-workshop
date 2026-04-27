@@ -19,7 +19,7 @@ unity_catalog_functions:  # 11. UC SQL functions to provision (paired with tools
 datasets:                 # 12. Tables to provision (paired with vector stores above).
 ```
 
-Not every config uses all of these. Lab 1 needs only `parameters` + `resources` + `agents` + `app`. Each lab from there adds one or two more sections. By Lab 11 the same shape covers everything from a single LLM up to a multi-agent swarm with vector search, memory, prompts, and guardrails.
+Not every config uses all of these. Lab 1 needs only `parameters` + `resources` + `agents` + `app`. Each lab from there adds one or two more sections. By Lab 12 the same shape covers everything from a single LLM up to a multi-agent swarm with vector search, memory, prompts, and guardrails.
 
 ## 1. `parameters:` -- variables for the YAML
 
@@ -105,7 +105,7 @@ Resource types you'll meet across the workshop:
 | `genie_rooms` | Lab 3 | Databricks Genie Space |
 | `vector_stores` | Lab 6 | Delta-Sync vector index over a Delta table |
 | `databases` | Lab 7 | Lakebase (managed Postgres) for memory |
-| `warehouses` | Lab 11 | SQL warehouse (cache replay, OBO queries) |
+| `warehouses` | Lab 12 | SQL warehouse (cache replay, OBO queries) |
 
 Every resource type accepts an `on_behalf_of_user: true` flag. With it, calls go out using the caller's identity (Databricks Apps forwards `x-forwarded-access-token`; Model Serving uses `ModelServingUserCredentials`) instead of the app's service principal -- so per-user UC permissions actually apply at query time.
 
@@ -174,7 +174,7 @@ retrievers:
       top_n: 5                         # narrow to top 5 for precision
 ```
 
-Lab 10 adds an `instructed:` block on top -- `decomposition:` (LLM splits the query into filters + residual semantic query) and an LLM-based `rerank:` that follows natural-language instructions.
+Lab 11 adds an `instructed:` block on top -- `decomposition:` (LLM splits the query into filters + residual semantic query) and an LLM-based `rerank:` that follows natural-language instructions.
 
 ## 6. `prompts:` -- inline or registry-managed
 

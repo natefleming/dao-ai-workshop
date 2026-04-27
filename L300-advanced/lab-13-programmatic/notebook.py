@@ -1,6 +1,6 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Lab 12 -- Programmatic Construction
+# MAGIC # Lab 13 -- Programmatic Construction
 # MAGIC
 # MAGIC **Level:** L300 (advanced)
 # MAGIC
@@ -166,7 +166,7 @@ unity_catalog_functions: list[UnityCatalogFunctionSqlModel] = [
 # 3g. The deployable app (YAML: app:).
 app: AppModel = AppModel(
     name=f"programmatic-{username}",
-    description="Lab 12: Lab 4's MCP agent built in pure Python.",
+    description="Lab 13: Lab 4's MCP agent built in pure Python.",
     log_level="INFO",
     deployment_target=DeploymentTarget.APPS,
     agents=[mcp_agent],

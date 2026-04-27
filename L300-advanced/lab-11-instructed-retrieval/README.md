@@ -1,4 +1,4 @@
-# Lab 10 -- Instructed Retrieval
+# Lab 11 -- Instructed Retrieval
 
 **Level:** L300 (advanced)
 
@@ -49,4 +49,4 @@ Deployed app name: `instructed-search-<your-username>`.
 
 ## Next
 
-[Lab 11 -- Genie Context-Aware Caching](../lab-11-genie-caching/) -- demonstrate the L1 LRU (exact match) and L2 similarity caches over a Genie tool.
+[Lab 12 -- Genie Context-Aware Caching](../lab-12-genie-caching/) -- demonstrate the L1 LRU (exact match) and L2 similarity caches over a Genie tool.

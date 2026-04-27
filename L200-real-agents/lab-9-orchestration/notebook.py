@@ -191,15 +191,8 @@ print(f"Deployed app: {config.app.name}")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Congratulations!
+# MAGIC ## Next
 # MAGIC
-# MAGIC You've completed the workshop. The chapters covered:
-# MAGIC
-# MAGIC | Use case | Chapters | dao-ai concepts |
-# MAGIC |---|---|---|
-# MAGIC | Hardware-store retail | 1-4 | LLM agent, UC function tools, Genie, MCP |
-# MAGIC | SaaS helpdesk | 5-9 | REST tools, vector search + reranker, memory, prompts + guardrails, multi-agent |
-# MAGIC
-# MAGIC **Want more?** See [`L300-advanced/`](../../L300-advanced/) for two
-# MAGIC more advanced patterns: instructed retrieval (Lab 10) and Genie
-# MAGIC context-aware caching with L1 LRU + L2 similarity layers (Lab 11).
+# MAGIC [Lab 10 -- Human in the Loop](../lab-10-hitl/) -- gate the
+# MAGIC refund tool with `human_in_the_loop:` and resume the workflow
+# MAGIC on a human's approve / edit / reject decision.
