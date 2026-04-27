@@ -1,18 +1,25 @@
 # yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
 #
-# Chapter 9 - Swarm with Agentic Handoffs (saas_helpdesk)
-# -------------------------------------------------------
-# Same three specialists, but as a swarm with agentic handoffs --
-# the LLM at each agent decides whether/where to hand off.
+# Chapter 9 - Swarm with Mixed Deterministic + Agentic Handoffs (saas_helpdesk)
+# -----------------------------------------------------------------------------
+# Three specialists. tier-1 routes agentically to either tier-2 or
+# escalation; tier-2 always (deterministic) escalates after its turn so
+# every technical fix goes through a manager review; escalation is the
+# terminal node.
+#
+# DAO-AI 0.1.62+ rejects deterministic edges that participate in a
+# cycle, so this is the only safe way to mix the two patterns: keep
+# the deterministic edge in an acyclic position (no path back to its
+# source). Adding `escalation_lead -> tier2_engineer` (agentic or
+# deterministic) here would make config load fail with a clear error.
 #
 # Flow:
 #   tier1_support (default entry)
-#     ├── agentic → tier2_engineer    (LLM picks if technical)
-#     └── agentic → escalation_lead   (LLM picks if billing/policy)
+#     ├── agentic → tier2_engineer       (LLM picks if technical)
+#     └── agentic → escalation_lead      (LLM picks if billing/policy)
 #   tier2_engineer
-#     └── agentic → escalation_lead   (LLM decides if escalation needed)
-#   escalation_lead
-#     └── agentic → tier2_engineer    (LLM decides if technical follow-up)
+#     └── deterministic → escalation_lead   (every tier-2 case is reviewed)
+#   escalation_lead                          (terminal — no outgoing handoffs)
 
 parameters:
   username:
@@ -97,21 +104,24 @@ app:
     swarm:
       default_agent: tier1_support
       handoffs:
-        # Agentic: triage LLM classifies and picks one specialist.
-        # All edges are agentic to avoid loops: a deterministic
-        # tier2->escalation combined with an agentic escalation->tier2
-        # would make every conversation ping-pong forever.
+        # Agentic: triage LLM reads the customer's question and picks
+        # one specialist on its own.
         tier1_support:
           - tier2_engineer
           - escalation_lead
 
-        # Agentic: tier-2 may escalate when account-impact decisions are needed.
+        # Deterministic: every tier-2 case is forwarded to escalation
+        # for manager review after the technical fix lands. The edge
+        # is acyclic (escalation has no outgoing handoffs), so the
+        # 0.1.62 cycle validator accepts it.
         tier2_engineer:
-          - escalation_lead
+          - agent: escalation_lead
+            is_deterministic: true
 
-        # Agentic: escalation may pull tier-2 back in for technical context.
-        escalation_lead:
-          - tier2_engineer
+        # Terminal: escalation_lead has no outgoing handoffs. Adding
+        # one back to tier2_engineer would form a cycle with the
+        # deterministic edge above and AppConfig load would error.
+        escalation_lead: []
 
   input_example:
     messages:
