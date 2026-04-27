@@ -48,9 +48,6 @@ app:
   deployment_target: apps
   agents:
     - *product_agent
-  orchestration:
-    swarm:
-      default_agent: *product_agent
   input_example:
     messages:
       - role: user

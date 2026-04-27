@@ -43,9 +43,6 @@ app:
   agents:
     - *greeter
 
-  orchestration:
-    swarm:
-      default_agent: *greeter
 
   input_example:
     messages:

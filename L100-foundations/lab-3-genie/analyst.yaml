@@ -75,9 +75,6 @@ app:
   agents:
     - *analyst
 
-  orchestration:
-    swarm:
-      default_agent: *analyst
 
   input_example:
     messages:

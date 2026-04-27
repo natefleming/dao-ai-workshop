@@ -346,7 +346,7 @@ app:
       secret: slack_bot_token
 ```
 
-`orchestration:` is `swarm` for "any agent can hand off to any other" or `supervisor` for "a router LLM picks per turn." Lab 9 demos both back to back with the same three specialists.
+`orchestration:` is **optional** -- when you have a single agent and no memory, the runtime treats the lone agent as the entry point automatically. You only need this block when you have multiple agents (`swarm` for "any agent can hand off to any other" or `supervisor` for "a router LLM picks per turn") **or** when you wire memory through `orchestration.memory` (Lab 7 / Lab 10). Lab 9 demos both `swarm` and `supervisor` back to back with the same three specialists.
 
 `environment_vars:` is the one place you declare runtime env vars (or secret references) the deployed app needs at boot.
 
@@ -381,16 +381,13 @@ app:
   name: greeter-${var.username}
   deployment_target: apps
   agents: [*greeter]
-  orchestration:
-    swarm:
-      default_agent: *greeter
   input_example:
     messages:
       - role: user
         content: "Hi!"
 ```
 
-That's a real, deployable agent. Each L100/L200/L300 lab adds one new section to this skeleton and stops -- so by the end of the workshop you've assembled the whole anatomy in pieces.
+No `orchestration:` block -- with a single agent and no memory, none is needed. That's a real, deployable agent. Each L100/L200/L300 lab adds one new section to this skeleton and stops -- so by the end of the workshop you've assembled the whole anatomy in pieces.
 
 ## What's next
 

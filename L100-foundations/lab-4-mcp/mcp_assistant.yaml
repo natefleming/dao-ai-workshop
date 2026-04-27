@@ -102,9 +102,6 @@ app:
   agents:
     - *mcp_agent
 
-  orchestration:
-    swarm:
-      default_agent: *mcp_agent
 
   input_example:
     messages:

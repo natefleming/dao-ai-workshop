@@ -53,9 +53,6 @@ app:
   deployment_target: apps
   agents:
     - *kb_assistant
-  orchestration:
-    swarm:
-      default_agent: *kb_assistant
   input_example:
     messages:
       - role: user

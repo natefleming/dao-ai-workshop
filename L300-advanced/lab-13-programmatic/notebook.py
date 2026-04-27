@@ -80,10 +80,8 @@ from dao_ai.config import (
     LLMModel,
     McpFunctionModel,
     Message,
-    OrchestrationModel,
     ResourcesModel,
     SchemaModel,
-    SwarmModel,
     TableModel,
     ToolModel,
     UnityCatalogFunctionSqlModel,
@@ -170,7 +168,7 @@ app: AppModel = AppModel(
     log_level="INFO",
     deployment_target=DeploymentTarget.APPS,
     agents=[mcp_agent],
-    orchestration=OrchestrationModel(swarm=SwarmModel(default_agent=mcp_agent)),
+    # No orchestration: needed -- single-agent apps don't require it.
     input_example=ChatPayload(
         input=[Message(role="user", content="List 3 power tools from our catalog.")],
     ),

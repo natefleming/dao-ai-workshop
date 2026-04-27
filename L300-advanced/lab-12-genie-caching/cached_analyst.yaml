@@ -142,9 +142,6 @@ app:
   agents:
     - *cached_analyst
 
-  orchestration:
-    swarm:
-      default_agent: *cached_analyst
 
   input_example:
     messages:

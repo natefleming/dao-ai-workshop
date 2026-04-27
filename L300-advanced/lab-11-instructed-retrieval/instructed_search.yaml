@@ -184,9 +184,6 @@ app:
   agents:
     - *catalog_advisor
 
-  orchestration:
-    swarm:
-      default_agent: *catalog_advisor
 
   input_example:
     messages:
