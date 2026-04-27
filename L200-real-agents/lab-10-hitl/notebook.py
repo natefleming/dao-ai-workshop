@@ -152,7 +152,7 @@ for intr in interrupts:
 # MAGIC %md
 # MAGIC ## Step 5 -- Approve and resume
 # MAGIC
-# MAGIC The interrupt payload describes the action the agent wants to take. We resume the run with a `Command(resume=...)` carrying the human's decision. LangChain's HITL middleware accepts a list of decision objects, one per pending action: `ApproveDecision()`, `EditDecision(args=...)`, or `RejectDecision(message=...)`.
+# MAGIC The interrupt payload describes the action the agent wants to take. We resume the run with a `Command(resume={"decisions": [...]})` carrying the human's decision(s) -- one per pending action. The decision types are `ApproveDecision()`, `EditDecision(args=...)`, or `RejectDecision(message=...)` from `langchain.agents.middleware.human_in_the_loop`.
 
 # COMMAND ----------
 
@@ -163,7 +163,7 @@ from langchain.agents.middleware.human_in_the_loop import (
 )
 
 approve_response: dict[str, Any] = await agent.ainvoke(
-    Command(resume=[ApproveDecision()]),
+    Command(resume={"decisions": [ApproveDecision()]}),
     config=thread_config,
 )
 print(approve_response["messages"][-1].content)
@@ -190,13 +190,45 @@ print(f"interrupts surfaced: {len(response.get('__interrupt__', []))}")
 # COMMAND ----------
 
 reject_response: dict[str, Any] = await agent.ainvoke(
-    Command(resume=[RejectDecision(message=(
+    Command(resume={"decisions": [RejectDecision(message=(
         "Refunds over $100 require manager approval. Tell the customer this "
         "needs to be escalated and ask if they'd like a credit instead."
-    ))]),
+    ))]}),
     config=reject_thread,
 )
 print(reject_response["messages"][-1].content)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Step 6b -- Edit the proposed arguments
+# MAGIC
+# MAGIC `EditDecision(args=...)` lets the human modify the tool's
+# MAGIC arguments before execution. Useful when the agent picked the
+# MAGIC right tool but got a number wrong.
+
+# COMMAND ----------
+
+edit_thread: dict[str, Any] = {"configurable": {"thread_id": f"lab10-{username}-edit"}}
+
+response = await agent.ainvoke(
+    {"messages": [{"role": "user", "content": (
+        "Refund order ORD-5555 for $99.99 -- the discount code didn't apply."
+    )}]},
+    config=edit_thread,
+)
+print(f"interrupts surfaced: {len(response.get('__interrupt__', []))}")
+
+edit_response: dict[str, Any] = await agent.ainvoke(
+    Command(resume={"decisions": [EditDecision(args={
+        "order_id": "ORD-5555",
+        # Reviewer cuts the refund in half because the discount was 50%, not full.
+        "amount": 49.99,
+        "reason": "discount code partial-apply (corrected by reviewer)",
+    })]}),
+    config=edit_thread,
+)
+print(edit_response["messages"][-1].content)
 
 # COMMAND ----------
 
