@@ -70,7 +70,7 @@ tools:
 # Omitting `database:` here means dao-ai uses an in-memory checkpointer
 # (state lost on restart) -- fine for the lab, swap to a Lakebase
 # `database: *workshop_db` reference for production (see Lab 7).
-memory:
+memory: &memory
   checkpointer:
     name: hitl_checkpointer
 
@@ -106,6 +106,7 @@ app:
     - *support_agent
 
   orchestration:
+    memory: *memory
     swarm:
       default_agent: *support_agent
 
