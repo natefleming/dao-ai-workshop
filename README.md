@@ -109,6 +109,10 @@ databricks sync . /Users/<you>@databricks.com/dao-ai-workshop \
   --profile <profile> --full
 ```
 
+## Known issues
+
+- **Lab 7 (Persistent Memory)** — when the agent's `manage_memory` tool runs and writes a record without an explicit TTL, dao-ai 0.1.58 forwards the `NotProvided` sentinel to the langgraph postgres store, which calls `float(op.ttl)` and raises `TypeError: float() argument must be a string or a real number, not 'NotProvided'`. The lab's config and provisioning are correct; the failure is in the dao-ai → langgraph integration. Tracking upstream; the lab is left as-is so the fix lands automatically when dao-ai patches it.
+
 ## Self-paced vs instructor-led
 
 - **Self-paced**: read the level README, read the lectures, then run each lab's notebook in order. Each lab is self-contained.
