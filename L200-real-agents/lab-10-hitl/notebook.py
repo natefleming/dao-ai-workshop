@@ -156,14 +156,12 @@ for intr in interrupts:
 
 # COMMAND ----------
 
-from langchain.agents.middleware.human_in_the_loop import (
-    ApproveDecision,
-    EditDecision,
-    RejectDecision,
-)
+# Decisions are plain TypedDicts: {"type": "approve" | "edit" | "reject"}
+# with optional "message" (reject) or "edited_action" (edit). The HITL
+# middleware reads decision["type"] -- always populate the type key.
 
 approve_response: dict[str, Any] = await agent.ainvoke(
-    Command(resume={"decisions": [ApproveDecision()]}),
+    Command(resume={"decisions": [{"type": "approve"}]}),
     config=thread_config,
 )
 print(approve_response["messages"][-1].content)
@@ -190,10 +188,13 @@ print(f"interrupts surfaced: {len(response.get('__interrupt__', []))}")
 # COMMAND ----------
 
 reject_response: dict[str, Any] = await agent.ainvoke(
-    Command(resume={"decisions": [RejectDecision(message=(
-        "Refunds over $100 require manager approval. Tell the customer this "
-        "needs to be escalated and ask if they'd like a credit instead."
-    ))]}),
+    Command(resume={"decisions": [{
+        "type": "reject",
+        "message": (
+            "Refunds over $100 require manager approval. Tell the customer this "
+            "needs to be escalated and ask if they'd like a credit instead."
+        ),
+    }]}),
     config=reject_thread,
 )
 print(reject_response["messages"][-1].content)
@@ -220,12 +221,18 @@ response = await agent.ainvoke(
 print(f"interrupts surfaced: {len(response.get('__interrupt__', []))}")
 
 edit_response: dict[str, Any] = await agent.ainvoke(
-    Command(resume={"decisions": [EditDecision(args={
-        "order_id": "ORD-5555",
-        # Reviewer cuts the refund in half because the discount was 50%, not full.
-        "amount": 49.99,
-        "reason": "discount code partial-apply (corrected by reviewer)",
-    })]}),
+    Command(resume={"decisions": [{
+        "type": "edit",
+        "edited_action": {
+            "name": "issue_refund",
+            "args": {
+                "order_id": "ORD-5555",
+                # Reviewer cuts the refund in half because the discount was 50%, not full.
+                "amount": 49.99,
+                "reason": "discount code partial-apply (corrected by reviewer)",
+            },
+        },
+    }]}),
     config=edit_thread,
 )
 print(edit_response["messages"][-1].content)
