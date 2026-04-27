@@ -1,8 +1,0 @@
-[project]
-name = "dao-ai-workshop-lab-8-prompts-guardrails"
-version = "0.1.0"
-description = "Lab 8 of the dao-ai workshop."
-requires-python = ">=3.11,<3.12"
-dependencies = [
-    "dao-ai>=0.1.58",
-]

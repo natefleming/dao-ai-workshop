@@ -1,6 +1,15 @@
-# dao-ai Workshop
+# DAO-AI Workshop
 
-Self-paced, hands-on workshop for building declarative AI agents on Databricks with the [dao-ai](https://github.com/natefleming/dao-ai) framework. Designed for solution architects, data engineers, and analysts who want to go from zero to a deployed, governed agent. By the end you'll have built, tested, and deployed a multi-agent system that combines tool use, NL-to-SQL, vector search, memory, guardrails, and orchestration -- all defined in YAML and running as a Databricks App.
+Self-paced, hands-on workshop for building declarative AI agents on Databricks with the [DAO-AI](https://github.com/natefleming/dao-ai) framework. Designed for solution architects, data engineers, and analysts who want to go from zero to a deployed, governed agent. By the end you'll have built, tested, and deployed a multi-agent system that combines tool use, NL-to-SQL, vector search, memory, guardrails, and orchestration -- all defined in YAML and running as a Databricks App.
+
+## Companion projects
+
+| Repo | What it is | When to reach for it |
+|---|---|---|
+| **[`natefleming/dao-ai`](https://github.com/natefleming/dao-ai)** | The DAO-AI framework itself: schema, runtime, deploy primitives. Every lab in this workshop installs it via `pip install "dao-ai>=0.1.59"`. | Read the framework source, file issues, contribute features, or check the canonical examples under [`config/examples/`](https://github.com/natefleming/dao-ai/tree/main/config/examples). |
+| **[`natefleming/dao-ai-builder`](https://github.com/natefleming/dao-ai-builder)** | Visual builder for DAO-AI configs -- forms and dropdowns instead of hand-written YAML. Exports a ready-to-deploy `dao_ai.yaml`. | Once you've finished L100 and want a faster authoring loop for new agents, or to hand the config surface to non-developer collaborators. |
+
+If you're wondering "where do these agents actually live in code?" the answer is `dao-ai`. If you're wondering "is there a UI for this?" the answer is `dao-ai-builder`.
 
 ## Workshop structure
 
@@ -8,47 +17,48 @@ The workshop is organized as **L100 → L200 → L300**, mirroring the level sys
 
 | Section | Path | Use case | Labs |
 |---|---|---|---|
-| **L100 Foundations** | [`l100-foundations/`](l100-foundations/) | hardware_store (consumer retail) | 4 labs |
-| **L200 Building Real Agents** | [`l200-real-agents/`](l200-real-agents/) | saas_helpdesk (support ops) | 5 labs |
-| **L300 Advanced** | [`l300-advanced/`](l300-advanced/) | hardware_store++ (extended) | 2 labs |
+| **L100 Foundations** | [`L100-foundations/`](L100-foundations/) | hardware_store (consumer retail) | 4 labs |
+| **L200 Building Real Agents** | [`L200-real-agents/`](L200-real-agents/) | saas_helpdesk (support ops) | 5 labs |
+| **L300 Advanced** | [`L300-advanced/`](L300-advanced/) | hardware_store++ (extended) | 3 labs |
 
 ## Lab index
 
 ### L100 Foundations -- `hardware_store`
 
-| Lab | Title | dao-ai concept | Path |
+| Lab | Title | DAO-AI concept | Path |
 |---|---|---|---|
-| **Lab 1** | Your First dao-ai Agent | Declarative single-agent LLM | [`l100-foundations/lab-1-first-agent/`](l100-foundations/lab-1-first-agent/) |
-| **Lab 2** | Grounding with Unity Catalog Tools | UC SQL function tools | [`l100-foundations/lab-2-uc-tools/`](l100-foundations/lab-2-uc-tools/) |
-| **Lab 3** | NL Analytics with Genie | Genie Space as a tool | [`l100-foundations/lab-3-genie/`](l100-foundations/lab-3-genie/) |
-| **Lab 4** | Schema-wide Tool Discovery with MCP | Managed MCP servers | [`l100-foundations/lab-4-mcp/`](l100-foundations/lab-4-mcp/) |
+| **Lab 1** | Your First DAO-AI Agent | Declarative single-agent LLM | [`L100-foundations/lab-1-first-agent/`](L100-foundations/lab-1-first-agent/) |
+| **Lab 2** | Grounding with Unity Catalog Tools | UC SQL function tools | [`L100-foundations/lab-2-uc-tools/`](L100-foundations/lab-2-uc-tools/) |
+| **Lab 3** | NL Analytics with Genie | Genie Space as a tool | [`L100-foundations/lab-3-genie/`](L100-foundations/lab-3-genie/) |
+| **Lab 4** | Schema-wide Tool Discovery with MCP | Managed MCP servers | [`L100-foundations/lab-4-mcp/`](L100-foundations/lab-4-mcp/) |
 
-L100 also ships two **lectures** before the labs: [Setting the Stage](l100-foundations/setting-the-stage.md) and [Anatomy of a dao-ai Config](l100-foundations/anatomy-of-a-config.md). Read these first.
+L100 also ships two **lectures** before the labs: [Setting the Stage](L100-foundations/setting-the-stage.md) and [Anatomy of a DAO-AI Config](L100-foundations/anatomy-of-a-config.md). Read these first.
 
 ### L200 Building Real Agents -- `saas_helpdesk`
 
-| Lab | Title | dao-ai concept | Path |
+| Lab | Title | DAO-AI concept | Path |
 |---|---|---|---|
-| **Lab 5** | External Integrations via REST | REST factory tools | [`l200-real-agents/lab-5-rest/`](l200-real-agents/lab-5-rest/) |
-| **Lab 6** | Knowledge-base Retrieval with Vector Search | Vector store + cross-encoder reranker | [`l200-real-agents/lab-6-vector-search/`](l200-real-agents/lab-6-vector-search/) |
-| **Lab 7** | Persistent Memory | Lakebase checkpointer + store + extraction | [`l200-real-agents/lab-7-memory/`](l200-real-agents/lab-7-memory/) |
-| **Lab 8** | Production Prompts and Guardrails | Prompt Registry + judge guardrail | [`l200-real-agents/lab-8-prompts-guardrails/`](l200-real-agents/lab-8-prompts-guardrails/) |
-| **Lab 9** | Multi-agent Orchestration | Supervisor + swarm | [`l200-real-agents/lab-9-orchestration/`](l200-real-agents/lab-9-orchestration/) |
+| **Lab 5** | External Integrations via REST | REST factory tools | [`L200-real-agents/lab-5-rest/`](L200-real-agents/lab-5-rest/) |
+| **Lab 6** | Knowledge-base Retrieval with Vector Search | Vector store + cross-encoder reranker | [`L200-real-agents/lab-6-vector-search/`](L200-real-agents/lab-6-vector-search/) |
+| **Lab 7** | Persistent Memory | Lakebase checkpointer + store + extraction | [`L200-real-agents/lab-7-memory/`](L200-real-agents/lab-7-memory/) |
+| **Lab 8** | Production Prompts and Guardrails | Prompt Registry + judge guardrail | [`L200-real-agents/lab-8-prompts-guardrails/`](L200-real-agents/lab-8-prompts-guardrails/) |
+| **Lab 9** | Multi-agent Orchestration | Supervisor + swarm | [`L200-real-agents/lab-9-orchestration/`](L200-real-agents/lab-9-orchestration/) |
 
-L200 starts with the [Building Real Agents](l200-real-agents/building-real-agents.md) lecture.
+L200 starts with the [Building Real Agents](L200-real-agents/building-real-agents.md) lecture.
 
 ### L300 Advanced
 
-| Lab | Title | dao-ai concept | Path |
+| Lab | Title | DAO-AI concept | Path |
 |---|---|---|---|
-| **Lab 10** | Instructed Retrieval | Query decomposition + cross-encoder + LLM-based instruction rerank | [`l300-advanced/lab-10-instructed-retrieval/`](l300-advanced/lab-10-instructed-retrieval/) |
-| **Lab 11** | Genie Context-Aware Caching | L1 LRU exact-match + L2 similarity cache over a Genie tool | [`l300-advanced/lab-11-genie-caching/`](l300-advanced/lab-11-genie-caching/) |
+| **Lab 10** | Instructed Retrieval | Query decomposition + cross-encoder + LLM-based instruction rerank | [`L300-advanced/lab-10-instructed-retrieval/`](L300-advanced/lab-10-instructed-retrieval/) |
+| **Lab 11** | Genie Context-Aware Caching | L1 LRU exact-match + L2 similarity cache over a Genie tool | [`L300-advanced/lab-11-genie-caching/`](L300-advanced/lab-11-genie-caching/) |
+| **Lab 12** | Programmatic Construction | Build the same `AppConfig` in pure Python instead of YAML | [`L300-advanced/lab-12-programmatic/`](L300-advanced/lab-12-programmatic/) |
 
-See the [L300 README](l300-advanced/README.md) for production-deployment guidance.
+See the [L300 README](L300-advanced/README.md) for production-deployment guidance.
 
 ## Why two use cases?
 
-L100 builds a hardware-store retail assistant. L200 switches to a SaaS support coordinator. **Same dao-ai concepts; different domain framing.** The switch keeps each lab's config tightly scoped to its new feature instead of accumulating every prior chapter's setup. See the level READMEs for more.
+L100 builds a hardware-store retail assistant. L200 switches to a SaaS support coordinator. **Same DAO-AI concepts; different domain framing.** The switch keeps each lab's config tightly scoped to its new feature instead of accumulating every prior chapter's setup. See the level READMEs for more.
 
 ## Per-student deployment
 
@@ -69,6 +79,7 @@ Resulting deployed names are short and theme-specific:
 | Lab 9 | `tier-routing-jane-doe` |
 | Lab 10 | `instructed-search-jane-doe` |
 | Lab 11 | `cached-analyst-jane-doe` |
+| Lab 12 | `programmatic-jane-doe` |
 
 All names fit within the 30-character Databricks Apps limit.
 
@@ -82,14 +93,14 @@ config.deploy_agent(target=DeploymentTarget.APPS)
 print(f"Deployed app: {config.app.name}")
 ```
 
-`deploy_agent` generates the Asset Bundle from the dao-ai config, deploys it, and runs the app. No `databricks bundle` CLI invocations from the notebook.
+`deploy_agent` generates the Asset Bundle from the DAO-AI config, deploys it, and runs the app. No `databricks bundle` CLI invocations from the notebook.
 
 ## Setup
 
 | Requirement | Detail |
 |---|---|
 | Python | 3.11+ |
-| dao-ai | `pip install "dao-ai>=0.1.58"` (the labs install this in the notebook) |
+| DAO-AI | `pip install "dao-ai>=0.1.59"` (the labs install this in the notebook) |
 | Databricks CLI | v0.230+ with a configured profile |
 | Compute | Databricks Serverless v5 |
 | Foundation models | `databricks-claude-sonnet-4-5` (always); `databricks-gte-large-en` (Lab 6 + Lab 10 + Lab 11); `databricks-claude-haiku-4-5` and `databricks-meta-llama-3-1-8b-instruct` (Lab 10 + Lab 7) |
@@ -111,7 +122,7 @@ databricks sync . /Users/<you>@databricks.com/dao-ai-workshop \
 
 ## Known issues
 
-- **Lab 7 (Persistent Memory)** — when the agent's `manage_memory` tool runs and writes a record without an explicit TTL, dao-ai 0.1.58 forwards the `NotProvided` sentinel to the langgraph postgres store, which calls `float(op.ttl)` and raises `TypeError: float() argument must be a string or a real number, not 'NotProvided'`. The lab's config and provisioning are correct; the failure is in the dao-ai → langgraph integration. Tracking upstream; the lab is left as-is so the fix lands automatically when dao-ai patches it.
+- **Lab 7 (Persistent Memory)** — when the agent's `manage_memory` tool runs and writes a record without an explicit TTL, DAO-AI 0.1.58 forwards the `NotProvided` sentinel to the langgraph postgres store, which calls `float(op.ttl)` and raises `TypeError: float() argument must be a string or a real number, not 'NotProvided'`. The lab's config and provisioning are correct; the failure is in the DAO-AI → langgraph integration. Tracking upstream; the lab is left as-is so the fix lands automatically when DAO-AI patches it.
 
 ## Self-paced vs instructor-led
 
@@ -123,7 +134,7 @@ databricks sync . /Users/<you>@databricks.com/dao-ai-workshop \
 ```
 dao-ai-workshop/
 ├── README.md                 (this file)
-├── l100-foundations/         L100 -- hardware_store labs
+├── L100-foundations/         L100 -- hardware_store labs
 │   ├── README.md             (level overview)
 │   ├── setting-the-stage.md  (lecture)
 │   ├── anatomy-of-a-config.md (lecture)
@@ -132,7 +143,7 @@ dao-ai-workshop/
 │   ├── lab-3-genie/          (Lab 3)
 │   ├── lab-4-mcp/            (Lab 4)
 │   └── debrief.md            (debrief)
-├── l200-real-agents/         L200 -- saas_helpdesk labs
+├── L200-real-agents/         L200 -- saas_helpdesk labs
 │   ├── README.md
 │   ├── building-real-agents.md (lecture)
 │   ├── lab-5-rest/           (Lab 5)
@@ -141,15 +152,15 @@ dao-ai-workshop/
 │   ├── lab-8-prompts-guardrails/ (Lab 8)
 │   ├── lab-9-orchestration/  (Lab 9)
 │   └── debrief.md            (debrief)
-├── l300-advanced/            L300 -- advanced patterns
+├── L300-advanced/            L300 -- advanced patterns
 │   ├── README.md
 │   ├── lab-10-instructed-retrieval/ (Lab 10)
-│   └── lab-11-genie-caching/        (Lab 11)
-├── 98-programmatic/          (sidebar: build the same agent in pure Python)
+│   ├── lab-11-genie-caching/        (Lab 11)
+│   └── lab-12-programmatic/         (Lab 12 -- build the same agent in pure Python)
 └── setup/                    (workshop setup scripts)
 ```
 
 ## Reference
 
-- dao-ai framework: <https://github.com/natefleming/dao-ai>
+- DAO-AI framework: <https://github.com/natefleming/dao-ai>
 - Canonical examples: `dao-ai/config/examples/15_complete_applications/`
