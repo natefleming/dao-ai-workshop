@@ -1,0 +1,128 @@
+# yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
+#
+# Lab 7 - Persistent Memory + Summarization (saas_helpdesk)
+# ---------------------------------------------------------
+# A SaaS support assistant with two layers of memory plus chat-history
+# summarization:
+#
+#   - memory.checkpointer  -- short-term, scoped to thread_id (thread state survives restarts)
+#   - memory.store         -- long-term, scoped to user_id (facts persist across threads)
+#   - memory.extraction    -- background pipeline that writes facts (name, recurring issues,
+#                             stated preferences) into the store
+#   - app.chat_history     -- when the message history exceeds the token budget, older turns
+#                             are compressed into a summary message by a small/fast LLM
+#
+# All persistence is backed by Databricks Lakebase (managed Postgres).
+
+parameters:
+  username:
+    description: Per-student username for unique deployment names. Auto-set by the notebook.
+    # No default => required.
+  lakebase_name:
+    description: Lakebase instance name.
+    default: retail-consumer-goods
+  lakebase_project:
+    description: Lakebase project name.
+    default: retail-consumer-goods
+  llm_endpoint:
+    description: Primary Databricks LLM serving endpoint name.
+    default: databricks-claude-sonnet-4-5
+  fast_llm_endpoint:
+    description: Faster LLM endpoint used for memory queries.
+    default: databricks-gpt-oss-120b
+  summarization_llm_endpoint:
+    description: Smaller, faster LLM used to compress older turns into a summary message.
+    default: databricks-meta-llama-3-1-8b-instruct
+  max_tokens_before_summary:
+    description: Trigger chat-history summarization when history exceeds this many tokens.
+    default: "6000"
+  max_tokens_after_summary:
+    description: Target token budget kept verbatim after summarization.
+    default: "2048"
+
+resources:
+  llms:
+    default_llm: &default_llm
+      name: ${var.llm_endpoint}
+      temperature: 0.4
+      max_tokens: 4096
+
+    fast_llm: &fast_llm
+      name: ${var.fast_llm_endpoint}
+      temperature: 0.1
+      max_tokens: 2048
+
+    summarization_llm: &summarization_llm
+      name: ${var.summarization_llm_endpoint}
+      temperature: 0.1
+      max_tokens: 512
+
+  databases:
+    workshop_db: &workshop_db
+      name: ${var.lakebase_name}
+      project: ${var.lakebase_project}
+      description: "Lakebase used by the workshop for persistent memory."
+
+agents:
+  support_agent: &support_agent
+    name: support_agent
+    description: A SaaS support assistant with cross-session memory + auto-summarization.
+    model: *default_llm
+    prompt: |
+      You are a tier-1 support assistant with persistent memory.
+      When a returning customer speaks to you, reference their prior
+      tickets and stated context naturally. Don't make them repeat
+      themselves.
+
+      If you see a conversation summary at the start of the message
+      history, treat it as authoritative context for what was discussed
+      earlier. Reference it naturally rather than acting like the
+      conversation just started.
+
+memory: &memory
+  checkpointer:
+    name: support_checkpointer
+    database: *workshop_db
+
+  store:
+    name: support_store
+    database: *workshop_db
+    namespace: "{user_id}"
+
+  extraction:
+    schemas: [user_profile, preference]
+    instructions: |
+      Extract the customer's name, the products they use, recurring
+      issues, and any stated preferences (channel, urgency, contact times).
+    auto_inject: true
+    auto_inject_limit: 5
+    background_extraction: false
+    extraction_model: *default_llm
+    query_model: *fast_llm
+
+app:
+  name: support-history-${var.username}
+  description: "Lab 7: persistent memory + chat-history summarization"
+  log_level: INFO
+  deployment_target: apps
+
+  agents:
+    - *support_agent
+
+  orchestration:
+    memory: *memory
+    swarm:
+      default_agent: *support_agent
+
+  # Once the chat history exceeds max_tokens_before_summary, dao-ai
+  # uses summarization_llm to compress older turns into a single
+  # summary message. Recent turns are kept verbatim.
+  chat_history:
+    model: *summarization_llm
+    max_tokens: ${var.max_tokens_after_summary}
+    max_tokens_before_summary: ${var.max_tokens_before_summary}
+
+  input_example:
+    messages:
+      - role: user
+        content: "Hi, I'm Jordan. Do you remember what I asked about last week?"

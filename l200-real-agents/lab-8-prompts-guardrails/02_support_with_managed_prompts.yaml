@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
+#
+# Chapter 8 - Step 2: support_with_managed_prompts
+# ------------------------------------------------
+# Capability: prompt lives in MLflow Prompt Registry. Edit the prompt
+# in the UI and the agent picks up the latest version on next load --
+# no code change.
+
+parameters:
+  username:
+    description: Per-student username for unique deployment names. Auto-set by the notebook.
+    # No default => required.
+  catalog:
+    description: Unity Catalog catalog where Prompt Registry entries live.
+    # No default => required.
+  schema:
+    description: Schema within the catalog for workshop assets.
+    default: dao_ai
+  llm_endpoint:
+    description: Databricks LLM serving endpoint name.
+    default: databricks-claude-sonnet-4-5
+  judge_llm_endpoint:
+    description: Judge LLM endpoint (declared for parity with step 3; unused here).
+    default: databricks-claude-sonnet-4-5
+
+schemas:
+  workshop_schema: &workshop_schema
+    catalog_name: ${var.catalog}
+    schema_name: ${var.schema}
+
+resources:
+  llms:
+    default_llm: &default_llm
+      name: ${var.llm_endpoint}
+      temperature: 0.2
+      max_tokens: 4096
+
+prompts:
+  support_prompt: &support_prompt
+    schema: *workshop_schema
+    name: support_prompt
+    description: Main prompt for the workshop SaaS support agent.
+    default_template: |
+      You are a tier-1 SaaS support assistant. Be accurate and concise.
+      If you don't know an answer, say so honestly rather than guessing.
+      Reference KB articles or ticket numbers when relevant.
+
+agents:
+  support_agent: &support_agent
+    name: support_agent
+    description: A support assistant with a registry-managed prompt.
+    model: *default_llm
+    prompt: *support_prompt
+
+app:
+  name: safe-support-${var.username}
+  description: "Workshop chapter 8 - step 2: support with managed prompts"
+  log_level: INFO
+  deployment_target: apps
+  agents:
+    - *support_agent
+  orchestration:
+    swarm:
+      default_agent: *support_agent
+  input_example:
+    messages:
+      - role: user
+        content: "What's the SLA for critical support tickets?"

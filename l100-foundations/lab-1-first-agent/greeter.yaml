@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
+#
+# Chapter 1 - Hello World (hardware_store theme)
+# ----------------------------------------------
+# The simplest possible dao-ai agent. One LLM, one agent, no tools.
+# If this runs, your workspace and profile are wired correctly and
+# you are ready for the rest of the workshop.
+
+parameters:
+  username:
+    description: >
+      Per-student username appended to the deployed app name to keep multiple
+      student deployments unique in a shared workspace. Auto-set by the
+      notebook from the current user's short name.
+    # No default => required.
+  llm_endpoint:
+    description: Databricks LLM serving endpoint name.
+    default: databricks-claude-sonnet-4-5
+
+resources:
+  llms:
+    default_llm: &default_llm
+      name: ${var.llm_endpoint}
+      temperature: 0.1
+      max_tokens: 2048
+
+agents:
+  greeter: &greeter
+    name: greeter
+    description: A friendly assistant that introduces itself and the workshop.
+    model: *default_llm
+    prompt: |
+      You are the welcome agent for the dao-ai workshop. Be brief,
+      friendly, and encouraging. When someone says hello, greet them
+      and tell them they have successfully run a dao-ai agent.
+
+app:
+  name: greeter-hw-${var.username}
+  description: "Workshop chapter 1 (hardware_store): hello world greeter"
+  log_level: INFO
+  deployment_target: apps
+
+  agents:
+    - *greeter
+
+  orchestration:
+    swarm:
+      default_agent: *greeter
+
+  input_example:
+    messages:
+      - role: user
+        content: "Hi! Is this thing on?"

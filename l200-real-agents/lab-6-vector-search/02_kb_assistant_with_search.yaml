@@ -1,0 +1,123 @@
+# yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
+#
+# Chapter 6 - Step 2: kb_assistant_with_search
+# --------------------------------------------
+# Capability: a support assistant that retrieves real KB articles by
+# semantic similarity. Adds (vs step 1):
+#   - schemas: workshop_schema
+#   - resources.llms.embedding_model
+#   - resources.vector_stores.kb_vs
+#   - retrievers.kb_retriever
+#   - tools.kb_search via create_vector_search_tool
+#   - datasets seed for kb_articles
+
+parameters:
+  username:
+    description: Per-student username for unique deployment names. Auto-set by the notebook.
+    # No default => required.
+  catalog:
+    description: Unity Catalog catalog containing the KB articles table.
+    # No default => required.
+  schema:
+    description: Schema within the catalog for workshop assets.
+    default: dao_ai
+  llm_endpoint:
+    description: Databricks LLM serving endpoint name.
+    default: databricks-claude-sonnet-4-5
+  embedding_model:
+    description: Foundation-model embedding endpoint name.
+    default: databricks-gte-large-en
+  vector_search_endpoint:
+    description: Vector Search endpoint name (must already exist).
+    default: dao_ai_workshop_vs
+
+schemas:
+  workshop_schema: &workshop_schema
+    catalog_name: ${var.catalog}
+    schema_name: ${var.schema}
+
+resources:
+  llms:
+    default_llm: &default_llm
+      name: ${var.llm_endpoint}
+      temperature: 0.1
+      max_tokens: 4096
+
+    embedding_model: &embedding_model
+      name: ${var.embedding_model}
+
+  vector_stores:
+    kb_vs: &kb_vs
+      embedding_model: *embedding_model
+      endpoint:
+        name: ${var.vector_search_endpoint}
+      index:
+        schema: *workshop_schema
+        name: kb_articles_index
+      source_table:
+        schema: *workshop_schema
+        name: kb_articles
+      primary_key: article_id
+      embedding_source_column: body
+      columns:
+        - article_id
+        - title
+        - topic
+        - body
+        - published_at
+
+retrievers:
+  kb_retriever: &kb_retriever
+    vector_store: *kb_vs
+    columns: [article_id, title, topic, body]
+    search_parameters:
+      num_results: 5
+      query_type: ANN
+
+tools:
+  kb_search: &kb_search
+    name: kb_search
+    function:
+      type: factory
+      name: dao_ai.tools.create_vector_search_tool
+      args:
+        retriever: *kb_retriever
+        name: kb_search
+        description: >
+          Semantic search over the support knowledge base. Use for
+          how-to questions, error diagnostics, and policy lookups.
+
+agents:
+  kb_assistant: &kb_assistant
+    name: kb_assistant
+    description: A support assistant grounded in the KB via semantic search.
+    model: *default_llm
+    tools:
+      - *kb_search
+    prompt: |
+      You are a tier-1 support assistant. When a customer asks a
+      how-to or troubleshooting question, call kb_search to find
+      relevant KB articles, then summarize the answer in plain
+      language. Cite the KB article title.
+
+app:
+  name: kb-search-${var.username}
+  description: "Workshop chapter 6 - step 2: kb_assistant_with_search"
+  log_level: INFO
+  deployment_target: apps
+  agents:
+    - *kb_assistant
+  orchestration:
+    swarm:
+      default_agent: *kb_assistant
+  input_example:
+    messages:
+      - role: user
+        content: "How do I rotate my API keys without downtime?"
+
+datasets:
+  - table:
+      schema: *workshop_schema
+      name: kb_articles
+    ddl: ./data/kb_articles.sql
+    format: sql

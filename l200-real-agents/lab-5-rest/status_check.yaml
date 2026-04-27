@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
+#
+# Chapter 5 (saas_helpdesk) - status_check
+# ----------------------------------------
+# Wraps the public GitHub Status API as an HTTP tool. When customers
+# report issues, the agent can check whether GitHub (a common upstream
+# dependency) is degraded before assuming the customer's own product
+# is at fault.
+#
+# This uses a real public no-auth API so the workshop is credential-
+# free. In production, swap to a UC Connection for governed access
+# to your own status endpoints.
+
+parameters:
+  username:
+    description: Per-student username for unique deployment names. Auto-set by the notebook.
+    # No default => required.
+  llm_endpoint:
+    description: Databricks LLM serving endpoint name.
+    default: databricks-claude-sonnet-4-5
+
+resources:
+  llms:
+    default_llm: &default_llm
+      name: ${var.llm_endpoint}
+      temperature: 0.1
+      max_tokens: 4096
+
+tools:
+  call_status_api: &call_status_api
+    name: check_github_status
+    function:
+      type: factory
+      name: dao_ai.tools.create_rest_api_tool
+      args:
+        base_url: "https://www.githubstatus.com"
+        name: check_github_status
+        description: >
+          Check GitHub's status (GET /api/v2/status.json). Returns the
+          current operational status. Use when a customer reports issues
+          that may be related to GitHub upstream.
+
+agents:
+  status_agent: &status_agent
+    name: status_agent
+    description: Support agent that can check upstream service status before triaging.
+    model: *default_llm
+    tools:
+      - *call_status_api
+    prompt: |
+      You are a tier-1 support agent. When a user asks whether an
+      upstream service is down (or wonders if their issue is on the
+      vendor side), call check_github_status with method GET and
+      path "/api/v2/status.json", then report the status indicator
+      and description in plain language.
+
+app:
+  name: status-check-${var.username}
+  description: "Workshop chapter 5 (saas_helpdesk): REST status-page tool"
+  log_level: INFO
+  deployment_target: apps
+  agents:
+    - *status_agent
+  orchestration:
+    swarm:
+      default_agent: *status_agent
+  input_example:
+    messages:
+      - role: user
+        content: "Is GitHub having an outage right now?"

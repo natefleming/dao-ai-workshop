@@ -1,0 +1,57 @@
+# Pedagogical step file for chapter 2. The deployable config is dao_ai.yaml.
+# yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
+#
+# Module 2 - Step 1: product_chat
+# -------------------------------
+# Capability: a product assistant that answers from prompt knowledge alone.
+# No tools. No grounded data. The agent will guess at SKUs and prices --
+# this baseline shows what "ungrounded" looks like before we add tools
+# in step 2.
+
+parameters:
+  username:
+    description: Per-student username for unique deployment names. Auto-set by the notebook.
+    # No default => required.
+  catalog:
+    description: Unity Catalog catalog (declared for parity with later steps; unused here).
+    default: main
+  schema:
+    description: Schema (declared for parity with later steps; unused here).
+    default: dao_ai
+  llm_endpoint:
+    description: Databricks LLM serving endpoint name.
+    default: databricks-claude-sonnet-4-5
+
+resources:
+  llms:
+    default_llm: &default_llm
+      name: ${var.llm_endpoint}
+      temperature: 0.1
+      max_tokens: 4096
+
+agents:
+  product_agent: &product_agent
+    name: product_agent
+    description: A product assistant with no tools (chats from prompt knowledge).
+    model: *default_llm
+    prompt: |
+      You are a product assistant for a small hardware store.
+      Answer questions about products as best you can.
+
+      Note: you currently have no tools to look up real product data,
+      so be honest when you don't know specifics like SKUs or prices.
+
+app:
+  name: products-hw-${var.username}
+  description: "Workshop chapter 2 - step 1: product_chat (no tools)"
+  log_level: INFO
+  deployment_target: apps
+  agents:
+    - *product_agent
+  orchestration:
+    swarm:
+      default_agent: *product_agent
+  input_example:
+    messages:
+      - role: user
+        content: "What power tools do you have under $100?"

@@ -1,0 +1,152 @@
+# yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
+#
+# Lab 11 -- Genie Context-Aware Caching (L300)
+# --------------------------------------------
+# A Genie-backed analyst with **two** layers of caching over the
+# Genie tool. The same question (or a near-duplicate) is served from
+# cache instead of paying for another Genie API round-trip.
+#
+# Cache flow on each tool call:
+#
+#   user question
+#       │
+#       ├──► L1: LRU cache (exact-match)
+#       │       hit?  → re-execute cached SQL on the warehouse → result
+#       │
+#       └──► L2: in-memory context-aware cache (similarity)
+#               hit?  → re-execute cached SQL → result
+#               miss? → call Genie API → cache the SQL → result
+#
+# On a hit, the cached SQL is re-executed (so the data is always
+# fresh); only the question→SQL step is reused.
+#
+# This config uses dao-ai's in-memory cache variant (no external
+# database). For multi-instance deployments swap to
+# `context_aware_cache_parameters` with a `database:` reference.
+#
+# Reference:
+#   dao-ai/config/examples/04_genie/genie_in_memory_context_aware_cache.yaml
+
+parameters:
+  username:
+    description: Per-student username for unique deployment names. Auto-set by the notebook.
+    # No default => required.
+  genie_space_id:
+    description: Databricks Genie Space ID (over the products table from Lab 2).
+    # No default => required.
+  warehouse_id:
+    description: SQL warehouse ID used to re-execute cached SQL on hits.
+    # No default => required.
+  llm_endpoint:
+    description: Primary Databricks LLM serving endpoint name.
+    default: databricks-claude-sonnet-4-5
+  embedding_model:
+    description: Embedding endpoint used by the L2 similarity cache.
+    default: databricks-gte-large-en
+  l1_capacity:
+    description: L1 LRU cache capacity (number of entries).
+    default: "100"
+  l1_ttl_seconds:
+    description: L1 LRU cache TTL (seconds).
+    default: "3600"
+  l2_similarity_threshold:
+    description: L2 cache hit threshold for question similarity (0.0-1.0).
+    default: "0.85"
+  l2_context_similarity_threshold:
+    description: L2 cache hit threshold for surrounding context similarity (0.0-1.0).
+    default: "0.80"
+  l2_context_window_size:
+    description: How many prior conversation turns count as L2 context.
+    default: "3"
+
+resources:
+  llms:
+    default_llm: &default_llm
+      name: ${var.llm_endpoint}
+      temperature: 0.1
+      max_tokens: 8192
+
+    embedding_model: &embedding_model
+      name: ${var.embedding_model}
+
+  warehouses:
+    cache_warehouse: &cache_warehouse
+      name: "Cache replay warehouse"
+      description: "Warehouse used by the cache to re-execute cached SQL on hits."
+      warehouse_id: ${var.warehouse_id}
+
+  genie_rooms:
+    products_genie: &products_genie
+      name: "Products Genie Room"
+      description: "Genie space over the workshop products table"
+      space_id: ${var.genie_space_id}
+
+tools:
+  cached_genie: &cached_genie
+    name: ask_products_genie
+    function:
+      type: factory
+      name: dao_ai.tools.create_genie_toolkit
+      args:
+        name: ask_products_genie
+        description: >
+          Ask analytical questions about the product catalog. Identical
+          and near-duplicate questions are served from cache.
+        genie_room: *products_genie
+
+        # ---- L1: LRU exact-match cache ----------------------------
+        # O(1) lookup. Only matches when the input string is byte-for-byte
+        # identical (after dao-ai's normalization). Fastest possible hit.
+        lru_cache_parameters:
+          warehouse: *cache_warehouse
+          capacity: ${var.l1_capacity}
+          time_to_live_seconds: ${var.l1_ttl_seconds}
+
+        # ---- L2: in-memory context-aware similarity cache ---------
+        # Embeds the question and the recent N turns of conversation,
+        # compares to cached entries by cosine similarity. Hits when:
+        #   - question similarity >= l2_similarity_threshold AND
+        #   - context similarity  >= l2_context_similarity_threshold
+        # On hit, the cached SQL is re-executed for fresh data.
+        in_memory_context_aware_cache_parameters:
+          warehouse: *cache_warehouse
+          embedding_model: *embedding_model
+          similarity_threshold: ${var.l2_similarity_threshold}
+          context_similarity_threshold: ${var.l2_context_similarity_threshold}
+          context_window_size: ${var.l2_context_window_size}
+          capacity: 10000
+          time_to_live_seconds: 604800   # 1 week
+
+        persist_conversation: true
+
+agents:
+  cached_analyst: &cached_analyst
+    name: cached_analyst
+    description: A products analyst whose Genie tool calls are cached at two layers.
+    model: *default_llm
+    tools:
+      - *cached_genie
+    prompt: |
+      You answer analytical questions about the product catalog by
+      calling ask_products_genie. Identical or near-duplicate
+      questions are served instantly from the local cache; novel
+      questions fall through to the Genie API and populate the cache
+      for next time.
+
+app:
+  name: cached-analyst-${var.username}
+  description: "Lab 11 (L300): Genie with L1 LRU + L2 context-aware caches"
+  log_level: INFO
+  deployment_target: apps
+
+  agents:
+    - *cached_analyst
+
+  orchestration:
+    swarm:
+      default_agent: *cached_analyst
+
+  input_example:
+    messages:
+      - role: user
+        content: "How many products do we have per category?"

@@ -1,0 +1,135 @@
+# yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
+#
+# Chapter 4 - Model Context Protocol (MCP)
+# ----------------------------------------
+# MCP lets an agent discover and call tools from a running MCP server
+# rather than declaring each tool individually in YAML.
+#
+# Databricks provides "managed" MCP servers that expose Unity Catalog
+# functions, Genie spaces, and SQL execution. When the agent runs in a
+# notebook or app, managed MCP authenticates using the caller's
+# identity (WorkspaceClient() picks it up) - no explicit OAuth creds
+# required in the YAML.
+#
+# Override parameters at load time:
+#   AppConfig.from_file("dao_ai.yaml", params={"catalog": "my_catalog"})
+#   dao-ai chat -c dao_ai.yaml --var catalog=my_catalog --var schema=dao_ai
+#   dao-ai vars list -c dao_ai.yaml          # see all declared parameters
+
+parameters:
+  username:
+    description: Per-student username for unique deployment names. Auto-set by the notebook.
+    # No default => required.
+  catalog:
+    description: Unity Catalog catalog containing the workshop tables/functions.
+    # No default => required.
+  schema:
+    description: Schema within the catalog for workshop assets.
+    default: dao_ai
+  llm_endpoint:
+    description: Databricks LLM serving endpoint name.
+    default: databricks-claude-sonnet-4-5
+
+schemas:
+  workshop_schema: &workshop_schema
+    catalog_name: ${var.catalog}
+    schema_name: ${var.schema}
+
+resources:
+  llms:
+    default_llm: &default_llm
+      name: ${var.llm_endpoint}
+      temperature: 0.1
+      max_tokens: 4096
+
+  # Declare the UC functions so dao-ai can provision them. MCP discovery
+  # happens at agent-build time, so the functions need to exist in the
+  # schema before `as_graph()` runs.
+  functions:
+    find_product_by_sku: &find_product_by_sku
+      schema: *workshop_schema
+      name: find_product_by_sku
+
+    find_products_by_category: &find_products_by_category
+      schema: *workshop_schema
+      name: find_products_by_category
+
+tools:
+  # Managed MCP - UC Functions in this schema.
+  # `functions: <schema>` tells dao-ai "expose every UC function in
+  # this schema as a tool". The agent sees each function as a tool
+  # name it can call.
+  functions_mcp: &functions_mcp
+    name: functions_mcp
+    function:
+      type: mcp
+      functions: *workshop_schema
+
+  # Managed MCP - Serverless DBSQL executor.
+  # `sql: true` wires the agent to the serverless SQL MCP endpoint so
+  # it can run ad-hoc SELECTs against anything the caller has access
+  # to. No warehouse configuration needed.
+  sql_mcp: &sql_mcp
+    name: sql_mcp
+    function:
+      type: mcp
+      sql: true
+
+agents:
+  mcp_agent: &mcp_agent
+    name: mcp_agent
+    description: Agent backed by managed MCP servers for UC functions and SQL.
+    model: *default_llm
+    tools:
+      - *functions_mcp
+      - *sql_mcp
+    prompt: |
+      You have access to Unity Catalog functions and a SQL execution
+      tool through MCP. Prefer UC functions when available (they have
+      typed parameters and audit trails). Use SQL for ad-hoc queries
+      that UC functions don't cover.
+
+      When you call a SQL tool, qualify every table with the full
+      three-part name: catalog.schema.table_name.
+
+app:
+  name: products-mcp-${var.username}
+  description: "Workshop chapter 4: managed MCP tools"
+  log_level: INFO
+
+  deployment_target: apps
+
+  agents:
+    - *mcp_agent
+
+  orchestration:
+    swarm:
+      default_agent: *mcp_agent
+
+  input_example:
+    messages:
+      - role: user
+        content: "List 3 power tools from our catalog."
+
+# Self-contained provisioning: products table + UC functions that MCP
+# will discover. The notebook calls dataset.create() and uc_fn.create()
+# before building the agent.
+unity_catalog_functions:
+  - function: *find_product_by_sku
+    ddl: ./functions/find_product_by_sku.sql
+    test:
+      parameters:
+        sku: ["SKU-0001"]
+
+  - function: *find_products_by_category
+    ddl: ./functions/find_products_by_category.sql
+    test:
+      parameters:
+        category: "Power Tools"
+
+datasets:
+  - table:
+      schema: *workshop_schema
+      name: products
+    ddl: ./data/products.sql
+    format: sql

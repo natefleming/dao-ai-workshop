@@ -1,0 +1,203 @@
+# yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
+#
+# Lab 10 -- Instructed Retrieval (L300)
+# -------------------------------------
+# An advanced retriever that decomposes natural-language queries into
+# filter constraints + a residual semantic query, then reranks via an
+# LLM that follows natural-language instructions.
+#
+# Pipeline (top to bottom):
+#   1. Query decomposition       -- haiku LLM extracts filters from the user query
+#   2. Hybrid ANN search         -- 50 candidates pulled per subquery
+#   3. Cross-encoder rerank      -- FlashRank promotes 20 most relevant
+#   4. Instruction-aware rerank  -- LLM applies natural-language priorities → top 10
+#
+# Backed by Lab 2's products table extended with brand / price-tier /
+# weight columns (see data/products_extended.sql).
+
+parameters:
+  username:
+    description: Per-student username for unique deployment names. Auto-set by the notebook.
+    # No default => required.
+  catalog:
+    description: Unity Catalog catalog containing the products table.
+    # No default => required.
+  schema:
+    description: Schema within the catalog for workshop assets.
+    default: dao_ai
+  llm_endpoint:
+    description: Primary Databricks LLM serving endpoint name.
+    default: databricks-claude-sonnet-4-5
+  decomposition_llm_endpoint:
+    description: Smaller, faster LLM for query decomposition + instruction rerank.
+    default: databricks-claude-haiku-4-5
+  embedding_model:
+    description: Foundation-model embedding endpoint name.
+    default: databricks-gte-large-en
+  vector_search_endpoint:
+    description: Vector Search endpoint name (must already exist).
+    default: dao_ai_workshop_vs
+  reranker_model:
+    description: FlashRank cross-encoder model.
+    default: ms-marco-MiniLM-L-12-v2
+
+schemas:
+  workshop_schema: &workshop_schema
+    catalog_name: ${var.catalog}
+    schema_name: ${var.schema}
+
+resources:
+  llms:
+    default_llm: &default_llm
+      name: ${var.llm_endpoint}
+      temperature: 0.4
+      max_tokens: 8192
+
+    decomposition_llm: &decomposition_llm
+      name: ${var.decomposition_llm_endpoint}
+      temperature: 0.0
+      max_tokens: 1024
+
+    embedding_model: &embedding_model
+      name: ${var.embedding_model}
+
+  vector_stores:
+    products_vs: &products_vs
+      embedding_model: *embedding_model
+      endpoint:
+        name: ${var.vector_search_endpoint}
+      index:
+        schema: *workshop_schema
+        name: products_index
+      source_table:
+        schema: *workshop_schema
+        name: products
+      primary_key: sku
+      embedding_source_column: description
+      columns:
+        - sku
+        - product_name
+        - category
+        - description
+        - price
+        - brand_name
+        - price_tier
+        - weight_lbs
+
+retrievers:
+  instructed_retriever: &instructed_retriever
+    vector_store: *products_vs
+    columns: [sku, product_name, category, description, price, brand_name, price_tier, weight_lbs]
+    search_parameters:
+      num_results: 50
+      query_type: HYBRID
+    instructed:
+      # Column metadata is the source of truth -- the decomposer and the
+      # instruction reranker both read this.
+      columns:
+        - name: product_name
+          type: string
+          description: "Product display name"
+        - name: category
+          type: string
+          description: "Top-level category (Power Tools, Hand Tools, Paint, etc.)"
+        - name: brand_name
+          type: string
+          description: "Brand / manufacturer (MILWAUKEE, DEWALT, STANLEY, etc.)"
+        - name: price_tier
+          type: string
+          description: "Price band: budget, mid, premium"
+        - name: price
+          type: number
+          description: "Retail price in USD"
+        - name: weight_lbs
+          type: number
+          description: "Shipping weight in pounds"
+      constraints:
+        - "Use category for category filtering"
+        - "Use brand_name for brand filtering (uppercase)"
+        - "Use price_tier for budget vs mid vs premium queries"
+      decomposition:
+        model: *decomposition_llm
+        normalize_filter_case: uppercase
+        max_subqueries: 3
+        rrf_k: 60
+        examples:
+          - query: "Milwaukee power tools under $100"
+            filters: {"brand_name": "MILWAUKEE", "category": "POWER TOOLS", "price <": 100}
+          - query: "premium paint products"
+            filters: {"category": "PAINT", "price_tier": "PREMIUM"}
+          - query: "lightweight hand tools from Stanley"
+            filters: {"brand_name": "STANLEY", "category": "HAND TOOLS", "weight_lbs <": 1.0}
+      rerank:
+        model: *decomposition_llm
+        instructions: |
+          Prioritize results based on the user's stated constraints:
+          - Match brand and category filters tightly.
+          - Prefer exact price-tier matches.
+          - When the user mentions a project ("repaint", "refinish",
+            "deck"), boost products whose description matches the
+            project context.
+        top_n: 10
+    # Cross-encoder rerank stage (runs before the instruction reranker).
+    rerank:
+      model: ${var.reranker_model}
+      top_n: 20
+
+tools:
+  instructed_product_search: &instructed_product_search
+    name: instructed_product_search
+    function:
+      type: factory
+      name: dao_ai.tools.create_vector_search_tool
+      args:
+        retriever: *instructed_retriever
+        name: instructed_product_search
+        description: >
+          Semantic search with query decomposition and instruction-aware
+          reranking. Use for product questions that combine natural-
+          language intent with constraints (brand, category, price tier).
+
+agents:
+  catalog_advisor: &catalog_advisor
+    name: catalog_advisor
+    description: A product advisor that uses instructed retrieval to filter and rank by intent.
+    model: *default_llm
+    tools:
+      - *instructed_product_search
+    prompt: |
+      You are a product advisor for a hardware store. Customers describe
+      what they're trying to do; you help them shortlist products.
+
+      For every product question, call instructed_product_search.
+      The retriever already extracts filters and reranks by intent --
+      trust the order it returns and surface the top matches with
+      brand, category, price, and a short reason matched to the
+      customer's stated constraints.
+
+app:
+  name: instructed-search-${var.username}
+  description: "Lab 10 (L300): instructed retrieval over the products catalog"
+  log_level: INFO
+  deployment_target: apps
+
+  agents:
+    - *catalog_advisor
+
+  orchestration:
+    swarm:
+      default_agent: *catalog_advisor
+
+  input_example:
+    messages:
+      - role: user
+        content: "Show me Milwaukee power tools under $100 -- I'm comparing options for a kitchen refinishing project."
+
+datasets:
+  # Self-contained: DROP + CREATE + INSERT in one DDL with the full
+  # 10-column extended schema. Idempotent on re-runs.
+  - table:
+      schema: *workshop_schema
+      name: products
+    ddl: ./data/products_extended.sql
+    format: sql

@@ -1,0 +1,97 @@
+# yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
+#
+# Chapter 9 - Supervisor Pattern (saas_helpdesk)
+# ----------------------------------------------
+# Three specialist agents plus a supervisor that routes between them.
+# Each specialist has a focused role; the supervisor reads the
+# customer's message and picks the right tier.
+#
+# Routing:
+#   - tier1_support  : answers FAQs, simple how-to questions
+#   - tier2_engineer : handles technical bugs, error messages, integrations
+#   - escalation_lead: takes the conversation when policy / billing / refund
+#                      decisions are needed, or when prior tiers couldn't help
+
+parameters:
+  username:
+    description: Per-student username for unique deployment names. Auto-set by the notebook.
+    # No default => required.
+  llm_endpoint:
+    description: Databricks LLM serving endpoint name.
+    default: databricks-claude-sonnet-4-5
+
+resources:
+  llms:
+    default_llm: &default_llm
+      name: ${var.llm_endpoint}
+      temperature: 0.2
+      max_tokens: 4096
+
+agents:
+  tier1_support: &tier1_support
+    name: tier1_support
+    description: Front-line agent that handles common how-to and policy questions.
+    model: *default_llm
+    prompt: |
+      You are tier-1 support. Handle straightforward how-to questions
+      and simple policy lookups. If the customer reports a bug,
+      stack trace, or integration error, the supervisor will route
+      them to tier-2.
+    handoff_prompt: |
+      How-to questions, account questions, simple policy lookups.
+      Example: "How do I export my data?" or "What payment methods
+      do you accept?"
+
+  tier2_engineer: &tier2_engineer
+    name: tier2_engineer
+    description: Technical specialist for bugs, errors, and integration issues.
+    model: *default_llm
+    prompt: |
+      You are tier-2 technical support. Handle reported bugs, error
+      messages, integration failures, and performance regressions.
+      Reproduce the issue when possible and provide diagnostic steps.
+      If the issue requires a refund, credit, or policy override,
+      hand off to the escalation lead.
+    handoff_prompt: |
+      Technical issues: bugs, error codes, stack traces, broken
+      integrations, performance regressions, data corruption.
+      Example: "I'm getting a 500 error from /v1/conversations"
+      or "Our webhook deliveries are failing."
+
+  escalation_lead: &escalation_lead
+    name: escalation_lead
+    description: Senior agent for policy exceptions, refunds, and complex disputes.
+    model: *default_llm
+    prompt: |
+      You are the escalation lead. You handle account-impacting
+      decisions: refunds, credits, contractual exceptions, and
+      complex disputes. Be measured and document your reasoning.
+    handoff_prompt: |
+      Refund requests, credit requests, contract exceptions, billing
+      disputes, anything that prior tiers couldn't resolve.
+      Example: "I need a refund for the duplicate charge" or
+      "We need an exception to the data retention policy."
+
+app:
+  name: tier-routing-${var.username}
+  description: "Workshop chapter 9: tier-1 / tier-2 / escalation supervisor"
+  log_level: INFO
+  deployment_target: apps
+  agents:
+    - *tier1_support
+    - *tier2_engineer
+    - *escalation_lead
+
+  orchestration:
+    supervisor:
+      model: *default_llm
+      prompt: |
+        Route the customer to the right specialist:
+          - tier1_support  : how-to, policy lookups, account questions
+          - tier2_engineer : bugs, errors, broken integrations
+          - escalation_lead: refunds, credits, contract exceptions
+
+  input_example:
+    messages:
+      - role: user
+        content: "I'm getting a 500 error from your API since yesterday's deploy."

@@ -1,0 +1,99 @@
+# yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
+#
+# Chapter 8 - Step 3: support_with_guardrails (FINAL)
+# ---------------------------------------------------
+# Capability: managed prompt + a judge-evaluated **accuracy
+# guardrail** that retries on factual hallucination. For a support
+# agent, accuracy matters more than tone -- the judge checks whether
+# the response makes claims the agent can actually back up.
+
+parameters:
+  username:
+    description: Per-student username for unique deployment names. Auto-set by the notebook.
+    # No default => required.
+  catalog:
+    description: Unity Catalog catalog where Prompt Registry entries live.
+    # No default => required.
+  schema:
+    description: Schema within the catalog for workshop assets.
+    default: dao_ai
+  llm_endpoint:
+    description: Databricks LLM serving endpoint name.
+    default: databricks-claude-sonnet-4-5
+  judge_llm_endpoint:
+    description: LLM endpoint used by the guardrail judge.
+    default: databricks-claude-sonnet-4-5
+
+schemas:
+  workshop_schema: &workshop_schema
+    catalog_name: ${var.catalog}
+    schema_name: ${var.schema}
+
+resources:
+  llms:
+    default_llm: &default_llm
+      name: ${var.llm_endpoint}
+      temperature: 0.2
+      max_tokens: 4096
+
+    judge_llm: &judge_llm
+      name: ${var.judge_llm_endpoint}
+      temperature: 0.3
+      max_tokens: 2048
+
+prompts:
+  support_prompt: &support_prompt
+    schema: *workshop_schema
+    name: support_prompt
+    description: Main prompt for the workshop SaaS support agent.
+    default_template: |
+      You are a tier-1 SaaS support assistant. Be accurate and concise.
+      If you don't know an answer, say so honestly rather than guessing.
+      Reference KB articles or ticket numbers when relevant.
+
+  accuracy_guardrail_prompt: &accuracy_guardrail_prompt
+    schema: *workshop_schema
+    name: accuracy_guardrail_prompt
+    description: Evaluates whether agent responses make verifiable claims.
+    default_template: |
+      Evaluate whether the response makes only claims that the agent
+      could verify (referenced KB articles, ticket numbers, or stated
+      uncertainty). Reject responses that invent specific facts
+      (numbers, SLAs, policies) without backing them up.
+
+      User request: {{ inputs }}
+      Response: {{ outputs }}
+
+      Rate true if the response is grounded and honest about
+      uncertainty; false if it invents specifics.
+
+guardrails:
+  accuracy_guardrail: &accuracy_guardrail
+    name: accuracy_check
+    model: *judge_llm
+    prompt: *accuracy_guardrail_prompt
+    num_retries: 2
+
+agents:
+  support_agent: &support_agent
+    name: support_agent
+    description: A guardrailed support assistant using registry prompts.
+    model: *default_llm
+    prompt: *support_prompt
+    guardrails:
+      - *accuracy_guardrail
+
+app:
+  name: safe-support-${var.username}
+  description: "Workshop chapter 8: prompt registry + accuracy guardrail"
+  log_level: INFO
+  deployment_target: apps
+  agents:
+    - *support_agent
+  orchestration:
+    swarm:
+      default_agent: *support_agent
+  input_example:
+    messages:
+      - role: user
+        content: "What's the SLA for critical support tickets?"

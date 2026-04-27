@@ -1,0 +1,107 @@
+# yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
+#
+# Chapter 9 - Swarm with Directed Routes (saas_helpdesk)
+# ------------------------------------------------------
+# Same three specialists, but as a swarm with mixed deterministic
+# and agentic handoffs.
+#
+# dao-ai allows AT MOST one deterministic handoff per source agent --
+# anything beyond that must be agentic (the LLM names the next agent).
+#
+# Flow:
+#   tier1_support (default entry)
+#     ├── agentic → tier2_engineer          (LLM picks based on triage classification)
+#     └── agentic → escalation_lead         (LLM picks based on triage classification)
+#   tier2_engineer
+#     └── deterministic → escalation_lead   (every tier2 case is reviewed by escalation)
+#   escalation_lead
+#     └── agentic → tier2_engineer          (LLM decides if technical follow-up needed)
+
+parameters:
+  username:
+    description: Per-student username for unique deployment names. Auto-set by the notebook.
+    # No default => required.
+  llm_endpoint:
+    description: Databricks LLM serving endpoint name.
+    default: databricks-claude-sonnet-4-5
+
+resources:
+  llms:
+    default_llm: &default_llm
+      name: ${var.llm_endpoint}
+      temperature: 0.2
+      max_tokens: 4096
+
+agents:
+  tier1_support: &tier1_support
+    name: tier1_support
+    description: Front-line triage agent.
+    model: *default_llm
+    prompt: |
+      You are the front-desk triage agent for SaaS support. Classify
+      the customer's question:
+        - If it's a bug, error, or integration issue, control passes
+          to tier-2 engineering.
+        - If it's a refund, credit, or contract exception, control
+          passes to escalation.
+      Keep your response to one sentence of classification.
+    handoff_prompt: |
+      Initial triage of incoming customer questions.
+
+  tier2_engineer: &tier2_engineer
+    name: tier2_engineer
+    description: Technical specialist for bugs and integration errors.
+    model: *default_llm
+    prompt: |
+      You are tier-2 technical support. Handle bugs, errors, broken
+      integrations. If the customer needs a refund or credit, hand
+      off to the escalation lead.
+    handoff_prompt: |
+      Bugs, error messages, integration failures, performance issues.
+
+  escalation_lead: &escalation_lead
+    name: escalation_lead
+    description: Senior agent for refunds, credits, and exceptions.
+    model: *default_llm
+    prompt: |
+      You are the escalation lead. Handle refunds, credits, contract
+      exceptions, complex disputes. If the customer needs a technical
+      diagnostic to back the request, hand off to tier-2.
+    handoff_prompt: |
+      Refunds, credits, contract exceptions, billing disputes.
+
+app:
+  name: tier-routing-${var.username}
+  description: "Workshop chapter 9: tier swarm with directed routes"
+  log_level: INFO
+  deployment_target: apps
+  agents:
+    - *tier1_support
+    - *tier2_engineer
+    - *escalation_lead
+
+  orchestration:
+    swarm:
+      default_agent: tier1_support
+      handoffs:
+        # Agentic: triage LLM classifies and picks one specialist.
+        # (dao-ai requires exactly one deterministic handoff per source --
+        # use plain agent names for additional agentic targets.)
+        tier1_support:
+          - tier2_engineer
+          - escalation_lead
+
+        # Deterministic: every tier-2 case is forwarded to escalation
+        # for account-impact review (illustrates the deterministic pattern).
+        tier2_engineer:
+          - agent: escalation_lead
+            is_deterministic: true
+
+        # Agentic: escalation may pull tier-2 back in for technical context.
+        escalation_lead:
+          - tier2_engineer
+
+  input_example:
+    messages:
+      - role: user
+        content: "Our webhook deliveries have been failing for a week, and I want a credit for the downtime."

@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
+#
+# Chapter 8 - Step 1: inline_support
+# ----------------------------------
+# Capability: a SaaS support assistant with an inline prompt.
+# Demonstrates: how prompts normally live -- hard-coded in YAML,
+# requiring a redeploy to change. Steps 2 and 3 add Prompt Registry
+# and a guardrail.
+
+parameters:
+  username:
+    description: Per-student username for unique deployment names. Auto-set by the notebook.
+    # No default => required.
+  catalog:
+    description: Unity Catalog catalog (declared for parity with later steps; unused here).
+    default: main
+  schema:
+    description: Schema (declared for parity with later steps; unused here).
+    default: dao_ai
+  llm_endpoint:
+    description: Databricks LLM serving endpoint name.
+    default: databricks-claude-sonnet-4-5
+  judge_llm_endpoint:
+    description: Judge LLM endpoint (declared for parity with step 3; unused here).
+    default: databricks-claude-sonnet-4-5
+
+resources:
+  llms:
+    default_llm: &default_llm
+      name: ${var.llm_endpoint}
+      temperature: 0.2
+      max_tokens: 4096
+
+agents:
+  support_agent: &support_agent
+    name: support_agent
+    description: A support assistant with an inline prompt.
+    model: *default_llm
+    prompt: |
+      You are a tier-1 SaaS support assistant. Be accurate and concise.
+      If you don't know an answer, say so honestly rather than
+      guessing. Reference KB articles or ticket numbers when relevant.
+
+app:
+  name: safe-support-${var.username}
+  description: "Workshop chapter 8 - step 1: inline support assistant"
+  log_level: INFO
+  deployment_target: apps
+  agents:
+    - *support_agent
+  orchestration:
+    swarm:
+      default_agent: *support_agent
+  input_example:
+    messages:
+      - role: user
+        content: "What's the SLA for critical support tickets?"

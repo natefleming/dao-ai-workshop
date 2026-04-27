@@ -1,0 +1,101 @@
+# Pedagogical step file for chapter 2. The deployable config is dao_ai.yaml.
+# yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
+#
+# Module 2 - Step 2: sku_lookup
+# -----------------------------
+# Capability: a product assistant that can look up real products by SKU.
+# Adds (vs step 1):
+#   - schemas: workshop_schema (referenced by the function below)
+#   - resources.functions: find_product_by_sku
+#   - tools: sku_lookup_tool
+#   - agent.tools: now lists sku_lookup_tool
+#   - unity_catalog_functions: how dao-ai provisions the SQL function
+#   - datasets: seeds the products table
+#
+# Now SKU questions get a real answer; category questions still
+# fall back to prompt knowledge. Step 3 fixes that.
+
+parameters:
+  username:
+    description: Per-student username for unique deployment names. Auto-set by the notebook.
+    # No default => required.
+  catalog:
+    description: Unity Catalog catalog containing the workshop tables/functions.
+    # No default => required.
+  schema:
+    description: Schema within the catalog for workshop assets.
+    default: dao_ai
+  llm_endpoint:
+    description: Databricks LLM serving endpoint name.
+    default: databricks-claude-sonnet-4-5
+
+schemas:
+  workshop_schema: &workshop_schema
+    catalog_name: ${var.catalog}
+    schema_name: ${var.schema}
+
+resources:
+  llms:
+    default_llm: &default_llm
+      name: ${var.llm_endpoint}
+      temperature: 0.1
+      max_tokens: 4096
+
+  functions:
+    find_product_by_sku: &find_product_by_sku
+      schema: *workshop_schema
+      name: find_product_by_sku
+
+tools:
+  sku_lookup_tool: &sku_lookup_tool
+    name: find_product_by_sku
+    function:
+      type: unity_catalog
+      resource: *find_product_by_sku
+
+agents:
+  product_agent: &product_agent
+    name: product_agent
+    description: Answers SKU questions using a UC function; chats about everything else.
+    model: *default_llm
+    tools:
+      - *sku_lookup_tool
+    prompt: |
+      You are a product assistant for a small hardware store.
+      You have one tool:
+        - find_product_by_sku: look up one or more products by SKU.
+
+      Rules:
+        - If the user gives a SKU, call find_product_by_sku.
+        - If the user asks about a category, you don't yet have a tool
+          for that -- be honest and say so.
+        - Summarize results in plain language. Include price and stock.
+
+app:
+  name: products-hw-${var.username}
+  description: "Workshop chapter 2 - step 2: sku_lookup"
+  log_level: INFO
+  deployment_target: apps
+  agents:
+    - *product_agent
+  orchestration:
+    swarm:
+      default_agent: *product_agent
+  input_example:
+    messages:
+      - role: user
+        content: "Tell me about SKU-0001."
+
+unity_catalog_functions:
+  - function: *find_product_by_sku
+    ddl: ./functions/find_product_by_sku.sql
+    test:
+      parameters:
+        sku: ["SKU-0001"]
+
+datasets:
+  - table:
+      schema: *workshop_schema
+      name: products
+    ddl: ./data/products.sql
+    format: sql

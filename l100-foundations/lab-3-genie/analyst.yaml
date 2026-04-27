@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
+#
+# Module 3 - Genie as a tool
+# --------------------------
+# Wraps a Databricks Genie Space as a tool the agent can call. The student
+# asks a natural-language question, the agent routes it to Genie, Genie
+# generates SQL against the curated dataset, and the agent summarizes.
+#
+# Prereq: create a Genie Space in the UI, give it access to the tables
+# you want it to answer over, and pass its ID via the genie_space_id
+# parameter.
+#
+# Override parameters at load time:
+#   AppConfig.from_file("dao_ai.yaml", params={"genie_space_id": "01f1..."})
+#   dao-ai chat -c dao_ai.yaml --var genie_space_id=01f1...
+#   dao-ai vars list -c dao_ai.yaml          # see all declared parameters
+
+parameters:
+  username:
+    description: Per-student username for unique deployment names. Auto-set by the notebook.
+    # No default => required.
+  genie_space_id:
+    description: >
+      Databricks Genie Space ID. Create a Genie Space in the UI and copy
+      its ID from the URL. No default => required.
+  llm_endpoint:
+    description: Databricks LLM serving endpoint name.
+    default: databricks-claude-sonnet-4-5
+
+resources:
+  llms:
+    default_llm: &default_llm
+      name: ${var.llm_endpoint}
+      temperature: 0.1
+      max_tokens: 4096
+
+  genie_rooms:
+    workshop_genie: &workshop_genie
+      name: "Workshop Genie Room"
+      description: "Genie space over the workshop products table"
+      space_id: ${var.genie_space_id}
+
+tools:
+  genie_tool: &genie_tool
+    name: ask_genie
+    function:
+      type: factory
+      name: dao_ai.tools.create_genie_tool
+      args:
+        name: ask_genie
+        description: >
+          Ask a Genie Space a natural-language question about products,
+          inventory, or sales.
+        genie_room: *workshop_genie
+
+agents:
+  analyst: &analyst
+    name: analyst
+    description: A data analyst agent backed by a Genie Space.
+    model: *default_llm
+    tools:
+      - *genie_tool
+    prompt: |
+      You are a data analyst. For any question about products, inventory,
+      or sales, call the ask_genie tool and summarize the result in plain
+      language. Do not make up numbers.
+
+app:
+  name: product-genie-${var.username}
+  description: "Workshop module 3: Genie Space as a tool"
+  log_level: INFO
+
+  deployment_target: apps
+
+  agents:
+    - *analyst
+
+  orchestration:
+    swarm:
+      default_agent: *analyst
+
+  input_example:
+    messages:
+      - role: user
+        content: "How many products do we have per category?"

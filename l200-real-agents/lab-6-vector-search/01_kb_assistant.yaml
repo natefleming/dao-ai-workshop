@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
+#
+# Chapter 6 - Step 1: kb_assistant
+# --------------------------------
+# Capability: a SaaS support assistant with no retrieval. Demonstrates
+# what fuzzy support questions look like before grounding -- the agent
+# will invent answers because it has no way to search the knowledge base.
+
+parameters:
+  username:
+    description: Per-student username for unique deployment names. Auto-set by the notebook.
+    # No default => required.
+  catalog:
+    description: Unity Catalog catalog (declared for parity with later steps; unused here).
+    default: main
+  schema:
+    description: Schema (declared for parity with later steps; unused here).
+    default: dao_ai
+  llm_endpoint:
+    description: Databricks LLM serving endpoint name.
+    default: databricks-claude-sonnet-4-5
+  embedding_model:
+    description: Embedding endpoint (declared for parity with later steps; unused here).
+    default: databricks-gte-large-en
+  vector_search_endpoint:
+    description: Vector Search endpoint (declared for parity with later steps; unused here).
+    default: dao_ai_workshop_vs
+
+resources:
+  llms:
+    default_llm: &default_llm
+      name: ${var.llm_endpoint}
+      temperature: 0.1
+      max_tokens: 4096
+
+agents:
+  kb_assistant: &kb_assistant
+    name: kb_assistant
+    description: A support assistant with no knowledge-base retrieval (baseline).
+    model: *default_llm
+    prompt: |
+      You are a tier-1 support assistant. Help the customer with their
+      question.
+
+      Note: you currently have no tools to search our knowledge base.
+      Be honest when you don't know specifics rather than inventing
+      a procedure.
+
+app:
+  name: kb-search-${var.username}
+  description: "Workshop chapter 6 - step 1: kb_assistant (no retrieval)"
+  log_level: INFO
+  deployment_target: apps
+  agents:
+    - *kb_assistant
+  orchestration:
+    swarm:
+      default_agent: *kb_assistant
+  input_example:
+    messages:
+      - role: user
+        content: "How do I rotate my API keys without downtime?"
