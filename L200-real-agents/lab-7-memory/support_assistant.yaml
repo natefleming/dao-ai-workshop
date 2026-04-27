@@ -32,7 +32,7 @@ parameters:
     default: databricks-gpt-oss-120b
   summarization_llm_endpoint:
     description: Smaller, faster LLM used to compress older turns into a summary message.
-    default: databricks-meta-llama-3-1-8b-instruct
+    default: databricks-gpt-5-nano
   max_tokens_before_summary:
     description: Trigger chat-history summarization when history exceeds this many tokens.
     default: "6000"
