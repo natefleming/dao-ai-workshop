@@ -35,7 +35,7 @@ All persistence is backed by Databricks **Lakebase** (managed Postgres).
 ## Prerequisites
 
 - Lakebase access (workshop default: `retail-consumer-goods` instance).
-- `databricks-claude-sonnet-4-5` (default LLM), `databricks-gpt-oss-120b` (memory query LLM), and `databricks-meta-llama-3-1-8b-instruct` (summarization LLM) foundation-model endpoints enabled.
+- `databricks-claude-sonnet-4-5` (default LLM), `databricks-gpt-oss-120b` (memory query LLM), and `databricks-gpt-5-nano` (summarization LLM) foundation-model endpoints enabled.
 
 ## Run
 

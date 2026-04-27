@@ -105,7 +105,7 @@ print(f"Deployed app: {config.app.name}")
 | DAO-AI | `pip install "dao-ai>=0.1.63"` (the labs install this in the notebook) |
 | Databricks CLI | v0.230+ with a configured profile |
 | Compute | Databricks Serverless v5 |
-| Foundation models | `databricks-claude-sonnet-4-5` (always); `databricks-gte-large-en` (Lab 6 + Lab 11 + Lab 12); `databricks-claude-haiku-4-5` and `databricks-meta-llama-3-1-8b-instruct` (Lab 11 + Lab 7) |
+| Foundation models | `databricks-claude-sonnet-4-5` (always); `databricks-gte-large-en` (Lab 6 + Lab 11 + Lab 12); `databricks-claude-haiku-4-5` and `databricks-meta-llama-3-1-8b-instruct` (Lab 9 + Lab 11); `databricks-gpt-5-nano` (Lab 7 summarization); `databricks-gpt-oss-120b` (Lab 7 memory queries) |
 | Genie Space | One pointed at `products` (Lab 3 + Lab 12) |
 | Vector Search endpoint | Used by Lab 6 + Lab 11 |
 | SQL warehouse | Used by Lab 12 (Genie cache replay) |
