@@ -50,4 +50,4 @@ databricks bundle deploy -t dev -p <profile>
 
 ## Back to the workshop
 
-[Chapter index](../README.md#chapter-index) | [Appendix: Advanced Topics](../appendix/)
+[Lab index](../README.md#lab-index) | [L300 Advanced](../l300-advanced/)

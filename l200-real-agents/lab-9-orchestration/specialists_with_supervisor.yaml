@@ -17,8 +17,14 @@ parameters:
     description: Per-student username for unique deployment names. Auto-set by the notebook.
     # No default => required.
   llm_endpoint:
-    description: Databricks LLM serving endpoint name.
+    description: Primary LLM endpoint (used by the escalation_lead and supervisor).
     default: databricks-claude-sonnet-4-5
+  fast_llm_endpoint:
+    description: Faster/smaller LLM endpoint (used by tier1_support).
+    default: databricks-claude-haiku-4-5
+  technical_llm_endpoint:
+    description: LLM endpoint used by tier2_engineer (good at code/diagnostics).
+    default: databricks-meta-llama-3-1-8b-instruct
 
 resources:
   llms:
@@ -27,11 +33,21 @@ resources:
       temperature: 0.2
       max_tokens: 4096
 
+    fast_llm: &fast_llm
+      name: ${var.fast_llm_endpoint}
+      temperature: 0.2
+      max_tokens: 2048
+
+    technical_llm: &technical_llm
+      name: ${var.technical_llm_endpoint}
+      temperature: 0.2
+      max_tokens: 4096
+
 agents:
   tier1_support: &tier1_support
     name: tier1_support
     description: Front-line agent that handles common how-to and policy questions.
-    model: *default_llm
+    model: *fast_llm
     prompt: |
       You are tier-1 support. Handle straightforward how-to questions
       and simple policy lookups. If the customer reports a bug,
@@ -45,7 +61,7 @@ agents:
   tier2_engineer: &tier2_engineer
     name: tier2_engineer
     description: Technical specialist for bugs, errors, and integration issues.
-    model: *default_llm
+    model: *technical_llm
     prompt: |
       You are tier-2 technical support. Handle reported bugs, error
       messages, integration failures, and performance regressions.

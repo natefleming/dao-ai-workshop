@@ -48,11 +48,17 @@ short_name: str = w.current_user.me().user_name.split("@")[0].lower()
 username: str = re.sub(r"[^a-z0-9]+", "-", short_name).strip("-")[:13]
 print(f"Derived username: {username}")
 
-dbutils.widgets.text("llm_endpoint", "databricks-claude-sonnet-4-5", "LLM endpoint")
+dbutils.widgets.text("llm_endpoint", "databricks-claude-sonnet-4-5", "Primary LLM (escalation_lead)")
+dbutils.widgets.text("fast_llm_endpoint", "databricks-claude-haiku-4-5", "Fast LLM (tier1_support)")
+dbutils.widgets.text("technical_llm_endpoint", "databricks-meta-llama-3-1-8b-instruct", "Technical LLM (tier2_engineer)")
 
+# Spreading agents across 3 endpoints reduces per-endpoint rate-limit pressure
+# when the supervisor or swarm fans out across specialists in one turn.
 params: dict[str, str] = {
     "username": username,
     "llm_endpoint": dbutils.widgets.get("llm_endpoint").strip(),
+    "fast_llm_endpoint": dbutils.widgets.get("fast_llm_endpoint").strip(),
+    "technical_llm_endpoint": dbutils.widgets.get("technical_llm_endpoint").strip(),
 }
 
 # COMMAND ----------

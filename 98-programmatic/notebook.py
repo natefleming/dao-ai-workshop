@@ -12,8 +12,14 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "dao-ai>=0.1.57"
+# MAGIC %pip install "dao-ai>=0.1.58"
 # MAGIC %restart_python
+
+# COMMAND ----------
+
+from importlib.metadata import version
+
+print(f"dao-ai={version('dao-ai')}")
 
 # COMMAND ----------
 
