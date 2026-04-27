@@ -199,7 +199,8 @@ print(response["messages"][-1].content)
 # COMMAND ----------
 
 from dao_ai.models import process_messages
-from mlflow.types.responses import ResponsesAgent, ResponsesAgentResponse
+from mlflow.pyfunc import ResponsesAgent
+from mlflow.types.responses import ResponsesAgentResponse
 
 responses_agent: ResponsesAgent = config.as_responses_agent()
 result: ResponsesAgentResponse = process_messages(

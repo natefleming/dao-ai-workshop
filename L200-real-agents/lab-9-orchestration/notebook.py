@@ -159,7 +159,8 @@ print(response["messages"][-1].content)
 # COMMAND ----------
 
 from dao_ai.models import process_messages_stream
-from mlflow.types.responses import ResponsesAgent, ResponsesAgentStreamEvent
+from mlflow.pyfunc import ResponsesAgent
+from mlflow.types.responses import ResponsesAgentStreamEvent
 
 swarm_responses: ResponsesAgent = swarm_config.as_responses_agent()
 event: ResponsesAgentStreamEvent
