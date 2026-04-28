@@ -139,11 +139,11 @@ params: dict[str, str] = {
 # MAGIC app:
 # MAGIC   name: hardware-store-${var.username}
 # MAGIC   deployment_target: apps
-# MAGIC   agents: [*greeter]
-# MAGIC   orchestration:
-# MAGIC     swarm:
-# MAGIC       default_agent: *greeter
+# MAGIC   agents:
+# MAGIC     - *greeter
 # MAGIC ```
+# MAGIC
+# MAGIC `orchestration:` is optional with a single agent and is omitted here.
 
 # COMMAND ----------
 

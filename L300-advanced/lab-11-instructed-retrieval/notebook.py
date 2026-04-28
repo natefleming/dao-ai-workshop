@@ -115,14 +115,19 @@ for vs in config.resources.vector_stores.values():
 # MAGIC retrievers:
 # MAGIC   instructed_retriever:
 # MAGIC     vector_store: *products_vs
-# MAGIC     search_parameters: { num_results: 50, query_type: HYBRID }
+# MAGIC     search_parameters:
+# MAGIC       num_results: 50
+# MAGIC       query_type: HYBRID
 # MAGIC     instructed:
-# MAGIC       columns: [...]               # schema metadata
-# MAGIC       constraints: [...]           # natural-language hints
+# MAGIC       columns:
+# MAGIC         # ...schema metadata for each retrievable column...
+# MAGIC       constraints:
+# MAGIC         # ...natural-language hints for the decomposer...
 # MAGIC       decomposition:
 # MAGIC         model: *decomposition_llm
 # MAGIC         max_subqueries: 3
-# MAGIC         examples: [...]            # few-shot exemplars
+# MAGIC         examples:
+# MAGIC           # ...few-shot exemplars...
 # MAGIC       rerank:
 # MAGIC         model: *decomposition_llm
 # MAGIC         instructions: "Prioritize..."  # natural-language reranker policy

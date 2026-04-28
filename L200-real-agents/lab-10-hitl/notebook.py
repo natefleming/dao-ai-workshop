@@ -82,7 +82,10 @@ params: dict[str, str] = {
 # MAGIC       human_in_the_loop:
 # MAGIC         review_prompt: |
 # MAGIC           The agent is requesting to issue a refund...
-# MAGIC         allowed_decisions: [approve, edit, reject]
+# MAGIC         allowed_decisions:
+# MAGIC           - approve
+# MAGIC           - edit
+# MAGIC           - reject
 # MAGIC ```
 # MAGIC
 # MAGIC `human_in_the_loop:` works on **any** tool type (UC function, MCP, factory, REST). It maps to LangChain's `HumanInTheLoopMiddleware`, which auto-wraps the tool so the LangGraph workflow pauses before execution. The agent definition itself doesn't change -- HITL is a tool-level concern.

@@ -78,7 +78,9 @@ params: dict[str, str] = {
 # MAGIC ```yaml
 # MAGIC resources:
 # MAGIC   databases:
-# MAGIC     workshop_db: { name: ${var.lakebase_name}, project: ${var.lakebase_project} }
+# MAGIC     workshop_db: &workshop_db
+# MAGIC       name: ${var.lakebase_name}
+# MAGIC       project: ${var.lakebase_project}
 # MAGIC
 # MAGIC memory:
 # MAGIC   checkpointer:
@@ -87,7 +89,9 @@ params: dict[str, str] = {
 # MAGIC     database: *workshop_db
 # MAGIC     namespace: "{user_id}"                  # long-term: scoped to user
 # MAGIC   extraction:
-# MAGIC     schemas: [user_profile, preference]
+# MAGIC     schemas:
+# MAGIC       - user_profile
+# MAGIC       - preference
 # MAGIC     auto_inject: true                       # injects extracted facts into the prompt
 # MAGIC
 # MAGIC app:

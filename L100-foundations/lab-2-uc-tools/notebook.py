@@ -102,9 +102,13 @@ params: dict[str, str] = {
 # MAGIC
 # MAGIC ```yaml
 # MAGIC # The whole config:
-# MAGIC parameters: { llm_endpoint: ... }
+# MAGIC parameters:
+# MAGIC   llm_endpoint:
+# MAGIC     default: databricks-claude-sonnet-4-5
 # MAGIC resources:
-# MAGIC   llms: { default_llm: ... }
+# MAGIC   llms:
+# MAGIC     default_llm: &default_llm
+# MAGIC       name: ${var.llm_endpoint}
 # MAGIC agents:
 # MAGIC   product_agent:
 # MAGIC     model: *default_llm
@@ -133,20 +137,27 @@ print(response["messages"][-1].content)
 # MAGIC
 # MAGIC ```yaml
 # MAGIC schemas:
-# MAGIC   workshop_schema: { catalog_name: ${var.catalog}, schema_name: ${var.schema} }
+# MAGIC   workshop_schema: &workshop_schema
+# MAGIC     catalog_name: ${var.catalog}
+# MAGIC     schema_name: ${var.schema}
 # MAGIC
 # MAGIC resources:
 # MAGIC   functions:
-# MAGIC     find_product_by_sku: { schema: *workshop_schema, name: find_product_by_sku }
+# MAGIC     find_product_by_sku: &find_product_by_sku
+# MAGIC       schema: *workshop_schema
+# MAGIC       name: find_product_by_sku
 # MAGIC
 # MAGIC tools:
 # MAGIC   sku_lookup_tool:
 # MAGIC     name: find_product_by_sku
-# MAGIC     function: { type: unity_catalog, resource: *find_product_by_sku }
+# MAGIC     function:
+# MAGIC       type: unity_catalog
+# MAGIC       resource: *find_product_by_sku
 # MAGIC
 # MAGIC agents:
 # MAGIC   product_agent:
-# MAGIC     tools: [*sku_lookup_tool]   # <-- agent now has one tool
+# MAGIC     tools:                          # <-- agent now has one tool
+# MAGIC       - *sku_lookup_tool
 # MAGIC ```
 # MAGIC
 # MAGIC Provision the resources this step introduces -- the schema, the
@@ -205,16 +216,22 @@ print(response["messages"][-1].content)
 # MAGIC ```yaml
 # MAGIC resources:
 # MAGIC   functions:
-# MAGIC     find_products_by_category: { schema: *workshop_schema, name: find_products_by_category }
+# MAGIC     find_products_by_category: &find_products_by_category
+# MAGIC       schema: *workshop_schema
+# MAGIC       name: find_products_by_category
 # MAGIC
 # MAGIC tools:
 # MAGIC   category_lookup_tool:
 # MAGIC     name: find_products_by_category
-# MAGIC     function: { type: unity_catalog, resource: *find_products_by_category }
+# MAGIC     function:
+# MAGIC       type: unity_catalog
+# MAGIC       resource: *find_products_by_category
 # MAGIC
 # MAGIC agents:
 # MAGIC   product_agent:
-# MAGIC     tools: [*sku_lookup_tool, *category_lookup_tool]   # <-- both tools
+# MAGIC     tools:                          # <-- both tools
+# MAGIC       - *sku_lookup_tool
+# MAGIC       - *category_lookup_tool
 # MAGIC     prompt: |
 # MAGIC       ...rules teaching the model when to pick which tool...
 # MAGIC ```
