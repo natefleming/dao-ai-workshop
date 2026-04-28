@@ -22,7 +22,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "dao-ai>=0.1.64"
+# MAGIC %pip install "dao-ai>=0.1.66"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -102,6 +102,26 @@ params: dict[str, str] = {
 from dao_ai.config import AppConfig
 
 config: AppConfig = AppConfig.from_file("support_assistant.yaml", params=params)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Step 4 -- Provision the Lakebase postgres role for the SP
+# MAGIC
+# MAGIC `database.create()` calls dao-ai's Lakebase autoscaling-role
+# MAGIC provisioner: it creates a postgres role on the project's branch,
+# MAGIC bound to the configured `client_id`, with `DATABRICKS_SUPERUSER`
+# MAGIC membership. That gives the deployed app's SP schema-level CREATE
+# MAGIC on `public` so the langgraph checkpointer can run its migrations.
+
+# COMMAND ----------
+
+for db_key, database in config.resources.databases.items():
+    database.create()
+    print(f"Lakebase role ready: {db_key} -> project={database.project}")
+
+# COMMAND ----------
+
 agent: CompiledStateGraph = config.as_graph()
 
 print(f"Compiled app name: {config.app.name}")
@@ -113,7 +133,7 @@ except Exception as e:
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 4 -- Test cross-session memory
+# MAGIC ## Step 5 -- Test cross-session memory
 # MAGIC
 # MAGIC Establish a fact in thread A. Open a brand-new thread B with the
 # MAGIC **same** `user_id`. The store + extraction pipeline should let
@@ -138,7 +158,7 @@ print(resp["messages"][-1].content)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 5 -- Test chat-history summarization
+# MAGIC ## Step 6 -- Test chat-history summarization
 # MAGIC
 # MAGIC We deliberately set `max_tokens_before_summary` low (1500) so
 # MAGIC summarization fires within a few turns. Track the message count
@@ -172,7 +192,7 @@ for i, content in enumerate(turns, 1):
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 6 -- Deploy as a Databricks App
+# MAGIC ## Step 7 -- Deploy as a Databricks App
 
 # COMMAND ----------
 

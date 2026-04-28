@@ -207,7 +207,10 @@ result: ResponsesAgentResponse = process_messages(
     responses_agent,
     [{"role": "user", "content": "In one sentence, what's a DAO-AI agent?"}],
 )
-print(result.output[-1].content[0].text)
+# `content[0]` may be a Pydantic Annotation (with .text) or a plain dict
+# (with a "text" key) depending on serialization path -- handle both.
+block = result.output[-1].content[0]
+print(getattr(block, "text", None) or block["text"])
 
 # COMMAND ----------
 
