@@ -95,11 +95,10 @@ for dataset in final_config.datasets:
 
 # COMMAND ----------
 
-kb_table: str = next(iter(final_config.schemas.values())).full_name + ".kb_articles"
-spark.sql(
-    f"ALTER TABLE {kb_table} SET TBLPROPERTIES (delta.enableChangeDataFeed = true)"
-)
-print(f"Change Data Feed enabled on {kb_table}.")
+# Vector Search needs the source table's Change Data Feed enabled so the
+# index can sync incrementally. `data/kb_articles.sql` declares
+# `TBLPROPERTIES (delta.enableChangeDataFeed = true)` on CREATE TABLE,
+# so the property is already set by the dataset.create() above.
 
 # COMMAND ----------
 
