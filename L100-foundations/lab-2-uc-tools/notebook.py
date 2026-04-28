@@ -116,10 +116,10 @@ params: dict[str, str] = {
 
 from dao_ai.config import AppConfig
 
-config_step1: AppConfig = AppConfig.from_file("01_product_assistant.yaml", params=params)
-agent_step1: CompiledStateGraph = config_step1.as_graph()
+config: AppConfig = AppConfig.from_file("01_product_assistant.yaml", params=params)
+agent: CompiledStateGraph = config.as_graph()
 
-response: dict[str, Any] = await agent_step1.ainvoke(
+response: dict[str, Any] = await agent.ainvoke(
     {"messages": [{"role": "user", "content": "Tell me about SKU-0001."}]},
 )
 print(response["messages"][-1].content)
@@ -157,25 +157,25 @@ print(response["messages"][-1].content)
 
 # COMMAND ----------
 
-config_step2: AppConfig = AppConfig.from_file("02_product_assistant_with_sku_lookup.yaml", params=params)
+config: AppConfig = AppConfig.from_file("02_product_assistant_with_sku_lookup.yaml", params=params)
 
-for schema in config_step2.schemas.values():
+for schema in config.schemas.values():
     schema.create()
     print(f"Schema ready:   {schema.full_name}")
 
-for dataset in config_step2.datasets:
+for dataset in config.datasets:
     dataset.create()
     print(f"Table loaded:   {dataset.table.full_name}")
 
-for uc_fn in config_step2.unity_catalog_functions:
+for uc_fn in config.unity_catalog_functions:
     uc_fn.create()
     print(f"Function ready: {uc_fn.function.full_name}")
 
 # COMMAND ----------
 
-agent_step2: CompiledStateGraph = config_step2.as_graph()
+agent: CompiledStateGraph = config.as_graph()
 
-response: dict[str, Any] = await agent_step2.ainvoke(
+response: dict[str, Any] = await agent.ainvoke(
     {"messages": [{"role": "user", "content": "Tell me about SKU-0001."}]},
 )
 print(response["messages"][-1].content)
@@ -190,7 +190,7 @@ print(response["messages"][-1].content)
 
 # COMMAND ----------
 
-response: dict[str, Any] = await agent_step2.ainvoke(
+response: dict[str, Any] = await agent.ainvoke(
     {"messages": [{"role": "user", "content": "What Power Tools do you have under $100?"}]},
 )
 print(response["messages"][-1].content)

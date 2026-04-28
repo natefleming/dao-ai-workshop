@@ -93,10 +93,10 @@ for schema in final_config.schemas.values():
 
 # COMMAND ----------
 
-config_step1: AppConfig = AppConfig.from_file("01_inline_support.yaml", params=params)
-agent_step1: CompiledStateGraph = config_step1.as_graph()
+config: AppConfig = AppConfig.from_file("01_inline_support.yaml", params=params)
+agent: CompiledStateGraph = config.as_graph()
 
-response: dict[str, Any] = await agent_step1.ainvoke(
+response: dict[str, Any] = await agent.ainvoke(
     {"messages": [{"role": "user", "content": "What's the SLA for critical support tickets?"}]},
 )
 print(response["messages"][-1].content)
@@ -111,10 +111,10 @@ print(response["messages"][-1].content)
 
 # COMMAND ----------
 
-config_step2: AppConfig = AppConfig.from_file("02_support_with_managed_prompts.yaml", params=params)
-agent_step2: CompiledStateGraph = config_step2.as_graph()
+config: AppConfig = AppConfig.from_file("02_support_with_managed_prompts.yaml", params=params)
+agent: CompiledStateGraph = config.as_graph()
 
-response: dict[str, Any] = await agent_step2.ainvoke(
+response: dict[str, Any] = await agent.ainvoke(
     {"messages": [{"role": "user", "content": "What's the SLA for critical support tickets?"}]},
 )
 print(response["messages"][-1].content)
