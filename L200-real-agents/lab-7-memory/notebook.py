@@ -145,6 +145,23 @@ except Exception as e:
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ### Enable MLflow autolog
+# MAGIC
+# MAGIC `mlflow.langchain.autolog()` registers tracers on every LangChain
+# MAGIC call so the agent's tool calls, LLM completions, and graph
+# MAGIC transitions land in the active MLflow experiment as traces.
+# MAGIC Open the Experiment from the right-hand panel after running an
+# MAGIC inference cell below to inspect what the agent did.
+
+# COMMAND ----------
+
+import mlflow
+
+mlflow.langchain.autolog()
+
+# COMMAND ----------
+
 await agent.ainvoke(
     {"messages": [{"role": "user", "content": "I'm Jordan. I'm getting 401 errors on the API since 09:00 today."}]},
     config={"configurable": {"thread_id": f"lab7-thread-A-{username}", "user_id": user_id}},

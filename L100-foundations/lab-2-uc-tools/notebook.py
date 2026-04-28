@@ -118,6 +118,23 @@ params: dict[str, str] = {
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ### Enable MLflow autolog
+# MAGIC
+# MAGIC `mlflow.langchain.autolog()` registers tracers on every LangChain
+# MAGIC call so the agent's tool calls, LLM completions, and graph
+# MAGIC transitions land in the active MLflow experiment as traces.
+# MAGIC Open the Experiment from the right-hand panel after running an
+# MAGIC inference cell below to inspect what the agent did.
+
+# COMMAND ----------
+
+import mlflow
+
+mlflow.langchain.autolog()
+
+# COMMAND ----------
+
 from dao_ai.config import AppConfig
 
 config: AppConfig = AppConfig.from_file("01_product_assistant.yaml", params=params)
