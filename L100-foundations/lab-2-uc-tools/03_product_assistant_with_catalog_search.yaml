@@ -1,18 +1,22 @@
-# Pedagogical step file for lab 2. The deployable config is dao_ai.yaml.
+# Pedagogical step file for lab 2.
 # yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
 #
-# Module 2 - Step 3: catalog_search (FINAL)
-# -----------------------------------------
+# Lab 2 - Step 3: catalog_search (FINAL)
+# --------------------------------------
 # Capability: a product assistant that can both look up by SKU and
 # browse categories with grounded data.
-# Adds (vs step 2):
-#   - resources.functions: find_products_by_category
-#   - tools: category_lookup_tool
-#   - agent.tools: now lists both tools
-#   - prompt updated to teach the model when to pick which tool
-#   - unity_catalog_functions: adds the second function's provisioning entry
 #
-# This is the canonical chapter-2 agent. dao_ai.yaml is a copy of this file.
+# Adds (vs step 2):
+#   - a second UC function (find_products_by_category) registered the
+#     same way as find_product_by_sku
+#   - a second tool wrapping it
+#   - agent.tools now lists both tools
+#   - prompt updated to teach the model when to pick which tool
+#   - second provisioning entry under unity_catalog_functions
+#
+# Pattern to internalize: every new tool the agent gets is four edits
+# (resources.functions + tools + agent.tools + provisioning). After
+# that the agent decides when to call which tool based on its prompt.
 
 parameters:
   username:

@@ -7,6 +7,22 @@
 # pauses, surfaces the proposed arguments to a human reviewer, and
 # resumes only on approve / edit / reject.
 #
+# Builds on:
+#   - Lab 1: parameters / resources.llms / agents / app baseline.
+#   - Lab 2: schemas, resources.functions, tools (type: unity_catalog),
+#            agent.tools, unity_catalog_functions provisioning. The
+#            `issue_refund` UC function is shaped exactly like Lab 2's
+#            `find_product_by_sku`.
+#   - Lab 7: memory.checkpointer (mentioned in this lab as the
+#            production-grade alternative to the in-memory fallback).
+#
+# What's new vs prior labs:
+#   - tools.<name>.function.human_in_the_loop block:
+#       - review_prompt:        text shown to the human reviewer
+#       - allowed_decisions:    approve / edit / reject set
+#     This wraps any tool (UC, MCP, factory, REST) so the LangGraph
+#     workflow pauses before the tool runs.
+#
 # HITL requires a checkpointer to persist agent state across the
 # interrupt. We rely on dao-ai's automatic InMemorySaver fallback by
 # omitting an explicit memory.checkpointer database -- production

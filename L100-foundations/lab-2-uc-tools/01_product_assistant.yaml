@@ -1,12 +1,15 @@
-# Pedagogical step file for lab 2. The deployable config is dao_ai.yaml.
+# Pedagogical step file for lab 2.
 # yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
 #
-# Module 2 - Step 1: product_chat
-# -------------------------------
+# Lab 2 - Step 1: product_chat
+# ----------------------------
 # Capability: a product assistant that answers from prompt knowledge alone.
 # No tools. No grounded data. The agent will guess at SKUs and prices --
 # this baseline shows what "ungrounded" looks like before we add tools
 # in step 2.
+#
+# Builds on Lab 1's structure (parameters / resources.llms / agents / app).
+# Same shape as the greeter, just a different prompt.
 
 parameters:
   username:

@@ -1,11 +1,23 @@
 # yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
 #
 # Lab 9 - Swarm with Mixed Deterministic + Agentic Handoffs (saas_helpdesk)
-# -----------------------------------------------------------------------------
+# -------------------------------------------------------------------------
 # Three specialists. tier-1 routes agentically to either tier-2 or
 # escalation; tier-2 always (deterministic) escalates after its turn so
 # every technical fix goes through a manager review; escalation is the
 # terminal node.
+#
+# Builds on:
+#   - The supervisor variant in this same lab (specialists_with_supervisor.yaml).
+#     Same three agents, same prompts; only the orchestration changes.
+#
+# What's new vs the supervisor variant:
+#   - app.orchestration.swarm:        peer-to-peer handoffs instead of a
+#                                     central router. Each agent declares
+#                                     who it can hand off to.
+#   - agents.<name>.handoffs:         either agentic (LLM decides at runtime)
+#                                     or deterministic (always fires after
+#                                     this agent's turn).
 #
 # DAO-AI 0.1.62+ rejects deterministic edges that participate in a
 # cycle, so this is the only safe way to mix the two patterns: keep

@@ -1,16 +1,22 @@
-# Pedagogical step file for lab 2. The deployable config is dao_ai.yaml.
+# Pedagogical step file for lab 2.
 # yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
 #
-# Module 2 - Step 2: sku_lookup
-# -----------------------------
+# Lab 2 - Step 2: sku_lookup
+# --------------------------
 # Capability: a product assistant that can look up real products by SKU.
+#
 # Adds (vs step 1):
-#   - schemas: workshop_schema (referenced by the function below)
-#   - resources.functions: find_product_by_sku
-#   - tools: sku_lookup_tool
-#   - agent.tools: now lists sku_lookup_tool
-#   - unity_catalog_functions: how dao-ai provisions the SQL function
-#   - datasets: seeds the products table
+#   - schemas:                  the UC catalog/schema the function lives in
+#   - resources.functions:      registers a UC function as a dao-ai resource
+#   - tools:                    binds that resource as a callable tool
+#   - agent.tools:              gives the agent access to the tool
+#   - unity_catalog_functions:  provisioning entry — runs DDL on .create()
+#   - datasets:                 seeds the table the function reads from
+#
+# These five concepts (schema → resource → tool → agent.tools +
+# provisioning blocks) are reused by every later lab that grounds the
+# agent in workspace data. Lab 3 swaps the UC function for a Genie tool;
+# Lab 4 swaps it for MCP auto-discovery; Lab 6 swaps it for vector search.
 #
 # Now SKU questions get a real answer; category questions still
 # fall back to prompt knowledge. Step 3 fixes that.
@@ -29,8 +35,11 @@ parameters:
     description: Databricks LLM serving endpoint name.
     default: databricks-claude-sonnet-4-5
 
-# NEW in step 2 (vs step 1): schemas block. The UC function below
-# binds to this schema via the *workshop_schema anchor.
+# NEW in step 2 (vs step 1): schemas block.
+# A `schema` is the (catalog, schema) pair where workshop assets live --
+# UC functions, tables, vector-store source tables, prompts, etc. dao-ai
+# uses this for both lookup (resolving function/table names) and
+# provisioning (the .create() loop in the notebook).
 schemas:
   workshop_schema: &workshop_schema
     catalog_name: ${var.catalog}
@@ -43,15 +52,24 @@ resources:
       temperature: 0.1
       max_tokens: 4096
 
-  # NEW in step 2: resources.functions -- declares the UC function the
-  # tool below resolves against.
+  # NEW in step 2: resources.functions
+  # Registers a UC SQL function by (schema, name). At deploy time the
+  # function gets attached to the served model / app as a Databricks
+  # resource so the runtime identity has EXECUTE on it. The actual
+  # SQL DDL is in unity_catalog_functions: below.
   functions:
     find_product_by_sku: &find_product_by_sku
       schema: *workshop_schema
       name: find_product_by_sku
 
-# NEW in step 2: tools block. Binds the UC function as a callable
-# `unity_catalog` tool the agent can invoke.
+# NEW in step 2: tools block.
+# A `tool` wraps a resource into something the LLM can call. dao-ai
+# supports several tool types:
+#   type: unity_catalog -- wraps a UC function (this lab)
+#   type: factory       -- runs a Python factory (vector search, REST, etc.)
+#   type: mcp           -- a Managed MCP server (Lab 4)
+#   type: genie         -- a Genie space (Lab 3)
+# The `name:` is what the LLM sees and what gets logged into traces.
 tools:
   sku_lookup_tool: &sku_lookup_tool
     name: find_product_by_sku
@@ -86,9 +104,16 @@ app:
   deployment_target: apps
   agents:
     - *product_agent
-# NEW in step 2: provisioning blocks. dao-ai uses these to materialize
-# the SQL function and the products table. Step 1 had nothing to
-# provision since it had no tools or grounded data.
+# NEW in step 2: provisioning blocks.
+# `unity_catalog_functions` and `datasets` describe how dao-ai
+# **materializes** workspace state from local DDL files. The notebook
+# iterates these and calls `.create()` on each. Both are idempotent --
+# safe to re-run every time the notebook executes.
+#
+# This is the dao-ai equivalent of `terraform apply` for workshop assets:
+# it lets a lab be self-contained (no manual SQL setup), and is reused
+# by Lab 4 (also UC functions), Lab 6 (kb_articles dataset), Lab 11
+# (extended products dataset), Lab 13 (programmatic equivalents).
 unity_catalog_functions:
   - function: *find_product_by_sku
     ddl: ./functions/find_product_by_sku.sql

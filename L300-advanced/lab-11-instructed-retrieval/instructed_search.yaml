@@ -6,6 +6,27 @@
 # filter constraints + a residual semantic query, then reranks via an
 # LLM that follows natural-language instructions.
 #
+# Builds on:
+#   - Lab 2: schemas, datasets (the products dataset is the same as
+#     Lab 2's, extended with extra columns).
+#   - Lab 6: vector_stores, retrievers, tools (factory + create_vector_search_tool),
+#     and the `rerank:` block at the retriever level (cross-encoder).
+#
+# What's new vs Lab 6:
+#   - retrievers.<name>.search_parameters.query_type: HYBRID
+#     (Lab 6 used ANN; HYBRID adds keyword scoring on top.)
+#   - retrievers.<name>.instructed:    new top-level retriever feature
+#       - columns:                     schema metadata (types, descriptions)
+#                                       the decomposer can filter on
+#       - constraints:                 natural-language hints to the
+#                                       decomposer ("brand_name uppercase", etc.)
+#       - decomposition:               LLM that splits the query into
+#                                       structured filters + residual
+#                                       semantic query
+#       - rerank:                      LLM-based reranker that follows
+#                                       natural-language priorities
+#                                       (vs Lab 6's FlashRank cross-encoder)
+#
 # Pipeline (top to bottom):
 #   1. Query decomposition       -- haiku LLM extracts filters from the user query
 #   2. Hybrid ANN search         -- 50 candidates pulled per subquery

@@ -1,10 +1,20 @@
 # yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
 #
-# Module 3 - Genie as a tool
-# --------------------------
+# Lab 3 - Genie as a tool
+# -----------------------
 # Wraps a Databricks Genie Space as a tool the agent can call. The student
 # asks a natural-language question, the agent routes it to Genie, Genie
 # generates SQL against the curated dataset, and the agent summarizes.
+#
+# Builds on Lab 2's pattern (parameters → resources → tools → agent.tools)
+# but introduces two new building blocks:
+#   - resources.genie_rooms:   Genie Space registered as a dao-ai resource
+#   - tools.<name>.function.type: factory   (vs Lab 2's `unity_catalog`)
+#
+# `factory` tools call a Python factory function (here
+# `dao_ai.tools.create_genie_tool`) that builds the LangChain tool at
+# load time. The same `factory` shape is reused by Lab 5 (REST), Lab 6
+# (vector search), and Lab 12 (cached Genie).
 #
 # Prereq: create a Genie Space in the UI, give it access to the tables
 # you want it to answer over, and pass its ID via the genie_space_id
@@ -34,12 +44,18 @@ resources:
       temperature: 0.1
       max_tokens: 4096
 
+  # Register the Genie Space as a dao-ai resource. At deploy time this
+  # gets attached to the agent's identity so the runtime SP has CAN_RUN
+  # on the space (and transitively on the tables it queries).
   genie_rooms:
     workshop_genie: &workshop_genie
       name: "Workshop Genie Room"
       description: "Genie space over the workshop products table"
       space_id: ${var.genie_space_id}
 
+# Tool wrapper: the LLM sees `ask_genie` as a callable; under the hood
+# `create_genie_tool` builds a LangChain tool that POSTs to the Genie
+# space's API on each call.
 tools:
   genie_tool: &genie_tool
     name: ask_genie

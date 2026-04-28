@@ -5,7 +5,16 @@
 # The simplest possible dao-ai agent. One LLM, one agent, no tools.
 # If this runs, your workspace and profile are wired correctly and
 # you are ready for the rest of the workshop.
+#
+# Concepts introduced here (used by every later lab):
+#   - parameters:    declarative ${var.NAME} substitution from params={...}
+#   - resources.llms: LLM endpoint registry, anchored with &name for reuse
+#   - agents:        a model + a prompt; tools come in Lab 2
+#   - app:           the deploy target (apps | model_serving)
 
+# parameters: top-level variables substituted into the rest of the YAML at
+# AppConfig.from_file load time. The notebook passes params={"username": ...}
+# to override values; defaults declared here are used otherwise.
 parameters:
   username:
     description: >
@@ -17,6 +26,10 @@ parameters:
     description: Databricks LLM serving endpoint name.
     default: databricks-claude-sonnet-4-5
 
+# resources: the registry of "physical" things the agent can use --
+# LLM endpoints, schemas, databases, vector stores, Genie rooms, etc.
+# Lab 1 only needs an LLM. Anchors (&default_llm) let later blocks
+# reference the same resource via *default_llm without duplicating.
 resources:
   llms:
     default_llm: &default_llm
@@ -24,6 +37,9 @@ resources:
       temperature: 0.1
       max_tokens: 2048
 
+# agents: one or more named agents. Each binds an LLM + prompt + (later)
+# tools + memory. dao-ai compiles the agents block into a LangGraph
+# StateGraph at as_graph() time -- you don't write the graph yourself.
 agents:
   greeter: &greeter
     name: greeter
@@ -34,6 +50,11 @@ agents:
       friendly, and encouraging. When someone says hello, greet them
       and tell them they have successfully run a dao-ai agent.
 
+# app: the deployable. `deployment_target: apps` ships this as a
+# Databricks App; `model_serving` would ship it as a Model Serving
+# endpoint instead. Single-agent apps don't need an `orchestration:`
+# block (it would only matter with 2+ agents that route between each
+# other -- see Lab 9).
 app:
   name: hardware-store-${var.username}
   description: "Workshop lab 1 (hardware_store): hello world greeter"

@@ -1,10 +1,15 @@
 # yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
 #
 # Lab 6 - Step 1: kb_assistant
-# --------------------------------
+# ----------------------------
 # Capability: a SaaS support assistant with no retrieval. Demonstrates
 # what fuzzy support questions look like before grounding -- the agent
 # will invent answers because it has no way to search the knowledge base.
+#
+# Builds on Lab 1's baseline structure (parameters / resources.llms /
+# agents / app). Same shape as the greeter; just a support-flavored
+# prompt. Step 2 layers vector search on top; step 3 adds a reranker.
+# Mirrors the Lab 2 pedagogy of "ungrounded baseline → tools added".
 
 parameters:
   username:

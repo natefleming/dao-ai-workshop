@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
 #
 # Lab 4 - Model Context Protocol (MCP)
-# ----------------------------------------
+# ------------------------------------
 # MCP lets an agent discover and call tools from a running MCP server
 # rather than declaring each tool individually in YAML.
 #
@@ -10,6 +10,19 @@
 # notebook or app, managed MCP authenticates using the caller's
 # identity (WorkspaceClient() picks it up) - no explicit OAuth creds
 # required in the YAML.
+#
+# Builds on:
+#   - Lab 1: parameters / resources.llms / agents / app baseline structure.
+#   - Lab 2: schemas, resources.functions, datasets, unity_catalog_functions
+#     -- the same provisioning blocks. The difference is no `tools:` entry
+#     per function; MCP discovers them all at once.
+#   - Lab 3: tool indirection (`function: { type: ... }`). Lab 3 used
+#     `type: factory` to build a Genie tool; this lab uses `type: mcp`.
+#
+# What's new vs prior labs:
+#   - tools.<name>.function.type: mcp                -- the MCP tool kind
+#     - functions: <schema_anchor>  -- bind every UC function in a schema
+#     - sql: true                   -- bind the serverless SQL executor
 #
 # Override parameters at load time:
 #   AppConfig.from_file("dao_ai.yaml", params={"catalog": "my_catalog"})

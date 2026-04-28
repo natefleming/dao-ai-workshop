@@ -1,11 +1,16 @@
 # yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
 #
 # Lab 8 - Step 1: inline_support
-# ----------------------------------
+# ------------------------------
 # Capability: a SaaS support assistant with an inline prompt.
 # Demonstrates: how prompts normally live -- hard-coded in YAML,
 # requiring a redeploy to change. Steps 2 and 3 add Prompt Registry
 # and a guardrail.
+#
+# Builds on Lab 1's baseline structure (parameters / resources.llms /
+# agents / app). Same shape as the greeter; the prompt is the only
+# meaningful difference. Step 2 (managed prompts) and step 3
+# (guardrails) layer new building blocks on top of this baseline.
 
 parameters:
   username:

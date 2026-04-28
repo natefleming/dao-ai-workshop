@@ -6,6 +6,25 @@
 # Genie tool. The same question (or a near-duplicate) is served from
 # cache instead of paying for another Genie API round-trip.
 #
+# Builds on:
+#   - Lab 3: resources.genie_rooms, factory tools wrapping a Genie space.
+#     The `cached_genie` tool here uses `dao_ai.tools.create_genie_toolkit`
+#     -- a richer factory than Lab 3's `create_genie_tool` -- but the
+#     same Genie-as-a-tool concept.
+#   - Lab 6: introduces `resources.llms.embedding_model` and
+#     `resources.warehouses` (here the warehouse re-executes cached SQL
+#     on hits, and the embedding model powers L2 similarity matching).
+#
+# What's new vs prior labs:
+#   - resources.warehouses:                    SQL warehouse as a resource
+#                                              (cache replays SQL here).
+#   - tools.<name>.function.lru_cache_parameters:
+#                                              L1 exact-match cache config.
+#   - tools.<name>.function.in_memory_context_aware_cache_parameters:
+#                                              L2 similarity cache + recent-
+#                                              context match config.
+#   - persist_conversation: true               keeps Genie thread state.
+#
 # Cache flow on each tool call:
 #
 #   user question

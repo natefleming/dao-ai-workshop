@@ -1,11 +1,23 @@
 # yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
 #
 # Lab 5 (saas_helpdesk) - status_check
-# ----------------------------------------
+# ------------------------------------
 # Wraps the public GitHub Status API as an HTTP tool. When customers
 # report issues, the agent can check whether GitHub (a common upstream
 # dependency) is degraded before assuming the customer's own product
 # is at fault.
+#
+# Builds on:
+#   - Lab 1: parameters / resources.llms / agents / app baseline.
+#   - Lab 3: `type: factory` tools (Lab 3 used create_genie_tool; here
+#     we use create_rest_api_tool). The factory pattern is a generic
+#     escape hatch for any tool dao-ai doesn't model directly.
+#
+# What's new vs prior labs:
+#   - First L200 lab -- switches use case from `hardware_store`
+#     (greeter/products) to `saas_helpdesk` (support).
+#   - dao_ai.tools.create_rest_api_tool -- a REST-API factory the agent
+#     can drive with method/path arguments at call time.
 #
 # This uses a real public no-auth API so the workshop is credential-
 # free. In production, swap to a UC Connection for governed access

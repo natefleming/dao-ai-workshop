@@ -1,10 +1,27 @@
 # yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
 #
 # Lab 9 - Supervisor Pattern (saas_helpdesk)
-# ----------------------------------------------
+# ------------------------------------------
 # Three specialist agents plus a supervisor that routes between them.
 # Each specialist has a focused role; the supervisor reads the
 # customer's message and picks the right tier.
+#
+# Builds on:
+#   - Lab 1: parameters / resources.llms / agents / app baseline.
+#   - Every prior L200 lab: agents in those labs were always single. This
+#     is the first lab where `app.agents` is a LIST of multiple agents
+#     and the orchestration layer matters.
+#
+# What's new vs prior labs:
+#   - resources.llms: multiple LLM endpoints (one per agent's role,
+#     so a fast/cheap model handles tier-1 and a stronger model
+#     handles escalation).
+#   - agents:                           three named agents, each with a
+#                                       different model and prompt.
+#   - app.orchestration.supervisor:     dao-ai builds a LangGraph
+#                                       supervisor node that classifies
+#                                       the user message and hands off to
+#                                       one of the listed agents.
 #
 # Routing:
 #   - tier1_support  : answers FAQs, simple how-to questions

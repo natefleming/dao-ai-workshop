@@ -13,6 +13,22 @@
 #                             are compressed into a summary message by a small/fast LLM
 #
 # All persistence is backed by Databricks Lakebase (managed Postgres).
+#
+# Builds on:
+#   - Lab 1: baseline structure (parameters / resources.llms / agents / app).
+#   - Lab 5: switched to the saas_helpdesk use case.
+#
+# What's new vs prior labs (every block below introduces something):
+#   - parameters: secret-scope-wired client_id/client_secret pattern
+#     (later labs reuse this when an SP needs explicit credentials).
+#   - variables:                      composite variable with multi-source fallback
+#     (used by checkpointer/store secrets).
+#   - resources.databases:            Lakebase autoscaling project as a resource.
+#   - top-level memory:               checkpointer (thread state) + store
+#                                     (cross-thread facts) + extraction (LLM
+#                                     pipeline that writes facts to the store).
+#   - app.orchestration.memory:       wires the memory section into runtime.
+#   - app.chat_history:               auto-summarization when token budget exceeded.
 
 parameters:
   username:
