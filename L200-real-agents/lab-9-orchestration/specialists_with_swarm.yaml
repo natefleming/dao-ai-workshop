@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
 #
-# Chapter 9 - Swarm with Mixed Deterministic + Agentic Handoffs (saas_helpdesk)
+# Lab 9 - Swarm with Mixed Deterministic + Agentic Handoffs (saas_helpdesk)
 # -----------------------------------------------------------------------------
 # Three specialists. tier-1 routes agentically to either tier-2 or
 # escalation; tier-2 always (deterministic) escalates after its turn so
@@ -92,7 +92,7 @@ agents:
 
 app:
   name: saas-helpdesk-${var.username}
-  description: "Workshop chapter 9: tier swarm with directed routes"
+  description: "Workshop lab 9: tier swarm with directed routes"
   log_level: INFO
   deployment_target: apps
   agents:

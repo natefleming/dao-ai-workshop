@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
 #
-# Chapter 4 - Model Context Protocol (MCP)
+# Lab 4 - Model Context Protocol (MCP)
 # ----------------------------------------
 # MCP lets an agent discover and call tools from a running MCP server
 # rather than declaring each tool individually in YAML.
@@ -94,7 +94,7 @@ agents:
 
 app:
   name: hardware-store-${var.username}
-  description: "Workshop chapter 4: managed MCP tools"
+  description: "Workshop lab 4: managed MCP tools"
   log_level: INFO
 
   deployment_target: apps

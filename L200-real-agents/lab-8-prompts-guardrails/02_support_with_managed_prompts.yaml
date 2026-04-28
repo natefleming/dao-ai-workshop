@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
 #
-# Chapter 8 - Step 2: support_with_managed_prompts
+# Lab 8 - Step 2: support_with_managed_prompts
 # ------------------------------------------------
 # Capability: prompt lives in MLflow Prompt Registry. Edit the prompt
 # in the UI and the agent picks up the latest version on next load --
@@ -54,7 +54,7 @@ agents:
 
 app:
   name: saas-helpdesk-${var.username}
-  description: "Workshop chapter 8 - step 2: support with managed prompts"
+  description: "Workshop lab 8 - step 2: support with managed prompts"
   log_level: INFO
   deployment_target: apps
   agents:

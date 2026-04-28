@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
 #
-# Chapter 6 - Step 1: kb_assistant
+# Lab 6 - Step 1: kb_assistant
 # --------------------------------
 # Capability: a SaaS support assistant with no retrieval. Demonstrates
 # what fuzzy support questions look like before grounding -- the agent
@@ -48,7 +48,7 @@ agents:
 
 app:
   name: saas-helpdesk-${var.username}
-  description: "Workshop chapter 6 - step 1: kb_assistant (no retrieval)"
+  description: "Workshop lab 6 - step 1: kb_assistant (no retrieval)"
   log_level: INFO
   deployment_target: apps
   agents:

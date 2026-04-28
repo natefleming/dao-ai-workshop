@@ -1,4 +1,4 @@
-# Pedagogical step file for chapter 2. The deployable config is dao_ai.yaml.
+# Pedagogical step file for lab 2. The deployable config is dao_ai.yaml.
 # yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
 #
 # Module 2 - Step 2: sku_lookup
@@ -73,7 +73,7 @@ agents:
 
 app:
   name: hardware-store-${var.username}
-  description: "Workshop chapter 2 - step 2: sku_lookup"
+  description: "Workshop lab 2 - step 2: sku_lookup"
   log_level: INFO
   deployment_target: apps
   agents:

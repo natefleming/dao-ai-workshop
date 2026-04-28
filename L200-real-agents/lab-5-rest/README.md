@@ -46,4 +46,4 @@ Deployed app name: `saas-helpdesk-<your-username>`.
 
 ## Next
 
-[Chapter 6](../lab-6-vector-search/) -- vector search + reranking over a knowledge-base table for fuzzy support questions.
+[Lab 6](../lab-6-vector-search/) -- vector search + reranking over a knowledge-base table for fuzzy support questions.

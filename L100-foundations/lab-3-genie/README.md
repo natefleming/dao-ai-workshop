@@ -14,7 +14,7 @@ An `analyst` agent that answers `"How many products do we have per category?"` b
 
 ---
 
-**Use case:** `hardware_store` -- the `product_assistant` from chapter 2 promotes to an `analyst` that answers ad-hoc analytical questions via Databricks Genie.
+**Use case:** `hardware_store` -- the `product_assistant` from lab 2 promotes to an `analyst` that answers ad-hoc analytical questions via Databricks Genie.
 
 **DAO-AI concept:** **Genie Space as a factory tool.** Instead of writing a UC function for every analytical question, point the agent at a Genie Space and let Genie generate the SQL on the fly.
 
@@ -33,16 +33,16 @@ An `analyst` agent that answers `"How many products do we have per category?"` b
 
 ## Prerequisites
 
-- Chapter 2 run -- the `products` table must exist.
+- Lab 2 run -- the `products` table must exist.
 - A **Genie Space** created manually in the Databricks UI, pointed at the `products` table. Copy its space ID.
 - `databricks-claude-sonnet-4-5` foundation-model endpoint enabled.
 
 ## Run
 
-Open `notebook.py`. Set the `genie_space_id` widget to the ID you copied. The notebook builds the agent and asks an analytical question that would have required a new UC function in chapter 2.
+Open `notebook.py`. Set the `genie_space_id` widget to the ID you copied. The notebook builds the agent and asks an analytical question that would have required a new UC function in lab 2.
 
 Deployed app name: `hardware-store-<your-username>`.
 
 ## Next
 
-[Chapter 4](../lab-4-mcp/) -- replace per-function tool declarations with **managed MCP** auto-discovery over the entire schema.
+[Lab 4](../lab-4-mcp/) -- replace per-function tool declarations with **managed MCP** auto-discovery over the entire schema.

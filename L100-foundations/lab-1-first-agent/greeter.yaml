@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
 #
-# Chapter 1 - Hello World (hardware_store theme)
+# Lab 1 - Hello World (hardware_store theme)
 # ----------------------------------------------
 # The simplest possible dao-ai agent. One LLM, one agent, no tools.
 # If this runs, your workspace and profile are wired correctly and
@@ -36,7 +36,7 @@ agents:
 
 app:
   name: hardware-store-${var.username}
-  description: "Workshop chapter 1 (hardware_store): hello world greeter"
+  description: "Workshop lab 1 (hardware_store): hello world greeter"
   log_level: INFO
   deployment_target: apps
 

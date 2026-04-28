@@ -15,7 +15,7 @@ An agent that answers `"What Power Tools do you have under $100?"` by calling `f
 
 ---
 
-**Use case:** `hardware_store` -- the greeter from chapter 1 grows into a `product_assistant` that answers SKU and category questions over a real catalog.
+**Use case:** `hardware_store` -- the greeter from lab 1 grows into a `product_assistant` that answers SKU and category questions over a real catalog.
 
 **DAO-AI concept:** **Unity Catalog SQL functions as tools.** The agent stops guessing and starts calling typed, governed functions over a Delta table.
 
@@ -50,4 +50,4 @@ Deployed app name: `hardware-store-<your-username>`.
 
 ## Next
 
-[Chapter 3](../lab-3-genie/) -- give the agent a Genie Space so it can answer open-ended NL questions without a hand-written function for each.
+[Lab 3](../lab-3-genie/) -- give the agent a Genie Space so it can answer open-ended NL questions without a hand-written function for each.

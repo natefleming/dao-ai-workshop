@@ -1,4 +1,4 @@
-# Pedagogical step file for chapter 2. The deployable config is dao_ai.yaml.
+# Pedagogical step file for lab 2. The deployable config is dao_ai.yaml.
 # yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
 #
 # Module 2 - Step 3: catalog_search (FINAL)

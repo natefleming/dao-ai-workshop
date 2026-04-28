@@ -133,7 +133,7 @@ params: dict[str, str] = {
 # MAGIC %md
 # MAGIC ### 3c. Wrap the Genie room as a tool
 # MAGIC
-# MAGIC Unlike chapter 2's `type: unity_catalog` tools, Genie tools are
+# MAGIC Unlike lab 2's `type: unity_catalog` tools, Genie tools are
 # MAGIC `type: factory` -- dao-ai calls a Python factory function at
 # MAGIC build time, passes the `args:`, and gets back a tool. The
 # MAGIC `description:` here is what the LLM sees when it decides
@@ -247,6 +247,6 @@ print(f"Deployed app: {config.app.name}")
 # MAGIC %md
 # MAGIC ## Next
 # MAGIC
-# MAGIC [Chapter 4: MCP](../lab-4-mcp/) - instead of declaring each UC
+# MAGIC [Lab 4: MCP](../lab-4-mcp/) - instead of declaring each UC
 # MAGIC function as its own tool, let the agent discover a whole
 # MAGIC schema's worth of functions via a managed MCP server.

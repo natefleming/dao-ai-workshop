@@ -48,4 +48,4 @@ Deployed app name: `hardware-store-<your-username>` (e.g. `hardware-store-jane-d
 
 ## Next
 
-[Chapter 2](../lab-2-uc-tools/) -- give the agent real tools (Unity Catalog SQL functions over a products table).
+[Lab 2](../lab-2-uc-tools/) -- give the agent real tools (Unity Catalog SQL functions over a products table).

@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
 #
-# Chapter 6 - Step 3: kb_assistant_with_reranking (FINAL)
+# Lab 6 - Step 3: kb_assistant_with_reranking (FINAL)
 # -------------------------------------------------------
 # Capability: ANN + cross-encoder reranking. Adds (vs step 2):
 #   - retriever.search_parameters.num_results: 50 (wider net)
@@ -113,7 +113,7 @@ agents:
 
 app:
   name: saas-helpdesk-${var.username}
-  description: "Workshop chapter 6: KB search with cross-encoder reranking"
+  description: "Workshop lab 6: KB search with cross-encoder reranking"
   log_level: INFO
   deployment_target: apps
   agents:

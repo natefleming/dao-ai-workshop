@@ -33,7 +33,7 @@ An `mcp_assistant` that answers both a UC-function question (`"List 3 power tool
 
 ## Prerequisites
 
-- Chapter 2 run -- UC functions must exist in `<your_catalog>.dao_ai.*`.
+- Lab 2 run -- UC functions must exist in `<your_catalog>.dao_ai.*`.
 - `databricks-claude-sonnet-4-5` foundation-model endpoint enabled.
 
 ## Run
@@ -44,4 +44,4 @@ Deployed app name: `hardware-store-<your-username>`.
 
 ## Next
 
-[Chapter 5](../../L200-real-agents/lab-5-rest/) -- **switch use case** to a SaaS helpdesk and call an external HTTP API for upstream-status checks.
+[Lab 5](../../L200-real-agents/lab-5-rest/) -- **switch use case** to a SaaS helpdesk and call an external HTTP API for upstream-status checks.

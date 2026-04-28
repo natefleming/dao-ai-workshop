@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
 #
-# Chapter 8 - Step 3: support_with_guardrails (FINAL)
+# Lab 8 - Step 3: support_with_guardrails (FINAL)
 # ---------------------------------------------------
 # Capability: managed prompt + a judge-evaluated **accuracy
 # guardrail** that retries on factual hallucination. For a support
@@ -85,7 +85,7 @@ agents:
 
 app:
   name: saas-helpdesk-${var.username}
-  description: "Workshop chapter 8: prompt registry + accuracy guardrail"
+  description: "Workshop lab 8: prompt registry + accuracy guardrail"
   log_level: INFO
   deployment_target: apps
   agents:

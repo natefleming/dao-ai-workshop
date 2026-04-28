@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
 #
-# Chapter 6 - Step 2: kb_assistant_with_search
+# Lab 6 - Step 2: kb_assistant_with_search
 # --------------------------------------------
 # Capability: a support assistant that retrieves real KB articles by
 # semantic similarity. Adds (vs step 1):
@@ -102,7 +102,7 @@ agents:
 
 app:
   name: saas-helpdesk-${var.username}
-  description: "Workshop chapter 6 - step 2: kb_assistant_with_search"
+  description: "Workshop lab 6 - step 2: kb_assistant_with_search"
   log_level: INFO
   deployment_target: apps
   agents:

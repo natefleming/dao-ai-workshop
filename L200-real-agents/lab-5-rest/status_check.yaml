@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
 #
-# Chapter 5 (saas_helpdesk) - status_check
+# Lab 5 (saas_helpdesk) - status_check
 # ----------------------------------------
 # Wraps the public GitHub Status API as an HTTP tool. When customers
 # report issues, the agent can check whether GitHub (a common upstream
@@ -56,7 +56,7 @@ agents:
 
 app:
   name: saas-helpdesk-${var.username}
-  description: "Workshop chapter 5 (saas_helpdesk): REST status-page tool"
+  description: "Workshop lab 5 (saas_helpdesk): REST status-page tool"
   log_level: INFO
   deployment_target: apps
   agents:

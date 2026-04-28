@@ -79,7 +79,7 @@ params: dict[str, str] = {
 # MAGIC %md
 # MAGIC ## Step 3 - Build the config
 # MAGIC
-# MAGIC The big swap from chapter 2: instead of declaring two
+# MAGIC The big swap from lab 2: instead of declaring two
 # MAGIC individual `unity_catalog` tools, we declare **one** `mcp` tool
 # MAGIC and let it discover every UC function in the schema.
 
@@ -282,4 +282,4 @@ print(f"Deployed app: {config.app.name}")
 # MAGIC %md
 # MAGIC ## Next
 # MAGIC
-# MAGIC [Chapter 5: REST](../../L200-real-agents/lab-5-rest/) - call an external HTTP API.
+# MAGIC [Lab 5: REST](../../L200-real-agents/lab-5-rest/) - call an external HTTP API.

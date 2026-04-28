@@ -116,7 +116,7 @@ params: dict[str, str] = {
 # MAGIC ### 3c. Declare the agent
 # MAGIC
 # MAGIC An `agent` ties together a model, optional tools, and a system
-# MAGIC prompt. Chapter 1 has no tools.
+# MAGIC prompt. Lab 1 has no tools.
 # MAGIC
 # MAGIC ```yaml
 # MAGIC agents:
@@ -233,6 +233,6 @@ print(f"Deployed app: {config.app.name}")
 # MAGIC %md
 # MAGIC ## Next
 # MAGIC
-# MAGIC [Chapter 2](../lab-2-uc-tools/) -- give the agent
+# MAGIC [Lab 2](../lab-2-uc-tools/) -- give the agent
 # MAGIC real tools (Unity Catalog SQL functions) so it stops guessing
 # MAGIC about products and queries a governed table instead.

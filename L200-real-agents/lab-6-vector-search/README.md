@@ -50,4 +50,4 @@ Deployed app name: `saas-helpdesk-<your-username>`.
 
 ## Next
 
-[Chapter 7](../lab-7-memory/) -- give the support agent persistent memory so returning customers don't have to repeat themselves.
+[Lab 7](../lab-7-memory/) -- give the support agent persistent memory so returning customers don't have to repeat themselves.
