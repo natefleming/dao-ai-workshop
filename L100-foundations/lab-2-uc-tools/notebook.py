@@ -81,47 +81,24 @@ params: dict[str, str] = {
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 3 - Provision shared resources
+# MAGIC ## Step 3 - Walk the steps
 # MAGIC
-# MAGIC Use the **final** config to create the schema, seed the products
-# MAGIC table, and register both UC functions up front. `.create()` is
-# MAGIC idempotent, so running this once is enough for the whole
-# MAGIC notebook -- every step file will find the resources it needs
-# MAGIC already in place.
-
-# COMMAND ----------
-
-from dao_ai.config import AppConfig
-
-final_config: AppConfig = AppConfig.from_file("03_product_assistant_with_catalog_search.yaml", params=params)
-
-for schema in final_config.schemas.values():
-    schema.create()
-    print(f"Schema ready:   {schema.full_name}")
-
-for dataset in final_config.datasets:
-    dataset.create()
-    print(f"Table loaded:   {dataset.table.full_name}")
-
-for uc_fn in final_config.unity_catalog_functions:
-    uc_fn.create()
-    print(f"Function ready: {uc_fn.function.full_name}")
+# MAGIC Each step config self-declares the resources it needs in its own
+# MAGIC `schemas:` / `datasets:` / `unity_catalog_functions:` blocks. We
+# MAGIC provision **per step** (only what that step's config introduces),
+# MAGIC not all upfront. `.create()` is idempotent so when step 3 reuses
+# MAGIC the schema and table from step 2, those calls are no-ops.
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 4 - Walk the steps
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ### 4a. `01_product_assistant.yaml` -- ungrounded baseline
+# MAGIC ### 3a. `01_product_assistant.yaml` -- ungrounded baseline
 # MAGIC
-# MAGIC Just an LLM with a prompt. No tools. Watch what happens when
-# MAGIC the agent has to answer a SKU-specific question without any way
-# MAGIC to look up real data: it will either guess or correctly admit
-# MAGIC it doesn't know -- both are fine. **The point is to feel what
-# MAGIC ungrounded looks like.**
+# MAGIC Just an LLM with a prompt. No tools, no UC resources to provision.
+# MAGIC Watch what happens when the agent has to answer a SKU-specific
+# MAGIC question without any way to look up real data: it will either
+# MAGIC guess or correctly admit it doesn't know -- both are fine.
+# MAGIC **The point is to feel what ungrounded looks like.**
 # MAGIC
 # MAGIC ```yaml
 # MAGIC # The whole config:
@@ -137,6 +114,8 @@ for uc_fn in final_config.unity_catalog_functions:
 
 # COMMAND ----------
 
+from dao_ai.config import AppConfig
+
 config_step1: AppConfig = AppConfig.from_file("01_product_assistant.yaml", params=params)
 agent_step1: CompiledStateGraph = config_step1.as_graph()
 
@@ -148,7 +127,7 @@ print(response["messages"][-1].content)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### 4b. `02_product_assistant_with_sku_lookup.yaml` -- adds SKU lookup
+# MAGIC ### 3b. `02_product_assistant_with_sku_lookup.yaml` -- adds SKU lookup
 # MAGIC
 # MAGIC New blocks since step 1 (diff this against `01_product_chat`):
 # MAGIC
@@ -170,12 +149,30 @@ print(response["messages"][-1].content)
 # MAGIC     tools: [*sku_lookup_tool]   # <-- agent now has one tool
 # MAGIC ```
 # MAGIC
-# MAGIC The same SKU question now triggers a real tool call. Watch the
-# MAGIC MLflow trace for the `find_product_by_sku` span.
+# MAGIC Provision the resources this step introduces -- the schema, the
+# MAGIC products table (datasets), and the `find_product_by_sku` UC
+# MAGIC function -- then run the same SKU question. It now triggers a
+# MAGIC real tool call. Watch the MLflow trace for the
+# MAGIC `find_product_by_sku` span.
 
 # COMMAND ----------
 
 config_step2: AppConfig = AppConfig.from_file("02_product_assistant_with_sku_lookup.yaml", params=params)
+
+for schema in config_step2.schemas.values():
+    schema.create()
+    print(f"Schema ready:   {schema.full_name}")
+
+for dataset in config_step2.datasets:
+    dataset.create()
+    print(f"Table loaded:   {dataset.table.full_name}")
+
+for uc_fn in config_step2.unity_catalog_functions:
+    uc_fn.create()
+    print(f"Function ready: {uc_fn.function.full_name}")
+
+# COMMAND ----------
+
 agent_step2: CompiledStateGraph = config_step2.as_graph()
 
 response: dict[str, Any] = await agent_step2.ainvoke(
@@ -201,7 +198,7 @@ print(response["messages"][-1].content)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### 4c. `03_product_assistant_with_catalog_search.yaml` -- adds category browsing (final)
+# MAGIC ### 3c. `03_product_assistant_with_catalog_search.yaml` -- adds category browsing (final)
 # MAGIC
 # MAGIC New blocks since step 2:
 # MAGIC
@@ -222,11 +219,27 @@ print(response["messages"][-1].content)
 # MAGIC       ...rules teaching the model when to pick which tool...
 # MAGIC ```
 # MAGIC
-# MAGIC Now both kinds of questions get grounded answers.
+# MAGIC Provision the new function (the schema + table + sku_lookup
+# MAGIC function from step 2 are already in place, so those `.create()`
+# MAGIC calls are idempotent no-ops). Now both kinds of questions get
+# MAGIC grounded answers.
 
 # COMMAND ----------
 
 config: AppConfig = AppConfig.from_file("03_product_assistant_with_catalog_search.yaml", params=params)
+
+for schema in config.schemas.values():
+    schema.create()
+
+for dataset in config.datasets:
+    dataset.create()
+
+for uc_fn in config.unity_catalog_functions:
+    uc_fn.create()
+    print(f"Function ready: {uc_fn.function.full_name}")
+
+# COMMAND ----------
+
 agent: CompiledStateGraph = config.as_graph()
 
 try:
@@ -251,7 +264,7 @@ print(response["messages"][-1].content)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 5 - Deploy as a Databricks App
+# MAGIC ## Step 4 - Deploy as a Databricks App
 # MAGIC
 # MAGIC The final step config (`03_product_assistant_with_catalog_search.yaml`)
 # MAGIC is the deploy artifact. Generate an Asset Bundle from it and deploy.
