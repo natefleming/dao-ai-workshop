@@ -4,14 +4,14 @@
 
 ## Goals
 
-- Read a 30-line `dao_ai.yaml` and understand each top-level section.
+- Read a 30-line `greeter.yaml` and understand each top-level section.
 - Auto-derive a per-student `username` and inject it via `params={...}`.
 - Compile the YAML to a runnable agent with `AppConfig.from_file(...).as_graph()`.
 - Deploy as a Databricks App with one call: `config.deploy_agent(target=DeploymentTarget.APPS)`.
 
 ## Deliverable
 
-A live `greeter-hw-<your-username>` Databricks App that responds to `"Hi! Is this thing on?"`.
+A live `hardware-store-<your-username>` Databricks App that responds to `"Hi! Is this thing on?"`.
 
 ---
 
@@ -44,7 +44,7 @@ A live `greeter-hw-<your-username>` Databricks App that responds to `"Hi! Is thi
 
 Open `notebook.py` on Serverless compute and run cell by cell. The notebook auto-derives `username` from your Databricks short name, builds the agent, invokes it locally, then deploys.
 
-Deployed app name: `greeter-hw-<your-username>` (e.g. `greeter-hw-jane-doe`).
+Deployed app name: `hardware-store-<your-username>` (e.g. `hardware-store-jane-doe`).
 
 ## Next
 

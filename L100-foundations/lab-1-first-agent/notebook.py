@@ -6,14 +6,14 @@
 # MAGIC
 # MAGIC ## Goals
 # MAGIC
-# MAGIC - Read a 30-line `dao_ai.yaml` and understand each top-level section.
+# MAGIC - Read a 30-line `greeter.yaml` and understand each top-level section.
 # MAGIC - Auto-derive a per-student `username` and inject it via `params={...}`.
 # MAGIC - Compile the YAML to a runnable agent with `AppConfig.from_file(...).as_graph()`.
 # MAGIC - Deploy as a Databricks App with one call: `config.deploy_agent(target=DeploymentTarget.APPS)`.
 # MAGIC
 # MAGIC ## Deliverable
 # MAGIC
-# MAGIC A live `greeter-hw-<your-username>` Databricks App that responds to `"Hi! Is this thing on?"`.
+# MAGIC A live `hardware-store-<your-username>` Databricks App that responds to `"Hi! Is this thing on?"`.
 
 # COMMAND ----------
 
@@ -137,7 +137,7 @@ params: dict[str, str] = {
 # MAGIC
 # MAGIC ```yaml
 # MAGIC app:
-# MAGIC   name: greeter-hw-${var.username}
+# MAGIC   name: hardware-store-${var.username}
 # MAGIC   deployment_target: apps
 # MAGIC   agents: [*greeter]
 # MAGIC   orchestration:

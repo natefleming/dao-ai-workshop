@@ -97,7 +97,7 @@ agents:
       what else you can do.
 
 app:
-  name: hitl-refund-${var.username}
+  name: saas-helpdesk-${var.username}
   description: "Lab 10: HITL-gated refund tool over a tier-1 support agent"
   log_level: INFO
   deployment_target: apps
@@ -109,12 +109,6 @@ app:
     memory: *memory
     swarm:
       default_agent: *support_agent
-
-  input_example:
-    messages:
-      - role: user
-        content: "Hi, I was charged $49.99 twice for order ORD-1234 -- I'd like a refund of $49.99 for the duplicate."
-
 # Self-contained provisioning: just the issue_refund UC function.
 unity_catalog_functions:
   - function: *issue_refund

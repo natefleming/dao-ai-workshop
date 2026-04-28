@@ -10,7 +10,7 @@
 
 ## Deliverable
 
-A `hitl-refund-<your-username>` agent that, when asked to refund a duplicate charge, pauses with the proposed `(order_id, amount, reason)` arguments. Approving resumes the run and the tool returns; rejecting cancels with feedback that the agent then explains back to the customer.
+A `saas-helpdesk-<your-username>` agent that, when asked to refund a duplicate charge, pauses with the proposed `(order_id, amount, reason)` arguments. Approving resumes the run and the tool returns; rejecting cancels with feedback that the agent then explains back to the customer.
 
 ---
 
@@ -64,7 +64,7 @@ Open `notebook.py`. Set the `catalog` widget. The notebook walks the YAML, provi
 1. **Approve** a $49.99 duplicate refund → tool runs → agent confirms.
 2. **Reject** a $200 unhappy-customer refund with manager-escalation feedback → tool is skipped → agent explains the escalation to the customer.
 
-Deployed app name: `hitl-refund-<your-username>`.
+Deployed app name: `saas-helpdesk-<your-username>`.
 
 ## When to reach for HITL
 

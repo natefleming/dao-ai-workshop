@@ -176,19 +176,13 @@ agents:
       customer's stated constraints.
 
 app:
-  name: instructed-search-${var.username}
+  name: hardware-store-${var.username}
   description: "Lab 11 (L300): instructed retrieval over the products catalog"
   log_level: INFO
   deployment_target: apps
 
   agents:
     - *catalog_advisor
-
-
-  input_example:
-    messages:
-      - role: user
-        content: "Show me Milwaukee power tools under $100 -- I'm comparing options for a kitchen refinishing project."
 
 datasets:
   # Self-contained: DROP + CREATE + INSERT in one DDL with the full

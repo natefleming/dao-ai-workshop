@@ -42,13 +42,9 @@ agents:
       so be honest when you don't know specifics like SKUs or prices.
 
 app:
-  name: products-hw-${var.username}
+  name: hardware-store-${var.username}
   description: "Workshop chapter 2 - step 1: product_chat (no tools)"
   log_level: INFO
   deployment_target: apps
   agents:
     - *product_agent
-  input_example:
-    messages:
-      - role: user
-        content: "What power tools do you have under $100?"

@@ -66,7 +66,7 @@ agents:
       language. Do not make up numbers.
 
 app:
-  name: product-genie-${var.username}
+  name: hardware-store-${var.username}
   description: "Workshop module 3: Genie Space as a tool"
   log_level: INFO
 
@@ -75,8 +75,3 @@ app:
   agents:
     - *analyst
 
-
-  input_example:
-    messages:
-      - role: user
-        content: "How many products do we have per category?"

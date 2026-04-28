@@ -134,7 +134,7 @@ agents:
       for next time.
 
 app:
-  name: cached-analyst-${var.username}
+  name: hardware-store-${var.username}
   description: "Lab 12 (L300): Genie with L1 LRU + L2 context-aware caches"
   log_level: INFO
   deployment_target: apps
@@ -142,8 +142,3 @@ app:
   agents:
     - *cached_analyst
 
-
-  input_example:
-    messages:
-      - role: user
-        content: "How many products do we have per category?"

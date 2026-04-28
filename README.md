@@ -65,23 +65,14 @@ L100 builds a hardware-store retail assistant. L200 switches to a SaaS support c
 
 Every lab's `app.name` is parameterized with `${var.username}`. The notebook auto-derives a sanitized short-name from your Databricks identity and injects it into `params={...}`, so multiple students can deploy to the same workspace without app-name collisions.
 
-Resulting deployed names are short and theme-specific:
+**Apps are reused per use case.** Each Databricks Apps deploy redeploys the use case's existing app rather than creating a new one — only the description and underlying agent change between labs. This keeps the workspace's app count manageable across the 13 labs:
 
-| Lab | Deployed app name |
-|---|---|
-| Lab 1 | `greeter-hw-jane-doe` |
-| Lab 2 | `products-hw-jane-doe` |
-| Lab 3 | `product-genie-jane-doe` |
-| Lab 4 | `products-mcp-jane-doe` |
-| Lab 5 | `status-check-jane-doe` |
-| Lab 6 | `kb-search-jane-doe` |
-| Lab 7 | `support-history-jane-doe` |
-| Lab 8 | `safe-support-jane-doe` |
-| Lab 9 | `tier-routing-jane-doe` |
-| Lab 10 | `hitl-refund-jane-doe` |
-| Lab 11 | `instructed-search-jane-doe` |
-| Lab 12 | `cached-analyst-jane-doe` |
-| Lab 13 | `programmatic-jane-doe` |
+| Use case | Labs | Deployed app name |
+|---|---|---|
+| Hardware store (L100 + L300) | Lab 1 · 2 · 3 · 4 · 11 · 12 · 13 | `hardware-store-jane-doe` |
+| SaaS helpdesk (L200) | Lab 5 · 6 · 7 · 8 · 9 · 10 | `saas-helpdesk-jane-doe` |
+
+Each lab's `app.description` updates to reflect what that lab's redeploy adds, so you can see in the Databricks Apps UI which lab last deployed.
 
 All names fit within the 30-character Databricks Apps limit.
 

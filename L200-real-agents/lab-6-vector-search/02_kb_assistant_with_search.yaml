@@ -101,17 +101,12 @@ agents:
       language. Cite the KB article title.
 
 app:
-  name: kb-search-${var.username}
+  name: saas-helpdesk-${var.username}
   description: "Workshop chapter 6 - step 2: kb_assistant_with_search"
   log_level: INFO
   deployment_target: apps
   agents:
     - *kb_assistant
-  input_example:
-    messages:
-      - role: user
-        content: "How do I rotate my API keys without downtime?"
-
 datasets:
   - table:
       schema: *workshop_schema

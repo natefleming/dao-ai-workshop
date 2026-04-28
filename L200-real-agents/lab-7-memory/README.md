@@ -11,7 +11,7 @@
 
 ## Deliverable
 
-A `support-history-<your-username>` agent where Jordan opens a new thread and the agent recalls the prior issue (e.g. *"You were investigating a 401 error -- did that resolve?"*), and a long thread that triggers chat-history summarization mid-conversation.
+A `saas-helpdesk-<your-username>` agent where Jordan opens a new thread and the agent recalls the prior issue (e.g. *"You were investigating a 401 error -- did that resolve?"*), and a long thread that triggers chat-history summarization mid-conversation.
 
 ---
 
@@ -41,7 +41,7 @@ All persistence is backed by Databricks **Lakebase** (managed Postgres).
 
 Open `notebook.py`. Set the Lakebase widgets if your instance differs from the default. The notebook deliberately sets `max_tokens_before_summary` low (1500) so summarization fires within ~7 demo turns; production defaults are 6000 / 2048.
 
-Deployed app name: `support-history-<your-username>`.
+Deployed app name: `saas-helpdesk-<your-username>`.
 
 ## Next
 

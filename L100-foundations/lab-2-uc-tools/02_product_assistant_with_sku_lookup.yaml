@@ -72,17 +72,12 @@ agents:
         - Summarize results in plain language. Include price and stock.
 
 app:
-  name: products-hw-${var.username}
+  name: hardware-store-${var.username}
   description: "Workshop chapter 2 - step 2: sku_lookup"
   log_level: INFO
   deployment_target: apps
   agents:
     - *product_agent
-  input_example:
-    messages:
-      - role: user
-        content: "Tell me about SKU-0001."
-
 unity_catalog_functions:
   - function: *find_product_by_sku
     ddl: ./functions/find_product_by_sku.sql

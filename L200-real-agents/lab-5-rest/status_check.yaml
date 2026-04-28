@@ -55,13 +55,9 @@ agents:
       and description in plain language.
 
 app:
-  name: status-check-${var.username}
+  name: saas-helpdesk-${var.username}
   description: "Workshop chapter 5 (saas_helpdesk): REST status-page tool"
   log_level: INFO
   deployment_target: apps
   agents:
     - *status_agent
-  input_example:
-    messages:
-      - role: user
-        content: "Is GitHub having an outage right now?"

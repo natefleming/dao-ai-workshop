@@ -42,7 +42,7 @@ A `status-check` agent that answers `"Is GitHub having an outage right now?"` by
 
 Open `notebook.py`. No catalog needed.
 
-Deployed app name: `status-check-<your-username>`.
+Deployed app name: `saas-helpdesk-<your-username>`.
 
 ## Next
 

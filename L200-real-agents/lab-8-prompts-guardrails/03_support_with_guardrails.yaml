@@ -84,13 +84,9 @@ agents:
       - *accuracy_guardrail
 
 app:
-  name: safe-support-${var.username}
+  name: saas-helpdesk-${var.username}
   description: "Workshop chapter 8: prompt registry + accuracy guardrail"
   log_level: INFO
   deployment_target: apps
   agents:
     - *support_agent
-  input_example:
-    messages:
-      - role: user
-        content: "What's the SLA for critical support tickets?"

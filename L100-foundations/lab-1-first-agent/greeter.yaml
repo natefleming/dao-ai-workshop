@@ -35,7 +35,7 @@ agents:
       and tell them they have successfully run a dao-ai agent.
 
 app:
-  name: greeter-hw-${var.username}
+  name: hardware-store-${var.username}
   description: "Workshop chapter 1 (hardware_store): hello world greeter"
   log_level: INFO
   deployment_target: apps
@@ -43,8 +43,3 @@ app:
   agents:
     - *greeter
 
-
-  input_example:
-    messages:
-      - role: user
-        content: "Hi! Is this thing on?"

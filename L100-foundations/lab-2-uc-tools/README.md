@@ -46,7 +46,7 @@ An agent that answers `"What Power Tools do you have under $100?"` by calling `f
 
 Open `notebook.py`. Set the `catalog` widget to your workshop catalog. The notebook provisions once with the final config, then walks through each step file in turn so you can compare the agent's behavior at each stage.
 
-Deployed app name: `products-hw-<your-username>`.
+Deployed app name: `hardware-store-<your-username>`.
 
 ## Next
 

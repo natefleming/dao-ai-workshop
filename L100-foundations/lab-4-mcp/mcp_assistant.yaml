@@ -93,7 +93,7 @@ agents:
       three-part name: catalog.schema.table_name.
 
 app:
-  name: products-mcp-${var.username}
+  name: hardware-store-${var.username}
   description: "Workshop chapter 4: managed MCP tools"
   log_level: INFO
 
@@ -101,12 +101,6 @@ app:
 
   agents:
     - *mcp_agent
-
-
-  input_example:
-    messages:
-      - role: user
-        content: "List 3 power tools from our catalog."
 
 # Self-contained provisioning: products table + UC functions that MCP
 # will discover. The notebook calls dataset.create() and uc_fn.create()

@@ -41,7 +41,7 @@ An `analyst` agent that answers `"How many products do we have per category?"` b
 
 Open `notebook.py`. Set the `genie_space_id` widget to the ID you copied. The notebook builds the agent and asks an analytical question that would have required a new UC function in chapter 2.
 
-Deployed app name: `product-genie-<your-username>`.
+Deployed app name: `hardware-store-<your-username>`.
 
 ## Next
 

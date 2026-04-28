@@ -11,7 +11,7 @@
 
 ## Deliverable
 
-A `cached-analyst-<your-username>` agent where the same analytical question runs in `O(seconds)` on the first call and `O(milliseconds)` on the second/third (L1 hit), and a re-phrasing of the question is also served from cache (L2 hit).
+A `hardware-store-<your-username>` agent where the same analytical question runs in `O(seconds)` on the first call and `O(milliseconds)` on the second/third (L1 hit), and a re-phrasing of the question is also served from cache (L2 hit).
 
 ---
 
@@ -54,7 +54,7 @@ The cache stores the **generated SQL**, not the answer. On a hit, the SQL is re-
 
 Open `notebook.py`. Set `genie_space_id` and `warehouse_id` widgets. The notebook walks L1 hits, then L2 hits, then deploys.
 
-Deployed app name: `cached-analyst-<your-username>`.
+Deployed app name: `hardware-store-<your-username>`.
 
 ## In-memory vs. database-backed
 

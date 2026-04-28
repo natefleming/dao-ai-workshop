@@ -44,7 +44,7 @@ A `tier-routing` app where a refund question routes to escalation, a 500-error q
 
 Open `notebook.py`. The notebook walks both patterns side by side.
 
-Deployed app name: `tier-routing-<your-username>`.
+Deployed app name: `saas-helpdesk-<your-username>`.
 
 ## Next
 

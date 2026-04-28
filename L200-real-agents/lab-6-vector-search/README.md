@@ -46,7 +46,7 @@ A `kb-search` agent that answers `"How do I rotate my API keys without downtime?
 
 Open `notebook.py`. Set `catalog` widget. **First-run provisioning takes 5-10 minutes** as the index builds; subsequent runs are fast.
 
-Deployed app name: `kb-search-<your-username>`.
+Deployed app name: `saas-helpdesk-<your-username>`.
 
 ## Next
 

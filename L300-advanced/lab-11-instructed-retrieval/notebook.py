@@ -13,7 +13,7 @@
 # MAGIC
 # MAGIC ## Deliverable
 # MAGIC
-# MAGIC An `instructed-search-<your-username>` agent that handles filter-rich, intent-laden product queries -- the kind that pure ANN+rerank from Lab 6 couldn't disambiguate.
+# MAGIC An `hardware-store-<your-username>` agent that handles filter-rich, intent-laden product queries -- the kind that pure ANN+rerank from Lab 6 couldn't disambiguate.
 
 # COMMAND ----------
 

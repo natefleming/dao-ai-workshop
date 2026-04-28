@@ -137,7 +137,7 @@ memory: &memory
     query_model: *fast_llm
 
 app:
-  name: support-history-${var.username}
+  name: saas-helpdesk-${var.username}
   description: "Lab 7: persistent memory + chat-history summarization"
   log_level: INFO
   deployment_target: apps
@@ -157,8 +157,3 @@ app:
     model: *summarization_llm
     max_tokens: ${var.max_tokens_after_summary}
     max_tokens_before_summary: ${var.max_tokens_before_summary}
-
-  input_example:
-    messages:
-      - role: user
-        content: "Hi, I'm Jordan. Do you remember what I asked about last week?"

@@ -53,13 +53,9 @@ agents:
     prompt: *support_prompt
 
 app:
-  name: safe-support-${var.username}
+  name: saas-helpdesk-${var.username}
   description: "Workshop chapter 8 - step 2: support with managed prompts"
   log_level: INFO
   deployment_target: apps
   agents:
     - *support_agent
-  input_example:
-    messages:
-      - role: user
-        content: "What's the SLA for critical support tickets?"

@@ -40,7 +40,7 @@ An `mcp_assistant` that answers both a UC-function question (`"List 3 power tool
 
 Open `notebook.py`. Set the `catalog` widget. The notebook tests both an MCP-discovered UC function call and a serverless SQL call.
 
-Deployed app name: `products-mcp-<your-username>`.
+Deployed app name: `hardware-store-<your-username>`.
 
 ## Next
 

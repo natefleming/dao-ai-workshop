@@ -320,7 +320,7 @@ The deployable shape: which agents are in the deployment, how they're wired toge
 
 ```yaml
 app:
-  name: tier-routing-${var.username}
+  name: saas-helpdesk-${var.username}
   description: "Multi-tier support routing"
   deployment_target: apps                  # apps | model_serving
   agents:

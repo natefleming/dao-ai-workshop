@@ -89,7 +89,7 @@ agents:
       "We need an exception to the data retention policy."
 
 app:
-  name: tier-routing-${var.username}
+  name: saas-helpdesk-${var.username}
   description: "Workshop chapter 9: tier-1 / tier-2 / escalation supervisor"
   log_level: INFO
   deployment_target: apps
@@ -106,8 +106,3 @@ app:
           - tier1_support  : how-to, policy lookups, account questions
           - tier2_engineer : bugs, errors, broken integrations
           - escalation_lead: refunds, credits, contract exceptions
-
-  input_example:
-    messages:
-      - role: user
-        content: "I'm getting a 500 error from your API since yesterday's deploy."

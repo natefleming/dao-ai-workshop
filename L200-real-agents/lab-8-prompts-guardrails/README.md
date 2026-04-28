@@ -46,7 +46,7 @@ A `safe-support` agent that, when asked for a critical-ticket SLA it doesn't kno
 
 Open `notebook.py`. Set `catalog` widget. After step 2 runs, open the **Prompts** tab in MLflow to see your auto-registered prompts.
 
-Deployed app name: `safe-support-<your-username>`.
+Deployed app name: `saas-helpdesk-<your-username>`.
 
 ## Next
 

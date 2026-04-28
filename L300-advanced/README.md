@@ -31,8 +31,8 @@ Lab-specific requirements:
 ## What you'll have at the end
 
 Two deployed Databricks Apps:
-- `instructed-search-<your-username>` -- handles filter-rich, intent-laden product queries.
-- `cached-analyst-<your-username>` -- serves repeat / near-duplicate analytical questions from cache, falling through to Genie only on novel queries.
+- `hardware-store-<your-username>` -- handles filter-rich, intent-laden product queries.
+- `hardware-store-<your-username>` -- serves repeat / near-duplicate analytical questions from cache, falling through to Genie only on novel queries.
 
 ## Going deeper
 

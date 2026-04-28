@@ -11,7 +11,7 @@
 
 ## Deliverable
 
-An `instructed-search-<your-username>` agent that handles filter-rich, intent-laden product queries -- the kind that pure ANN+rerank from Lab 6 couldn't disambiguate.
+An `hardware-store-<your-username>` agent that handles filter-rich, intent-laden product queries -- the kind that pure ANN+rerank from Lab 6 couldn't disambiguate.
 
 ---
 
@@ -45,7 +45,7 @@ This lab is **self-contained** -- it creates its own products table and extends 
 
 Open `notebook.py`. Set `catalog`. The notebook provisions the products table, extends it, builds the index, and runs two filter-heavy queries that exercise the decomposition + reranking stack.
 
-Deployed app name: `instructed-search-<your-username>`.
+Deployed app name: `hardware-store-<your-username>`.
 
 ## Next
 

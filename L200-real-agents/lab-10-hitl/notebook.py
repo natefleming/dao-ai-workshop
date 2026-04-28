@@ -12,7 +12,7 @@
 # MAGIC
 # MAGIC ## Deliverable
 # MAGIC
-# MAGIC A `hitl-refund-<your-username>` agent that, when asked to refund a duplicate charge, pauses with the proposed `(order_id, amount, reason)` arguments. Approving resumes the run and the tool returns; rejecting cancels with feedback the agent then explains.
+# MAGIC A `saas-helpdesk-<your-username>` agent that, when asked to refund a duplicate charge, pauses with the proposed `(order_id, amount, reason)` arguments. Approving resumes the run and the tool returns; rejecting cancels with feedback the agent then explains.
 
 # COMMAND ----------
 

@@ -91,7 +91,7 @@ agents:
       Refunds, credits, contract exceptions, billing disputes.
 
 app:
-  name: tier-routing-${var.username}
+  name: saas-helpdesk-${var.username}
   description: "Workshop chapter 9: tier swarm with directed routes"
   log_level: INFO
   deployment_target: apps
@@ -122,8 +122,3 @@ app:
         # one back to tier2_engineer would form a cycle with the
         # deterministic edge above and AppConfig load would error.
         escalation_lead: []
-
-  input_example:
-    messages:
-      - role: user
-        content: "Our webhook deliveries have been failing for a week, and I want a credit for the downtime."

@@ -13,7 +13,7 @@
 # MAGIC
 # MAGIC ## Deliverable
 # MAGIC
-# MAGIC A `cached-analyst-<your-username>` agent where the same analytical question runs in `O(seconds)` on the first call and `O(milliseconds)` on the second/third (L1 hit), and a re-phrasing of the question is also served from cache (L2 hit).
+# MAGIC A `hardware-store-<your-username>` agent where the same analytical question runs in `O(seconds)` on the first call and `O(milliseconds)` on the second/third (L1 hit), and a re-phrasing of the question is also served from cache (L2 hit).
 
 # COMMAND ----------
 

@@ -13,7 +13,7 @@
 # MAGIC
 # MAGIC ## Deliverable
 # MAGIC
-# MAGIC A `support-history-<your-username>` agent where Jordan opens a new thread and the agent recalls the prior issue (e.g. `"You were investigating a 401 error -- did that resolve?"`), and a long thread that triggers chat-history summarization mid-conversation.
+# MAGIC A `saas-helpdesk-<your-username>` agent where Jordan opens a new thread and the agent recalls the prior issue (e.g. `"You were investigating a 401 error -- did that resolve?"`), and a long thread that triggers chat-history summarization mid-conversation.
 
 # COMMAND ----------
 

@@ -34,7 +34,7 @@ resources:
       name: ${var.llm_endpoint}
 
 agents:
-  greeter:
+  greeter: &greeter
     name: greeter
     model: *default_llm
     prompt: |
@@ -43,9 +43,6 @@ agents:
 app:
   name: greeter-${var.username}
   agents: [*greeter]
-  orchestration:
-    swarm:
-      default_agent: *greeter
 ```
 
 That's a complete, deployable agent. You'll write something very close to this in Lab 1.

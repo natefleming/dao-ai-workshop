@@ -85,17 +85,12 @@ agents:
         - Summarize results in plain language. Include price and stock.
 
 app:
-  name: products-hw-${var.username}
+  name: hardware-store-${var.username}
   description: "Workshop module 2: declarative UC function tools"
   log_level: INFO
   deployment_target: apps
   agents:
     - *product_agent
-  input_example:
-    messages:
-      - role: user
-        content: "What power tools do you have under $100?"
-
 unity_catalog_functions:
   - function: *find_product_by_sku
     ddl: ./functions/find_product_by_sku.sql

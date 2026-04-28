@@ -12,7 +12,7 @@
 # MAGIC
 # MAGIC ## Deliverable
 # MAGIC
-# MAGIC A `programmatic-<your-username>` agent that does everything Lab 4's MCP agent does -- discovers UC functions in the workshop schema, runs ad-hoc SQL via the managed SQL MCP, and answers product questions over the provisioned `products` table -- built end-to-end from Python.
+# MAGIC A `hardware-store-<your-username>` agent that does everything Lab 4's MCP agent does -- discovers UC functions in the workshop schema, runs ad-hoc SQL via the managed SQL MCP, and answers product questions over the provisioned `products` table -- built end-to-end from Python. Reuses the L100 hardware_store app slot; redeploying replaces the previous lab's agent with this one.
 
 # COMMAND ----------
 
@@ -163,8 +163,8 @@ unity_catalog_functions: list[UnityCatalogFunctionSqlModel] = [
 
 # 3g. The deployable app (YAML: app:).
 app: AppModel = AppModel(
-    name=f"programmatic-{username}",
-    description="Lab 13: Lab 4's MCP agent built in pure Python.",
+    name=f"hardware-store-{username}",
+    description="Lab 13 (hardware_store): Lab 4's MCP agent built in pure Python.",
     log_level="INFO",
     deployment_target=DeploymentTarget.APPS,
     agents=[mcp_agent],
