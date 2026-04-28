@@ -20,6 +20,7 @@ parameters:
   llm_endpoint:
     description: Databricks LLM serving endpoint name.
     default: databricks-claude-sonnet-4-5
+  # NEW in step 3 (vs step 2): now actually used (was declared for parity in step 2).
   judge_llm_endpoint:
     description: LLM endpoint used by the guardrail judge.
     default: databricks-claude-sonnet-4-5
@@ -36,6 +37,9 @@ resources:
       temperature: 0.2
       max_tokens: 4096
 
+    # NEW in step 3: judge_llm -- a separate LLM that scores agent
+    # outputs. Higher temperature than default_llm so it'll surface
+    # more diverse failure-mode reasoning during evaluation.
     judge_llm: &judge_llm
       name: ${var.judge_llm_endpoint}
       temperature: 0.3
@@ -51,6 +55,8 @@ prompts:
       If you don't know an answer, say so honestly rather than guessing.
       Reference KB articles or ticket numbers when relevant.
 
+  # NEW in step 3: a second registry-managed prompt used by the
+  # accuracy guardrail's judge. Editable in MLflow without redeploying.
   accuracy_guardrail_prompt: &accuracy_guardrail_prompt
     schema: *workshop_schema
     name: accuracy_guardrail_prompt
@@ -67,6 +73,9 @@ prompts:
       Rate true if the response is grounded and honest about
       uncertainty; false if it invents specifics.
 
+# NEW in step 3: guardrails block. The judge runs after every agent
+# turn, evaluates the output via accuracy_guardrail_prompt, and
+# triggers up to `num_retries` retries when the verdict is false.
 guardrails:
   accuracy_guardrail: &accuracy_guardrail
     name: accuracy_check
@@ -80,6 +89,8 @@ agents:
     description: A guardrailed support assistant using registry prompts.
     model: *default_llm
     prompt: *support_prompt
+    # NEW in step 3: agent.guardrails list. Step 2's agent had no
+    # guardrails -- responses went straight to the user.
     guardrails:
       - *accuracy_guardrail
 

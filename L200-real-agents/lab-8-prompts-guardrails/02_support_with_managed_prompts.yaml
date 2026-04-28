@@ -23,6 +23,8 @@ parameters:
     description: Judge LLM endpoint (declared for parity with step 3; unused here).
     default: databricks-claude-sonnet-4-5
 
+# NEW in step 2 (vs step 1): schemas block. Required because the
+# Prompt Registry entry below is namespaced into a UC schema.
 schemas:
   workshop_schema: &workshop_schema
     catalog_name: ${var.catalog}
@@ -35,6 +37,11 @@ resources:
       temperature: 0.2
       max_tokens: 4096
 
+# NEW in step 2: prompts block. The agent now references a registry-
+# managed prompt via *support_prompt rather than carrying the prompt
+# text inline. dao-ai will create the prompt entry on first deploy
+# using `default_template` and re-fetch the latest version on
+# subsequent loads.
 prompts:
   support_prompt: &support_prompt
     schema: *workshop_schema
@@ -50,6 +57,8 @@ agents:
     name: support_agent
     description: A support assistant with a registry-managed prompt.
     model: *default_llm
+    # NEW in step 2: prompt is now a *support_prompt alias (a
+    # registry reference) rather than an inline string.
     prompt: *support_prompt
 
 app:

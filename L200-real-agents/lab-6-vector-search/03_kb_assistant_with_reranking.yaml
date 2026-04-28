@@ -26,6 +26,7 @@ parameters:
   vector_search_endpoint:
     description: Vector Search endpoint name (must already exist).
     default: dao_ai_workshop_vs
+  # NEW in step 3 (vs step 2): cross-encoder reranker model.
   reranker_model:
     description: FlashRank cross-encoder model.
     default: ms-marco-MiniLM-L-12-v2
@@ -47,12 +48,12 @@ resources:
 
   vector_stores:
     kb_vs: &kb_vs
-      # On-Behalf-Of-User: queries against this index run as the
-      # caller (Databricks Apps forwards x-forwarded-access-token,
-      # Model Serving uses ModelServingUserCredentials). With OBO
-      # the agent only ever returns rows the calling user has UC
-      # SELECT on; without OBO the app's service principal would
-      # see every row.
+      # NEW in step 3: On-Behalf-Of-User. Queries against this index
+      # run as the caller (Databricks Apps forwards
+      # x-forwarded-access-token, Model Serving uses
+      # ModelServingUserCredentials). With OBO the agent only ever
+      # returns rows the calling user has UC SELECT on; without OBO
+      # the app's service principal would see every row.
       on_behalf_of_user: true
       embedding_model: *embedding_model
       endpoint:
@@ -77,8 +78,12 @@ retrievers:
     vector_store: *kb_vs
     columns: [article_id, title, topic, body]
     search_parameters:
+      # NEW in step 3: widen the ANN net to 50 candidates so the
+      # reranker has more to choose from. Step 2 returned 5 directly.
       num_results: 50
       query_type: ANN
+    # NEW in step 3: cross-encoder reranks the 50 ANN candidates and
+    # keeps the top 5 most relevant. The agent only sees the top 5.
     rerank:
       model: ${var.reranker_model}
       top_n: 5

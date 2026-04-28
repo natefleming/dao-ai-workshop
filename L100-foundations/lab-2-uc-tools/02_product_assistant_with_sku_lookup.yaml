@@ -29,6 +29,8 @@ parameters:
     description: Databricks LLM serving endpoint name.
     default: databricks-claude-sonnet-4-5
 
+# NEW in step 2 (vs step 1): schemas block. The UC function below
+# binds to this schema via the *workshop_schema anchor.
 schemas:
   workshop_schema: &workshop_schema
     catalog_name: ${var.catalog}
@@ -41,11 +43,15 @@ resources:
       temperature: 0.1
       max_tokens: 4096
 
+  # NEW in step 2: resources.functions -- declares the UC function the
+  # tool below resolves against.
   functions:
     find_product_by_sku: &find_product_by_sku
       schema: *workshop_schema
       name: find_product_by_sku
 
+# NEW in step 2: tools block. Binds the UC function as a callable
+# `unity_catalog` tool the agent can invoke.
 tools:
   sku_lookup_tool: &sku_lookup_tool
     name: find_product_by_sku
@@ -58,6 +64,8 @@ agents:
     name: product_agent
     description: Answers SKU questions using a UC function; chats about everything else.
     model: *default_llm
+    # NEW in step 2: agent.tools list. The agent gets one tool now;
+    # in step 1 the agent had no tools at all.
     tools:
       - *sku_lookup_tool
     prompt: |
@@ -78,6 +86,9 @@ app:
   deployment_target: apps
   agents:
     - *product_agent
+# NEW in step 2: provisioning blocks. dao-ai uses these to materialize
+# the SQL function and the products table. Step 1 had nothing to
+# provision since it had no tools or grounded data.
 unity_catalog_functions:
   - function: *find_product_by_sku
     ddl: ./functions/find_product_by_sku.sql

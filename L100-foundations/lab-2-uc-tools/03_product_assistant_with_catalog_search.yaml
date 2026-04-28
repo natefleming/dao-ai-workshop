@@ -45,6 +45,7 @@ resources:
       schema: *workshop_schema
       name: find_product_by_sku
 
+    # NEW in step 3 (vs step 2): second UC function for category lookup.
     find_products_by_category: &find_products_by_category
       schema: *workshop_schema
       name: find_products_by_category
@@ -56,6 +57,7 @@ tools:
       type: unity_catalog
       resource: *find_product_by_sku
 
+  # NEW in step 3: a second tool wraps find_products_by_category.
   category_lookup_tool: &category_lookup_tool
     name: find_products_by_category
     function:
@@ -67,6 +69,8 @@ agents:
     name: product_agent
     description: Answers product and availability questions using UC functions.
     model: *default_llm
+    # NEW in step 3: agent now has BOTH tools, and the prompt below
+    # teaches it when to pick each one.
     tools:
       - *sku_lookup_tool
       - *category_lookup_tool
@@ -98,6 +102,7 @@ unity_catalog_functions:
       parameters:
         sku: ["SKU-0001"]
 
+  # NEW in step 3: provisioning entry for the second UC function.
   - function: *find_products_by_category
     ddl: ./functions/find_products_by_category.sql
     test:

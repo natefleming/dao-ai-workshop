@@ -31,6 +31,8 @@ parameters:
     description: Vector Search endpoint name (must already exist).
     default: dao_ai_workshop_vs
 
+# NEW in step 2 (vs step 1): schemas block. The vector store and
+# its source table both bind to this schema via *workshop_schema.
 schemas:
   workshop_schema: &workshop_schema
     catalog_name: ${var.catalog}
@@ -43,9 +45,13 @@ resources:
       temperature: 0.1
       max_tokens: 4096
 
+    # NEW in step 2: embedding_model -- the FM endpoint that produces
+    # the vectors stored in the index.
     embedding_model: &embedding_model
       name: ${var.embedding_model}
 
+  # NEW in step 2: vector_stores block. dao-ai provisions the index
+  # from `source_table` if it doesn't exist; otherwise it's reused.
   vector_stores:
     kb_vs: &kb_vs
       embedding_model: *embedding_model
@@ -66,6 +72,8 @@ resources:
         - body
         - published_at
 
+# NEW in step 2: retrievers wraps the vector store with the search
+# parameters the agent will actually use at query time.
 retrievers:
   kb_retriever: &kb_retriever
     vector_store: *kb_vs
@@ -74,6 +82,9 @@ retrievers:
       num_results: 5
       query_type: ANN
 
+# NEW in step 2: tools block. `factory` tools call a Python factory
+# (here `create_vector_search_tool`) that builds a LangChain tool
+# from the retriever above.
 tools:
   kb_search: &kb_search
     name: kb_search
@@ -92,6 +103,7 @@ agents:
     name: kb_assistant
     description: A support assistant grounded in the KB via semantic search.
     model: *default_llm
+    # NEW in step 2: agent.tools list (step 1 had no tools).
     tools:
       - *kb_search
     prompt: |
@@ -107,6 +119,8 @@ app:
   deployment_target: apps
   agents:
     - *kb_assistant
+# NEW in step 2: datasets block seeds the kb_articles table dao-ai
+# uses as the vector store's source. Step 1 had no grounded data.
 datasets:
   - table:
       schema: *workshop_schema
