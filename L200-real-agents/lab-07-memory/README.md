@@ -45,4 +45,4 @@ Deployed app name: `saas-helpdesk-<your-username>`.
 
 ## Next
 
-[Lab 8](../lab-8-prompts-guardrails/) -- managed prompts in MLflow + an accuracy guardrail that retries on hallucination.
+[Lab 8](../lab-08-prompts-guardrails/) -- managed prompts in MLflow + an accuracy guardrail that retries on hallucination.

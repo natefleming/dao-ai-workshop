@@ -45,4 +45,4 @@ Deployed app name: `hardware-store-<your-username>`.
 
 ## Next
 
-[Lab 4](../lab-4-mcp/) -- replace per-function tool declarations with **managed MCP** auto-discovery over the entire schema.
+[Lab 4](../lab-04-mcp/) -- replace per-function tool declarations with **managed MCP** auto-discovery over the entire schema.

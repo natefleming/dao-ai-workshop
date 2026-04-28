@@ -27,10 +27,10 @@ The workshop is organized as **L100 → L200 → L300**, mirroring the level sys
 
 | Lab | Title | DAO-AI concept | Path |
 |---|---|---|---|
-| **Lab 1** | Your First DAO-AI Agent | Declarative single-agent LLM | [`L100-foundations/lab-1-first-agent/`](L100-foundations/lab-1-first-agent/) |
-| **Lab 2** | Grounding with Unity Catalog Tools | UC SQL function tools | [`L100-foundations/lab-2-uc-tools/`](L100-foundations/lab-2-uc-tools/) |
-| **Lab 3** | NL Analytics with Genie | Genie Space as a tool | [`L100-foundations/lab-3-genie/`](L100-foundations/lab-3-genie/) |
-| **Lab 4** | Schema-wide Tool Discovery with MCP | Managed MCP servers | [`L100-foundations/lab-4-mcp/`](L100-foundations/lab-4-mcp/) |
+| **Lab 1** | Your First DAO-AI Agent | Declarative single-agent LLM | [`L100-foundations/lab-01-first-agent/`](L100-foundations/lab-01-first-agent/) |
+| **Lab 2** | Grounding with Unity Catalog Tools | UC SQL function tools | [`L100-foundations/lab-02-uc-tools/`](L100-foundations/lab-02-uc-tools/) |
+| **Lab 3** | NL Analytics with Genie | Genie Space as a tool | [`L100-foundations/lab-03-genie/`](L100-foundations/lab-03-genie/) |
+| **Lab 4** | Schema-wide Tool Discovery with MCP | Managed MCP servers | [`L100-foundations/lab-04-mcp/`](L100-foundations/lab-04-mcp/) |
 
 L100 also ships two **lectures** before the labs: [Setting the Stage](L100-foundations/setting-the-stage.md) and [Anatomy of a DAO-AI Config](L100-foundations/anatomy-of-a-config.md). Read these first.
 
@@ -38,11 +38,11 @@ L100 also ships two **lectures** before the labs: [Setting the Stage](L100-found
 
 | Lab | Title | DAO-AI concept | Path |
 |---|---|---|---|
-| **Lab 5** | External Integrations via REST | REST factory tools | [`L200-real-agents/lab-5-rest/`](L200-real-agents/lab-5-rest/) |
-| **Lab 6** | Knowledge-base Retrieval with Vector Search | Vector store + cross-encoder reranker | [`L200-real-agents/lab-6-vector-search/`](L200-real-agents/lab-6-vector-search/) |
-| **Lab 7** | Persistent Memory + Chat Summarization | Lakebase checkpointer + long-term store + extraction, plus `app.chat_history` auto-summarization | [`L200-real-agents/lab-7-memory/`](L200-real-agents/lab-7-memory/) |
-| **Lab 8** | Production Prompts and Guardrails | Prompt Registry + judge guardrail | [`L200-real-agents/lab-8-prompts-guardrails/`](L200-real-agents/lab-8-prompts-guardrails/) |
-| **Lab 9** | Multi-agent Orchestration | Supervisor + swarm | [`L200-real-agents/lab-9-orchestration/`](L200-real-agents/lab-9-orchestration/) |
+| **Lab 5** | External Integrations via REST | REST factory tools | [`L200-real-agents/lab-05-rest/`](L200-real-agents/lab-05-rest/) |
+| **Lab 6** | Knowledge-base Retrieval with Vector Search | Vector store + cross-encoder reranker | [`L200-real-agents/lab-06-vector-search/`](L200-real-agents/lab-06-vector-search/) |
+| **Lab 7** | Persistent Memory + Chat Summarization | Lakebase checkpointer + long-term store + extraction, plus `app.chat_history` auto-summarization | [`L200-real-agents/lab-07-memory/`](L200-real-agents/lab-07-memory/) |
+| **Lab 8** | Production Prompts and Guardrails | Prompt Registry + judge guardrail | [`L200-real-agents/lab-08-prompts-guardrails/`](L200-real-agents/lab-08-prompts-guardrails/) |
+| **Lab 9** | Multi-agent Orchestration | Supervisor + swarm | [`L200-real-agents/lab-09-orchestration/`](L200-real-agents/lab-09-orchestration/) |
 | **Lab 10** | Human in the Loop | Tool-level approval gating with `human_in_the_loop:` (approve / edit / reject) | [`L200-real-agents/lab-10-hitl/`](L200-real-agents/lab-10-hitl/) |
 
 L200 starts with the [Building Real Agents](L200-real-agents/building-real-agents.md) lecture.
@@ -127,19 +127,19 @@ dao-ai-workshop/
 │   ├── README.md             (level overview)
 │   ├── setting-the-stage.md  (lecture)
 │   ├── anatomy-of-a-config.md (lecture)
-│   ├── lab-1-first-agent/    (Lab 1)
-│   ├── lab-2-uc-tools/       (Lab 2)
-│   ├── lab-3-genie/          (Lab 3)
-│   ├── lab-4-mcp/            (Lab 4)
+│   ├── lab-01-first-agent/    (Lab 1)
+│   ├── lab-02-uc-tools/       (Lab 2)
+│   ├── lab-03-genie/          (Lab 3)
+│   ├── lab-04-mcp/            (Lab 4)
 │   └── debrief.md            (debrief)
 ├── L200-real-agents/         L200 -- saas_helpdesk labs
 │   ├── README.md
 │   ├── building-real-agents.md (lecture)
-│   ├── lab-5-rest/           (Lab 5)
-│   ├── lab-6-vector-search/  (Lab 6)
-│   ├── lab-7-memory/         (Lab 7)
-│   ├── lab-8-prompts-guardrails/ (Lab 8)
-│   ├── lab-9-orchestration/  (Lab 9)
+│   ├── lab-05-rest/           (Lab 5)
+│   ├── lab-06-vector-search/  (Lab 6)
+│   ├── lab-07-memory/         (Lab 7)
+│   ├── lab-08-prompts-guardrails/ (Lab 8)
+│   ├── lab-09-orchestration/  (Lab 9)
 │   └── debrief.md            (debrief)
 ├── L300-advanced/            L300 -- advanced patterns
 │   ├── README.md

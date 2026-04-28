@@ -10,10 +10,10 @@ The first level of the DAO-AI workshop. Goal: by the end you'll have built four 
 |---|---|---|---|
 | 1 | [setting-the-stage.md](setting-the-stage.md) | Lecture | What an agent is. Why DAO-AI uses YAML instead of code. |
 | 2 | [anatomy-of-a-config.md](anatomy-of-a-config.md) | Lecture | The four sections every DAO-AI config has: `parameters`, `resources`, `agents`, `app`. |
-| 3 | [lab-1-first-agent/](lab-1-first-agent/) | Lab | **Lab 1 -- Your First DAO-AI Agent.** A single LLM, no tools. Confirms your environment works. |
-| 4 | [lab-2-uc-tools/](lab-2-uc-tools/) | Lab | **Lab 2 -- Grounding with Unity Catalog Tools.** Add UC SQL functions as tools so the agent stops guessing. |
-| 5 | [lab-3-genie/](lab-3-genie/) | Lab | **Lab 3 -- NL Analytics with Genie.** Wrap a Databricks Genie Space as a tool for open-ended analytics. |
-| 6 | [lab-4-mcp/](lab-4-mcp/) | Lab | **Lab 4 -- Schema-wide Tool Discovery with MCP.** Replace per-function declarations with one MCP block. |
+| 3 | [lab-01-first-agent/](lab-01-first-agent/) | Lab | **Lab 1 -- Your First DAO-AI Agent.** A single LLM, no tools. Confirms your environment works. |
+| 4 | [lab-02-uc-tools/](lab-02-uc-tools/) | Lab | **Lab 2 -- Grounding with Unity Catalog Tools.** Add UC SQL functions as tools so the agent stops guessing. |
+| 5 | [lab-03-genie/](lab-03-genie/) | Lab | **Lab 3 -- NL Analytics with Genie.** Wrap a Databricks Genie Space as a tool for open-ended analytics. |
+| 6 | [lab-04-mcp/](lab-04-mcp/) | Lab | **Lab 4 -- Schema-wide Tool Discovery with MCP.** Replace per-function declarations with one MCP block. |
 | 7 | [debrief.md](debrief.md) | Debrief | Common gotchas, what surprised you, segue to L200. |
 
 ## Prerequisites

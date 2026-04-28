@@ -227,5 +227,5 @@ print(f"Deployed app: {config.app.name}")
 # MAGIC %md
 # MAGIC ## Next
 # MAGIC
-# MAGIC [Lab 8](../lab-8-prompts-guardrails/) -- prompts in MLflow
+# MAGIC [Lab 8](../lab-08-prompts-guardrails/) -- prompts in MLflow
 # MAGIC Registry + a judge LLM that retries on quality failures.

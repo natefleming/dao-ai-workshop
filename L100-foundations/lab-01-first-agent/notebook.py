@@ -250,6 +250,6 @@ print(f"Deployed app: {config.app.name}")
 # MAGIC %md
 # MAGIC ## Next
 # MAGIC
-# MAGIC [Lab 2](../lab-2-uc-tools/) -- give the agent
+# MAGIC [Lab 2](../lab-02-uc-tools/) -- give the agent
 # MAGIC real tools (Unity Catalog SQL functions) so it stops guessing
 # MAGIC about products and queries a governed table instead.

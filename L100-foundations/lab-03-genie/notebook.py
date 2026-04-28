@@ -264,6 +264,6 @@ print(f"Deployed app: {config.app.name}")
 # MAGIC %md
 # MAGIC ## Next
 # MAGIC
-# MAGIC [Lab 4: MCP](../lab-4-mcp/) - instead of declaring each UC
+# MAGIC [Lab 4: MCP](../lab-04-mcp/) - instead of declaring each UC
 # MAGIC function as its own tool, let the agent discover a whole
 # MAGIC schema's worth of functions via a managed MCP server.

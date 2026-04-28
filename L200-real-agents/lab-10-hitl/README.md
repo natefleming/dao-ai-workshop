@@ -74,4 +74,4 @@ Deployed app name: `saas-helpdesk-<your-username>`.
 
 ## Back to the workshop
 
-[Lab 9 -- Multi-agent Orchestration](../lab-9-orchestration/) | [L300 Advanced](../../L300-advanced/) | [Workshop README](../../README.md)
+[Lab 9 -- Multi-agent Orchestration](../lab-09-orchestration/) | [L300 Advanced](../../L300-advanced/) | [Workshop README](../../README.md)

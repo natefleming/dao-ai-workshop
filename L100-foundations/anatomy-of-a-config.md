@@ -391,4 +391,4 @@ No `orchestration:` block -- with a single agent and no memory, none is needed. 
 
 ## What's next
 
-[**Lab 1 -- Your First DAO-AI Agent**](lab-1-first-agent/) -- run the config above end-to-end.
+[**Lab 1 -- Your First DAO-AI Agent**](lab-01-first-agent/) -- run the config above end-to-end.

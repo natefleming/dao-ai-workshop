@@ -76,4 +76,4 @@ L200 just adds new top-level YAML keys (`memory:`, `prompts:`, `guardrails:`) an
 
 ## What's next
 
-[**Lab 5 -- External Integrations via REST**](lab-5-rest/) -- the support agent's first L200 capability.
+[**Lab 5 -- External Integrations via REST**](lab-05-rest/) -- the support agent's first L200 capability.

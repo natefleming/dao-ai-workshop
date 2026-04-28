@@ -315,6 +315,6 @@ print(f"Deployed app: {config.app.name}")
 # MAGIC %md
 # MAGIC ## Next
 # MAGIC
-# MAGIC [Lab 3: Genie](../lab-3-genie/) - give the agent a Databricks
+# MAGIC [Lab 3: Genie](../lab-03-genie/) - give the agent a Databricks
 # MAGIC Genie Space as a tool so it can answer natural-language
 # MAGIC questions in SQL directly against the data.

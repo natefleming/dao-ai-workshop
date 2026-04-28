@@ -299,4 +299,4 @@ print(f"Deployed app: {config.app.name}")
 # MAGIC %md
 # MAGIC ## Next
 # MAGIC
-# MAGIC [Lab 5: REST](../../L200-real-agents/lab-5-rest/) - call an external HTTP API.
+# MAGIC [Lab 5: REST](../../L200-real-agents/lab-05-rest/) - call an external HTTP API.

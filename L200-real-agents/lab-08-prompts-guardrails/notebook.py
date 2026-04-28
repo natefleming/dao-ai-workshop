@@ -179,5 +179,5 @@ print(f"Deployed app: {config.app.name}")
 # MAGIC %md
 # MAGIC ## Next
 # MAGIC
-# MAGIC [Lab 9](../lab-9-orchestration/) -- multi-agent: tier-1 / tier-2 /
+# MAGIC [Lab 9](../lab-09-orchestration/) -- multi-agent: tier-1 / tier-2 /
 # MAGIC escalation specialists with supervisor or swarm orchestration.

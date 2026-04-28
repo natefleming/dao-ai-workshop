@@ -50,4 +50,4 @@ Deployed app name: `hardware-store-<your-username>`.
 
 ## Next
 
-[Lab 3](../lab-3-genie/) -- give the agent a Genie Space so it can answer open-ended NL questions without a hand-written function for each.
+[Lab 3](../lab-03-genie/) -- give the agent a Genie Space so it can answer open-ended NL questions without a hand-written function for each.

@@ -44,4 +44,4 @@ Deployed app name: `hardware-store-<your-username>`.
 
 ## Next
 
-[Lab 5](../../L200-real-agents/lab-5-rest/) -- **switch use case** to a SaaS helpdesk and call an external HTTP API for upstream-status checks.
+[Lab 5](../../L200-real-agents/lab-05-rest/) -- **switch use case** to a SaaS helpdesk and call an external HTTP API for upstream-status checks.

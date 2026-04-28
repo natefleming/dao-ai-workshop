@@ -50,4 +50,4 @@ Deployed app name: `saas-helpdesk-<your-username>`.
 
 ## Next
 
-[Lab 9](../lab-9-orchestration/) -- multi-agent orchestration with tier-1 / tier-2 / escalation specialists.
+[Lab 9](../lab-09-orchestration/) -- multi-agent orchestration with tier-1 / tier-2 / escalation specialists.

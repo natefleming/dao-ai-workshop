@@ -204,5 +204,5 @@ print(f"Deployed app: {config.app.name}")
 # MAGIC %md
 # MAGIC ## Next
 # MAGIC
-# MAGIC [Lab 7](../lab-7-memory/) -- give the support agent persistent
+# MAGIC [Lab 7](../lab-07-memory/) -- give the support agent persistent
 # MAGIC memory so returning customers don't have to repeat themselves.

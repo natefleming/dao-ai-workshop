@@ -65,7 +65,7 @@ llm_endpoint: str = dbutils.widgets.get("llm_endpoint").strip()
 # MAGIC %md
 # MAGIC ## Step 3 -- Build the config in Python
 # MAGIC
-# MAGIC Each block below is the Python equivalent of the matching YAML block in `L100-foundations/lab-4-mcp/mcp_assistant.yaml`. Compare side by side to see how `${var.NAME}` substitution maps to Python f-strings, anchors map to plain Python references, and `&workshop_schema` / `*workshop_schema` becomes a single shared `SchemaModel` instance.
+# MAGIC Each block below is the Python equivalent of the matching YAML block in `L100-foundations/lab-04-mcp/mcp_assistant.yaml`. Compare side by side to see how `${var.NAME}` substitution maps to Python f-strings, anchors map to plain Python references, and `&workshop_schema` / `*workshop_schema` becomes a single shared `SchemaModel` instance.
 
 # COMMAND ----------
 
