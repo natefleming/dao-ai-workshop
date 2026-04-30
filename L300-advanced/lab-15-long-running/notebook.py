@@ -8,7 +8,7 @@
 # MAGIC
 # MAGIC - Configure `app.long_running:` so dao-ai wraps the agent with `LongRunningResponsesAgent`, persisting kickoff state in Lakebase.
 # MAGIC - Deploy as a Databricks App and exercise the **Responses-API contract end-to-end**: kickoff (`background=True`), retrieve, cancel.
-# MAGIC - Show the canonical Databricks pattern for invoking an Apps-deployed agent from a notebook: OIDC token-exchange + `databricks_openai.DatabricksOpenAI` with `model="apps/<name>"`.
+# MAGIC - Show the canonical pattern for invoking an Apps-deployed agent from a notebook: OIDC token-exchange to mint an app-scoped OAuth bearer, then the OpenAI Python SDK against the App URL.
 # MAGIC - Understand why long-running agents need a checkpointer (state has to survive the kickoff / poll / cancel turns) and where dao-ai persists kickoff state.
 # MAGIC
 # MAGIC ## Deliverable
@@ -35,7 +35,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "dao-ai>=0.1.66" "databricks-openai>=0.6"
+# MAGIC %pip install "dao-ai>=0.1.66" "openai>=1.40"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -192,18 +192,17 @@ print(f"app.oauth2_app_client_id: {app.oauth2_app_client_id}")
 # COMMAND ----------
 
 # Mint an app-scoped OAuth bearer via OIDC token-exchange.
-# Subject = the notebook's runtime PAT (only available in a Databricks notebook).
+# Subject = the notebook's runtime PAT, retrieved via the SDK's
+# config/auth machinery (no dbutils plumbing).
 import requests
 
-notebook_pat: str = (
-    dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().get()
-)
+subject_pat: str = w.config.authenticate()["Authorization"].removeprefix("Bearer ")
 
 exchange = requests.post(
     f"{w.config.host}/oidc/v1/token",
     data={
         "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
-        "subject_token": notebook_pat,
+        "subject_token": subject_pat,
         "subject_token_type": "urn:databricks:params:oauth:token-type:personal-access-token",
         "requested_token_type": "urn:ietf:params:oauth:token-type:access_token",
         "scope": "all-apis",
@@ -215,22 +214,22 @@ exchange.raise_for_status()
 app_token: str = exchange.json()["access_token"]
 print(f"Minted app-scoped bearer (len={len(app_token)})")
 
-# Build an OAuth-backed WorkspaceClient that DatabricksOpenAI will accept,
-# then build the DatabricksOpenAI client. `model="apps/<name>"` auto-routes
-# to the App URL via WorkspaceClient.apps.get(name).url.
-from databricks.sdk import WorkspaceClient as WC
-from databricks_openai import DatabricksOpenAI
+# Use the OpenAI Python SDK directly with the app-scoped bearer.
+# (Databricks ships `databricks_openai.DatabricksOpenAI` for the same
+# purpose, but it gates on `WorkspaceClient.config.oauth_token()` which
+# is not available when the WC is constructed with a static OAuth bearer
+# rather than an OAuth credentials strategy. The bare OpenAI client with
+# our exchanged app_token gives us the same surface without that gate.)
+from openai import OpenAI
 
-w_app = WC(host=w.config.host, token=app_token, auth_type="pat")
-client = DatabricksOpenAI(workspace_client=w_app)
-model_ref: str = f"apps/{config.app.name}"
+client = OpenAI(api_key=app_token, base_url=app.url)
 
 # COMMAND ----------
 
 # 7a -- kickoff: responses.create with background=True returns a resp_* id immediately
 t0 = time.time()
 kickoff = client.responses.create(
-    model=model_ref,
+    model=config.app.name,  # ignored by dao-ai's responses agent but required by SDK
     input=[{"role": "user", "content": "Deep-research the Power Tools category for Q2 2026 and produce a thorough analyst report."}],
     background=True,
     extra_body={"custom_inputs": {"configurable": {"thread_id": f"lab15-{username}-deployed"}}},
