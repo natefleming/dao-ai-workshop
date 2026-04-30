@@ -65,6 +65,8 @@ username: str = re.sub(r"[^a-z0-9]+", "-", short_name).strip("-")[:13]
 username_sql: str = username.replace("-", "_")
 print(f"Derived username: {username}  (sql-safe: {username_sql})")
 
+dbutils.widgets.text("catalog", "workshop_nate_fleming", "Unity Catalog")
+dbutils.widgets.text("schema", "dao_ai_workshop_test", "UC schema")
 dbutils.widgets.text("lakebase_project", "retail-consumer-goods", "Lakebase project")
 dbutils.widgets.text("llm_endpoint", "databricks-claude-sonnet-4-5", "LLM endpoint")
 dbutils.widgets.text("max_duration_seconds", "1800", "Max background duration (s)")
@@ -73,6 +75,8 @@ dbutils.widgets.text("poll_interval_seconds", "1.0", "Internal poll cadence (s)"
 params: dict[str, str] = {
     "username": username,
     "username_sql": username_sql,
+    "catalog": dbutils.widgets.get("catalog").strip(),
+    "schema": dbutils.widgets.get("schema").strip(),
     "lakebase_project": dbutils.widgets.get("lakebase_project").strip(),
     "llm_endpoint": dbutils.widgets.get("llm_endpoint").strip(),
     "max_duration_seconds": dbutils.widgets.get("max_duration_seconds").strip(),
@@ -91,6 +95,10 @@ params: dict[str, str] = {
 from dao_ai.config import AppConfig
 
 config: AppConfig = AppConfig.from_file("background_advisor.yaml", params=params)
+
+for s_key, schema in config.schemas.items():
+    schema.create()
+    print(f"UC schema ready: {s_key} -> {schema.full_name}")
 
 for db_key, database in config.resources.databases.items():
     database.create()
