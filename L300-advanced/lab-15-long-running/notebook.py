@@ -7,8 +7,9 @@
 # MAGIC ## Goals
 # MAGIC
 # MAGIC - Configure `app.long_running:` so dao-ai wraps the agent with `LongRunningResponsesAgent`, persisting kickoff state in Lakebase.
-# MAGIC - Deploy to Databricks Apps as a headless API endpoint (`enable_chat_proxy: false`) and exercise the **Responses-API contract end-to-end via HTTP** -- the way a real client process would. Three operations: **kickoff** (`background: true`), **retrieve** (`GET /v1/responses/{id}`), **cancel**.
-# MAGIC - Understand why long-running agents need a checkpointer (state has to survive the kickoff / poll / cancel turns) and why the contract is a deployed-endpoint contract -- the responses tables are owned by the deployed app's service principal, so an in-notebook predict (under the user's PAT) would hit `InsufficientPrivilege`.
+# MAGIC - Deploy to **Model Serving** (`deployment_target: model_serving`) and exercise the **Responses-API contract end-to-end via HTTP** -- the way a real client process would. Three operations: **kickoff** (`background: true`), **retrieve** (`operation: retrieve`), **cancel** (`operation: cancel`).
+# MAGIC - Understand why long-running agents need a checkpointer (state has to survive the kickoff / poll / cancel turns) and why the contract is a deployed-endpoint contract -- the responses tables are owned by the deployed agent's service principal, so an in-notebook predict (under the user's PAT) would hit `InsufficientPrivilege`.
+# MAGIC - Notice why this lab targets Model Serving instead of Apps: MS's `/serving-endpoints/<name>/invocations` accepts the notebook's SDK bearer; Apps live behind gap-auth and require a CLI-minted OAuth token.
 # MAGIC
 # MAGIC ## Deliverable
 # MAGIC
@@ -144,85 +145,84 @@ print(f"Wrapped class:     {type(agent_lr).__name__}")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 6 -- Deploy as a Databricks App
+# MAGIC ## Step 6 -- Deploy to Model Serving
+# MAGIC
+# MAGIC `create_agent()` logs a new MLflow model version; `deploy_agent()` wires that version into a Model Serving endpoint named `config.app.name`. (`deploy_agent` alone errors when the endpoint already serves the latest version, hence the explicit `create_agent()` first.)
 
 # COMMAND ----------
 
 from dao_ai.config import DeploymentTarget
 
-config.deploy_agent(target=DeploymentTarget.APPS)
-print(f"Deployed app: {config.app.name}")
+config.create_agent()
+config.deploy_agent(target=DeploymentTarget.MODEL_SERVING)
+print(f"Deployed serving endpoint: {config.app.name}")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 7 -- Invoke the deployed app from a client
+# MAGIC ## Step 7 -- Invoke the deployed Model Serving endpoint
 # MAGIC
-# MAGIC Real client processes (a backend service, a script, another notebook) call the deployed app over HTTP. Pattern:
+# MAGIC Real client processes (a backend service, a script, another notebook) call the endpoint over HTTP. Pattern:
 # MAGIC
-# MAGIC 1. Resolve the app URL via `WorkspaceClient`.
-# MAGIC 2. Mint a bearer token from the same client.
-# MAGIC 3. **Kickoff:** `POST /invocations` with `"background": true` -- returns a `resp_*` id and `status: in_progress` within ~1s.
-# MAGIC 4. **Retrieve:** `GET /v1/responses/{id}` (the OpenAI-style alias) until `status: completed`.
-# MAGIC 5. **Cancel:** `POST /invocations` with `operation: cancel` flips the status to `cancelled`.
+# MAGIC 1. Resolve the workspace host from `WorkspaceClient.config`.
+# MAGIC 2. Mint a bearer token from the same client (`w.config.authenticate()`).
+# MAGIC 3. **Kickoff:** `POST <host>/serving-endpoints/<name>/invocations` with `"background": true` -- returns a `resp_*` id and `status: in_progress` within ~1s.
+# MAGIC 4. **Retrieve:** repeat `POST` with `custom_inputs.operation: "retrieve"` until `status: completed`. (Apps also expose `GET /v1/responses/{id}` -- Model Serving does not, so we use the `operation: retrieve` form.)
+# MAGIC 5. **Cancel:** `POST` with `custom_inputs.operation: "cancel"` flips the status to `cancelled`.
 # MAGIC
-# MAGIC The YAML sets `enable_chat_proxy: false` so the deployed app is a headless API endpoint -- no chat UI build, FastAPI binds directly to the platform's expected port, and `/invocations` + `/v1/responses/{id}` are reachable from any client with a valid bearer token.
+# MAGIC We deploy to Model Serving (not Databricks Apps) because the long-running pattern is a headless API contract: MS accepts the notebook's SDK bearer for `/serving-endpoints/<name>/invocations`. Apps live behind gap-auth, which rejects in-notebook tokens with a 302 to OIDC -- usable only from a CLI-minted OAuth client.
 
 # COMMAND ----------
 
-info: dict[str, Any] = {}
+# Wait for the endpoint to become READY.
+endpoint_name: str = config.app.name
 for i in range(40):  # up to ~10 min
-    info = w.api_client.do("GET", f"/api/2.0/apps/{config.app.name}")
-    cs = (info.get("compute_status") or {}).get("state")
-    aps = (info.get("app_status") or {}).get("state")
-    print(f"  attempt {i+1:>2d}  compute={cs}  app={aps}")
-    if cs == "ACTIVE" and aps == "RUNNING":
+    ep = w.serving_endpoints.get(endpoint_name)
+    state = ep.state.ready if ep.state else None
+    cfg_state = ep.state.config_update if ep.state else None
+    print(f"  attempt {i+1:>2d}  ready={state}  config={cfg_state}")
+    if state and str(state).endswith("READY"):
         break
     time.sleep(15)
 
-app_url: str = info["url"]
-print(f"\napp_url: {app_url}")
+ms_url: str = f"{w.config.host.rstrip('/')}/serving-endpoints/{endpoint_name}/invocations"
+print(f"\nms_url: {ms_url}")
 
 # COMMAND ----------
 
 bearer: str = w.config.authenticate()["Authorization"].removeprefix("Bearer ")
 hdr: dict[str, str] = {"Authorization": f"Bearer {bearer}", "Content-Type": "application/json"}
 
-# 7a -- kickoff via POST /invocations
+# 7a -- kickoff via POST /serving-endpoints/<name>/invocations
 t0 = time.time()
 r = requests.post(
-    f"{app_url}/invocations",
+    ms_url,
     headers=hdr,
     timeout=60,
-    allow_redirects=False,
     json={
         "input": [{"role": "user", "content": "Deep-research the Power Tools category for Q2 2026 and produce a thorough analyst report."}],
         "background": True,
         "custom_inputs": {"configurable": {"thread_id": f"lab15-{username}-deployed"}},
     },
 )
-print(f"[7a] status={r.status_code}  content-type={r.headers.get('content-type')!r}  "
-      f"len={len(r.content)}  body[:200]={r.text[:200]!r}")
 r.raise_for_status()
-try:
-    kickoff: dict[str, Any] = r.json()
-except Exception:
-    raise RuntimeError(
-        f"[7a] non-JSON response: status={r.status_code} "
-        f"ct={r.headers.get('content-type')!r} loc={r.headers.get('location')!r} "
-        f"body[:500]={r.text[:500]!r}"
-    )
+kickoff: dict[str, Any] = r.json()
 deployed_resp_id: str = kickoff["id"]
 print(f"[7a] kickoff ok: resp_id={deployed_resp_id}  status={kickoff.get('status')}  "
       f"({int((time.time()-t0)*1000)}ms)")
 
 # COMMAND ----------
 
-# 7b -- retrieve via GET /v1/responses/{id}
+# 7b -- retrieve via POST with operation=retrieve
 t_start = time.time()
 final_payload: dict[str, Any] = {}
 for i in range(36):  # 36 * 5s = ~3 min cap
-    r = requests.get(f"{app_url}/v1/responses/{deployed_resp_id}", headers=hdr, timeout=30)
+    r = requests.post(
+        ms_url,
+        headers=hdr,
+        timeout=30,
+        json={"input": [], "custom_inputs": {"operation": "retrieve", "response_id": deployed_resp_id}},
+    )
     r.raise_for_status()
     final_payload = r.json()
     status = final_payload.get("status")
@@ -241,7 +241,7 @@ if final_payload.get("status") == "completed":
 
 # 7c -- cancel: kickoff again, immediately cancel
 r = requests.post(
-    f"{app_url}/invocations",
+    ms_url,
     headers=hdr,
     timeout=60,
     json={
@@ -255,7 +255,7 @@ cancel_id: str = r.json()["id"]
 print(f"[7c] kickoff: {cancel_id}  -- cancelling in 2s...")
 time.sleep(2)
 r = requests.post(
-    f"{app_url}/invocations",
+    ms_url,
     headers=hdr,
     timeout=30,
     json={"input": [], "custom_inputs": {"operation": "cancel", "response_id": cancel_id}},
