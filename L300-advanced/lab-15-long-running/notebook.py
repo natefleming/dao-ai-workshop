@@ -214,15 +214,31 @@ exchange.raise_for_status()
 app_token: str = exchange.json()["access_token"]
 print(f"Minted app-scoped bearer (len={len(app_token)})")
 
-# Use the OpenAI Python SDK directly with the app-scoped bearer.
-# (Databricks ships `databricks_openai.DatabricksOpenAI` for the same
-# purpose, but it gates on `WorkspaceClient.config.oauth_token()` which
-# is not available when the WC is constructed with a static OAuth bearer
-# rather than an OAuth credentials strategy. The bare OpenAI client with
-# our exchanged app_token gives us the same surface without that gate.)
+# Diagnostic: probe the App URL directly with the exchanged bearer.
+# If gap-auth accepts the token, this should return 200 with a `resp_*` id.
+probe = requests.post(
+    f"{app.url}/v1/responses",
+    headers={"Authorization": f"Bearer {app_token}", "Content-Type": "application/json"},
+    json={"model": config.app.name, "input": [{"role": "user", "content": "ping"}], "background": True},
+    timeout=30,
+)
+print(f"[probe] status={probe.status_code}  ct={probe.headers.get('content-type')}  "
+      f"body[:300]={probe.text[:300]!r}")
+probe.raise_for_status()
+
+# Use the OpenAI Python SDK with the app-scoped bearer.
+# (Databricks ships `databricks_openai.DatabricksOpenAI` and
+# `databricks_langchain.ChatDatabricks` for the same purpose, but both
+# gate on `WorkspaceClient.config.oauth_token()` which is not available
+# when the WC was constructed with a static OAuth bearer rather than an
+# OAuth credentials strategy. The bare OpenAI client gives us the same
+# surface -- pointed at the App URL -- without that gate.)
 from openai import OpenAI
 
-client = OpenAI(api_key=app_token, base_url=app.url)
+# OpenAI SDK appends `/responses` to base_url for `responses.create`.
+# dao-ai's app exposes `/v1/responses` (and `/v1/responses/{id}`),
+# so set base_url to `<app.url>/v1`.
+client = OpenAI(api_key=app_token, base_url=f"{app.url.rstrip('/')}/v1")
 
 # COMMAND ----------
 
@@ -262,7 +278,7 @@ if final.status == "completed" and final.output:
 
 # 7c -- cancel: kickoff again, immediately cancel
 cancel_kickoff = client.responses.create(
-    model=model_ref,
+    model=config.app.name,
     input=[{"role": "user", "content": "Deep-research every category and produce a 5000-word strategic review."}],
     background=True,
     extra_body={"custom_inputs": {"configurable": {"thread_id": f"lab15-{username}-deployed-cancel"}}},
