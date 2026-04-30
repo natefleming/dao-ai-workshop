@@ -7,7 +7,8 @@
 # you are ready for the rest of the workshop.
 #
 # Concepts introduced here (used by every later lab):
-#   - parameters:    declarative ${var.NAME} substitution from params={...}
+#   - parameters:    declarative variable substitution from params={...}
+#                    (referenced elsewhere as $ {var.NAME} -- see README)
 #   - resources.llms: LLM endpoint registry, anchored with &name for reuse
 #   - agents:        a model + a prompt; tools come in Lab 2
 #   - app:           the deploy target (apps | model_serving)
