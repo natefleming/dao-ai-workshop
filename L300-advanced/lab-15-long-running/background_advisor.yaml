@@ -145,10 +145,22 @@ app:
 
   # Triggers dao-ai to wrap the responses agent with
   # LongRunningResponsesAgent. State is persisted in `database`'s
-  # Lakebase project (the wrapper auto-creates `dao_ai_responses` and
-  # `dao_ai_response_messages` tables on first request).
+  # Lakebase project (the wrapper auto-creates the two tables named
+  # below on first request).
+  #
+  # The table names are username-scoped on purpose: every student's
+  # deployed app SP owns its own pair of tables. If we used the
+  # default names (`dao_ai_responses` + `dao_ai_response_messages`),
+  # the first student's SP would create them and own them; subsequent
+  # students' SPs would hit `must be owner of table dao_ai_responses`
+  # the moment they tried to write. Postgres ownership is also
+  # un-droppable from outside the control plane (orphan SP roles
+  # have no members and `databricks_superuser` is not a true postgres
+  # SUPERUSER), so once those tables exist they stay forever.
   long_running:
     database: *workshop_db
     default_background: false
     max_duration_seconds: ${var.max_duration_seconds}
     poll_interval_seconds: ${var.poll_interval_seconds}
+    responses_table_name: dao_ai_responses_${var.username}
+    messages_table_name: dao_ai_response_messages_${var.username}
