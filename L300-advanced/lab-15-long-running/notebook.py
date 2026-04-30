@@ -7,19 +7,19 @@
 # MAGIC ## Goals
 # MAGIC
 # MAGIC - Configure `app.long_running:` so dao-ai wraps the agent with `LongRunningResponsesAgent`, persisting kickoff state in Lakebase.
-# MAGIC - Exercise the Responses-API contract end-to-end **inside the notebook**: kickoff (`background: true`), retrieve (`operation: "retrieve"`), cancel (`operation: "cancel"`).
-# MAGIC - Hit the **same surface on the deployed Databricks App** (`/invocations` + `/v1/responses/{id}`) using `WorkspaceClient` to authenticate and `requests` to call out -- the way a real client process would.
-# MAGIC - Understand why long-running agents need a checkpointer (state has to survive across kickoff/poll turns).
+# MAGIC - Sanity-check the agent with a synchronous in-notebook call (no `background`) to confirm the wrapper passes through normal requests unchanged.
+# MAGIC - Deploy to Databricks Apps and exercise the **Responses-API contract end-to-end via HTTP** -- the way a real client process would. Three operations: **kickoff** (`background: true`), **retrieve** (`GET /v1/responses/{id}`), **cancel**.
+# MAGIC - Understand why long-running agents need a checkpointer (state has to survive the kickoff / poll / cancel turns) and where dao-ai persists kickoff state.
 # MAGIC
 # MAGIC ## Deliverable
 # MAGIC
-# MAGIC A `hardware-store-<your-username>` agent that, when called with `background: true`, returns a `resp_*` ID immediately and produces a multi-paragraph inventory analysis ~30-90 seconds later -- retrievable by ID either in-notebook (`predict({...operation: retrieve...})`) or against the deployed app (`GET /v1/responses/{id}`).
+# MAGIC A `hardware-store-<your-username>` agent that, when called with `background: true`, returns a `resp_*` ID immediately and produces a multi-paragraph inventory analysis ~30-90 seconds later -- retrievable by ID via the OpenAI-style `/v1/responses/{id}` route on the deployed app.
 # MAGIC
 # MAGIC ---
 # MAGIC
 # MAGIC **Use case:** `hardware_store++` -- inventory analyst agent that produces deep-research style reports.
 # MAGIC
-# MAGIC **DAO-AI concept:** `app.long_running:` block + `LongRunningResponsesAgent` wrapper + Lakebase-backed responses store.
+# MAGIC **DAO-AI concept:** `app.long_running:` block + `LongRunningResponsesAgent` wrapper + Lakebase-backed responses store + Responses-API HTTP surface (`/invocations` with `background: true`, `/v1/responses/{id}` for retrieve / cancel).
 # MAGIC
 # MAGIC ## Pre-reqs
 # MAGIC
@@ -55,8 +55,8 @@ import re
 import time
 from typing import Any
 
+import requests
 from databricks.sdk import WorkspaceClient
-from langgraph.graph.state import CompiledStateGraph
 
 w: WorkspaceClient = WorkspaceClient()
 short_name: str = w.current_user.me().user_name.split("@")[0].lower()
@@ -107,23 +107,25 @@ for db_key, database in config.resources.databases.items():
 # MAGIC     poll_interval_seconds: ${var.poll_interval_seconds}
 # MAGIC ```
 # MAGIC
-# MAGIC With this block present, `config.as_responses_agent()` returns a `LongRunningResponsesAgent` instead of the plain `ResponsesAgent`. Two things happen on first request:
+# MAGIC With this block present, dao-ai wraps the responses agent with `LongRunningResponsesAgent`. Two things happen on first request:
 # MAGIC
 # MAGIC 1. The wrapper auto-creates `dao_ai_responses` and `dao_ai_response_messages` tables in the Lakebase project (idempotent).
 # MAGIC 2. Background runs go to a process-singleton daemon thread so they survive Model Serving's per-request `asyncio.run()` teardown.
 # MAGIC
-# MAGIC Three runtime operations are exposed:
+# MAGIC Three runtime operations are exposed (we exercise each below against the **deployed** endpoint -- the long-running pattern is a deployed-endpoint contract, not an in-notebook one):
 # MAGIC
-# MAGIC | client sends                                                                | server returns                              |
+# MAGIC | client sends                                                                | server returns                                |
 # MAGIC |---|---|
-# MAGIC | `custom_inputs={"background": true}`                                        | immediate `resp_*` id, `status: in_progress` |
-# MAGIC | `custom_inputs={"operation": "retrieve", "response_id": id}`                | latest events / final output once `completed` |
-# MAGIC | `custom_inputs={"operation": "cancel",   "response_id": id}`                | best-effort cancel, `status: cancelled`      |
+# MAGIC | `POST /invocations` with `"background": true`                              | immediate `resp_*` id, `status: in_progress`  |
+# MAGIC | `GET /v1/responses/{id}` (or `POST /invocations` `operation: "retrieve"`)  | latest events / final output once `completed` |
+# MAGIC | `POST /v1/responses/{id}/cancel` (or `operation: "cancel"`)                | best-effort cancel, `status: cancelled`       |
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 5 -- Compile the responses agent + enable MLflow autolog
+# MAGIC ## Step 5 -- Compile + sanity-check passthrough (no background)
+# MAGIC
+# MAGIC `mlflow.langchain.autolog()` registers tracers so we can see what the wrapped agent does. A synchronous call without `background: true` flows straight through the long-running wrapper's passthrough branch -- proves the agent is wired correctly before we deploy.
 
 # COMMAND ----------
 
@@ -132,112 +134,26 @@ import mlflow
 mlflow.langchain.autolog()
 
 agent_lr = config.as_responses_agent()
-
 print(f"Compiled app name: {config.app.name}")
 print(f"Wrapped class:     {type(agent_lr).__name__}")
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC ## Step 6 -- Exercise kickoff / retrieve / cancel locally
-# MAGIC
-# MAGIC `dao_ai.models.process_messages(...)` accepts the responses-agent + a list of messages + `custom_inputs={...}` and returns the response object.
+# Quick passthrough sanity check using the underlying graph (the
+# long-running wrapper's kickoff/retrieve/cancel contract is best
+# exercised against the deployed app — we do that in Steps 7-10 below).
+from langgraph.graph.state import CompiledStateGraph
 
-# COMMAND ----------
-
-from dao_ai.models import process_messages
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ### 6a. Kickoff -- background: true returns a resp_* id immediately
-
-# COMMAND ----------
-
-t0 = time.time()
-kickoff = process_messages(
-    agent_lr,
-    [{"role": "user", "content": "Deep-research the Power Tools category for Q2 2026 and produce a thorough analyst report."}],
-    custom_inputs={
-        "configurable": {"thread_id": f"lab15-{username}-A"},
-        "background": True,
-    },
+agent: CompiledStateGraph = config.as_graph()
+sanity = await agent.ainvoke(
+    {"messages": [{"role": "user", "content": "In one sentence, what's the value of organizing inventory analysis as background work?"}]},
 )
-elapsed_ms = int((time.time() - t0) * 1000)
-resp_id_a: str = kickoff.id  # type: ignore[attr-defined]
-print(f"resp_id:  {resp_id_a}")
-print(f"status:   {kickoff.status}")
-print(f"returned to client in {elapsed_ms} ms (the agent is still working)")
+print(sanity["messages"][-1].content)
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### 6b. Retrieve -- poll until status: completed
-# MAGIC
-# MAGIC The actual analyst work (multi-paragraph report) takes ~30-90 seconds depending on FMAPI load. We poll every 5 seconds for up to ~3 minutes.
-
-# COMMAND ----------
-
-t_start = time.time()
-final = None
-for i in range(36):  # 36 * 5s = ~3 min cap
-    final = process_messages(
-        agent_lr,
-        [],  # retrieve doesn't need new messages
-        custom_inputs={"operation": "retrieve", "response_id": resp_id_a},
-    )
-    print(f"  poll #{i+1:>2d} ({int(time.time()-t_start)}s)  status={final.status}")
-    if final.status in ("completed", "failed", "cancelled"):
-        break
-    time.sleep(5)
-
-print(f"\nfinal status: {final.status}")
-if final.status == "completed":
-    # output[-1] is the final assistant message; .content[0].text is the body.
-    block = final.output[-1].content[0]
-    text = getattr(block, "text", None) or block["text"]
-    print(f"\n--- analyst report (first 800 chars) ---\n{text[:800]}")
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ### 6c. Cancel -- kick off a second task and cancel it before it finishes
-
-# COMMAND ----------
-
-cancel_kickoff = process_messages(
-    agent_lr,
-    [{"role": "user", "content": "Deep-research every category in our catalog and produce a 5000-word strategic review."}],
-    custom_inputs={
-        "configurable": {"thread_id": f"lab15-{username}-B"},
-        "background": True,
-    },
-)
-resp_id_b: str = cancel_kickoff.id  # type: ignore[attr-defined]
-print(f"resp_id:  {resp_id_b}")
-print(f"status:   {cancel_kickoff.status}  (cancelling immediately...)")
-
-# Give the daemon thread a moment to start the work, then cancel.
-time.sleep(2)
-
-cancelled = process_messages(
-    agent_lr,
-    [],
-    custom_inputs={"operation": "cancel", "response_id": resp_id_b},
-)
-print(f"cancelled.status: {cancelled.status}")
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ### Streaming variant (no code, FYI)
-# MAGIC
-# MAGIC `LongRunningResponsesAgent` also supports streaming retrieve via `agent_lr.predict_stream(...)` (or, on the deployed app, `POST /invocations` with `"stream": true`). The server emits Server-Sent Events as the agent generates each chunk. We don't exercise streaming in this lab to keep the cell budget reasonable -- see `dao-ai/notebooks/14_long_running_agents_demo.py` for the full streaming demo.
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Step 7 -- Deploy as a Databricks App
+# MAGIC ## Step 6 -- Deploy as a Databricks App
 
 # COMMAND ----------
 
@@ -249,12 +165,13 @@ print(f"Deployed app: {config.app.name}")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 8 -- Wait for the deployed app's compute to be ready
+# MAGIC ## Step 7 -- Wait for the deployed app to be ready
 # MAGIC
-# MAGIC The deploy returns once the bundle is uploaded; the App's Python process may still be starting. Poll until `compute_status.state == "ACTIVE"` and `app_status.state == "RUNNING"` before exercising the deployed surface.
+# MAGIC The deploy returns once the bundle is uploaded; the app's Python process may still be starting. Poll until `compute_status.state == "ACTIVE"` and `app_status.state == "RUNNING"` before exercising the deployed surface.
 
 # COMMAND ----------
 
+info: dict[str, Any] = {}
 for i in range(40):  # up to ~10 min
     info = w.api_client.do("GET", f"/api/2.0/apps/{config.app.name}")
     cs = (info.get("compute_status") or {}).get("state")
@@ -270,44 +187,45 @@ print(f"\napp_url: {app_url}")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 9 -- Invoke the deployed app from a client (WorkspaceClient + requests)
+# MAGIC ## Step 8 -- Kickoff: `POST /invocations` with `"background": true`
 # MAGIC
-# MAGIC This is what a real client process (a script, a backend, another notebook) would do: get the app URL via `WorkspaceClient`, mint a bearer token, POST to `/invocations` with `"background": true`, and poll the Responses-API alias `/v1/responses/{id}` until done.
-# MAGIC
-# MAGIC Compare to Step 6 (which talks to the in-process compiled graph) -- the surface is identical, the wire path is different. dao-ai mounts strict `/v1/responses*` routes on Databricks Apps so the deployed agent is a drop-in for any OpenAI-Responses-compatible client.
+# MAGIC Authenticates with `WorkspaceClient`'s bearer token and POSTs to `/invocations`. With `"background": true` the response returns immediately with a `resp_*` id and `status: in_progress`.
 
 # COMMAND ----------
-
-import requests
 
 bearer: str = w.config.authenticate()["Authorization"].removeprefix("Bearer ")
 hdr: dict[str, str] = {"Authorization": f"Bearer {bearer}", "Content-Type": "application/json"}
 
-# 9a -- kickoff via /invocations
 t0 = time.time()
 r = requests.post(
     f"{app_url}/invocations",
     headers=hdr,
     timeout=30,
     json={
-        "input": [{"role": "user", "content": "Deep-research the Hand Tools category and produce a thorough analyst report."}],
-        "custom_inputs": {
-            "configurable": {"thread_id": f"lab15-{username}-deployed"},
-            "background": True,
-        },
+        "input": [{"role": "user", "content": "Deep-research the Power Tools category for Q2 2026 and produce a thorough analyst report."}],
+        "background": True,
+        "custom_inputs": {"configurable": {"thread_id": f"lab15-{username}-deployed"}},
     },
 )
 r.raise_for_status()
-kickoff_payload: dict[str, Any] = r.json()
-deployed_resp_id: str = kickoff_payload["id"]
-print(f"deployed kickoff status: {kickoff_payload.get('status')}  (id={deployed_resp_id}, returned in {int((time.time()-t0)*1000)}ms)")
+kickoff: dict[str, Any] = r.json()
+deployed_resp_id: str = kickoff["id"]
+print(f"resp_id:  {deployed_resp_id}")
+print(f"status:   {kickoff.get('status')}")
+print(f"returned to client in {int((time.time()-t0)*1000)} ms (the agent is still working)")
 
 # COMMAND ----------
 
-# 9b -- poll /v1/responses/{id}
+# MAGIC %md
+# MAGIC ## Step 9 -- Retrieve: poll `GET /v1/responses/{id}` until completed
+# MAGIC
+# MAGIC The deployed app exposes the OpenAI-Responses-style alias `/v1/responses/{id}` -- a strict GET that returns the latest state of the response (status + accumulated events + final output once the agent finishes). The actual analyst work takes ~30-90 seconds depending on FMAPI load.
+
+# COMMAND ----------
+
 t_start = time.time()
 final_payload: dict[str, Any] = {}
-for i in range(36):  # 36 * 5s = ~3 min
+for i in range(36):  # 36 * 5s = ~3 min cap
     r = requests.get(f"{app_url}/v1/responses/{deployed_resp_id}", headers=hdr, timeout=30)
     r.raise_for_status()
     final_payload = r.json()
@@ -322,11 +240,59 @@ if final_payload.get("status") == "completed":
     output = final_payload.get("output", [])
     if output:
         last = output[-1]
-        # output[-1] is the assistant message; content[0].text is the body.
         content = last.get("content", [])
         if content:
             text = content[0].get("text", "")
-            print(f"\n--- deployed analyst report (first 800 chars) ---\n{text[:800]}")
+            print(f"\n--- analyst report (first 800 chars) ---\n{text[:800]}")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Step 10 -- Cancel: kick off another task and cancel before it finishes
+# MAGIC
+# MAGIC Kicking off a second long task and immediately cancelling via `POST /invocations` with `operation: cancel`. The status flips to `cancelled` and the daemon thread tears down the underlying task best-effort.
+
+# COMMAND ----------
+
+# 10a -- kickoff
+r = requests.post(
+    f"{app_url}/invocations",
+    headers=hdr,
+    timeout=30,
+    json={
+        "input": [{"role": "user", "content": "Deep-research every category in our catalog and produce a 5000-word strategic review."}],
+        "background": True,
+        "custom_inputs": {"configurable": {"thread_id": f"lab15-{username}-cancel"}},
+    },
+)
+r.raise_for_status()
+cancel_kickoff = r.json()
+cancel_resp_id: str = cancel_kickoff["id"]
+print(f"resp_id:  {cancel_resp_id}")
+print(f"status:   {cancel_kickoff.get('status')}  (cancelling immediately...)")
+
+time.sleep(2)
+
+# 10b -- cancel via /invocations + custom_inputs.operation
+r = requests.post(
+    f"{app_url}/invocations",
+    headers=hdr,
+    timeout=30,
+    json={
+        "input": [],
+        "custom_inputs": {"operation": "cancel", "response_id": cancel_resp_id},
+    },
+)
+r.raise_for_status()
+cancelled = r.json()
+print(f"cancelled.status: {cancelled.get('status')}")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Streaming variant (no code, FYI)
+# MAGIC
+# MAGIC The deployed app also supports streaming both for synchronous calls and for retrieve. Add `"stream": true` to the `/invocations` body to get Server-Sent Events instead of a JSON envelope. We don't exercise streaming in this lab to keep the cell budget reasonable -- see `dao-ai/notebooks/14_long_running_agents_demo.py` for the full streaming demo.
 
 # COMMAND ----------
 
