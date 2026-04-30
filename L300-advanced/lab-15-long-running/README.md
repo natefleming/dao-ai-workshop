@@ -5,13 +5,12 @@
 ## Goals
 
 - Configure `app.long_running:` so dao-ai wraps the agent with `LongRunningResponsesAgent`, persisting kickoff state in Lakebase.
-- Exercise the Responses-API contract end-to-end **inside the notebook**: kickoff (`background: true`), retrieve (`operation: "retrieve"`), cancel (`operation: "cancel"`).
-- Hit the **same surface on the deployed Databricks App** (`/invocations` + `/v1/responses/{id}`) using `WorkspaceClient` to authenticate and `requests` to call out — the way a real client process would.
-- Understand why long-running agents need a checkpointer (state has to survive across kickoff/poll turns).
+- Hit the Responses-API surface on the **deployed Databricks App** (`/invocations` + `/v1/responses/{id}`) using `WorkspaceClient` to authenticate and `requests` to call out — the way a real client process would.
+- Understand why long-running agents need a checkpointer (state has to survive across kickoff/poll turns), and why the long-running contract is a deployed-endpoint contract (the responses tables are owned by the deployed app's service principal).
 
 ## Deliverable
 
-A `hardware-store-<your-username>` agent that, when called with `background: true`, returns a `resp_*` ID immediately and produces a multi-paragraph inventory analysis ~30-90 seconds later — retrievable by ID either in-notebook (`predict({...operation: retrieve...})`) or against the deployed app (`GET /v1/responses/{id}`).
+A `hardware-store-<your-username>` agent that, when called with `background: true` against the deployed app, returns a `resp_*` ID immediately and produces a multi-paragraph inventory analysis ~30-90 seconds later — retrievable via `GET /v1/responses/{id}`.
 
 ---
 
@@ -22,15 +21,16 @@ A `hardware-store-<your-username>` agent that, when called with `background: tru
 ## What you'll learn
 
 - How `app.long_running:` toggles the LongRunningResponsesAgent wrapper.
-- The Responses-API runtime contract (`background: true` / `operation: "retrieve"` / `operation: "cancel"`).
+- The Responses-API runtime contract (`background: true` / `GET /v1/responses/{id}` / `operation: "cancel"`).
 - Why background work needs a checkpointer (Lab 7 introduced this; here we reuse the same Lakebase wiring).
-- The two equivalent ways to retrieve a long-running result: `custom_inputs.operation: "retrieve"` on `/invocations`, or the strict OpenAI-style `/v1/responses/{id}` route on the deployed app.
+- Why long-running is a **deployed-endpoint contract**: the responses tables are owned by the app's service principal, so an in-notebook predict against the same Lakebase would hit `InsufficientPrivilege` -- exercise the contract over HTTP instead.
 - How a real client (e.g. a non-notebook backend) authenticates using `WorkspaceClient` + `Authorization: Bearer <token>` and calls the deployed app.
+- Why this lab sets `enable_chat_proxy: false` -- the long-running pattern is a headless API contract, so we skip the chat-UI build and let FastAPI bind directly to the platform's expected port.
 
 ## Files
 
-- `background_advisor.yaml` — single config with `resources.databases:` (Lakebase) + `memory.checkpointer:` + `app.long_running:`.
-- `notebook.py` — install / params / provision Lakebase role / kickoff / poll / cancel / deploy / **post-deploy WorkspaceClient inference**.
+- `background_advisor.yaml` — single config with `resources.databases:` (Lakebase) + `memory.checkpointer:` + `app.long_running:` + `enable_chat_proxy: false`.
+- `notebook.py` — install / params / provision Lakebase role / compile / deploy / **post-deploy kickoff + retrieve + cancel via HTTP using `WorkspaceClient`**.
 
 ## Prerequisites
 
@@ -44,12 +44,13 @@ Same Lakebase / SP setup Lab 7 needs:
 
 Open `notebook.py` on Serverless compute. Run cell by cell. Watch:
 
-1. **Step 5 (passthrough sanity)** — confirms the wrapped agent works for synchronous calls before we exercise the long-running surface.
-2. **Step 6 (deploy)** — pushes the agent to a Databricks App. The long-running contract is best exercised against the deployed endpoint, not the in-process compiled graph.
-3. **Step 7** waits for `compute_status: ACTIVE` + `app_status: RUNNING`. First deploy is ~3-5 min for compute warm-up.
-4. **Step 8 (kickoff)** — `WorkspaceClient` mints a bearer token, `requests.post` to `<app_url>/invocations` with `"background": true`. Returns within ~1s with `status: in_progress` and a `resp_*` id.
-5. **Step 9 (retrieve)** — `requests.get` to `<app_url>/v1/responses/<resp_id>` polls every 5s until `completed`. ~30-90s wallclock for the analyst report.
-6. **Step 10 (cancel)** — second kickoff, immediate cancel via `operation: cancel`, status flips to `cancelled`.
+1. **Step 3 (provision Lakebase role)** — `database.create()` creates the SP's postgres `DATABRICKS_SUPERUSER` role (idempotent, same pattern as Lab 7). The `dao_ai_responses` / `dao_ai_response_messages` tables are auto-created by the long-running wrapper on first request.
+2. **Step 5 (compile)** — confirms the wrapped class is `LongRunningResponsesAgent`. We do not exercise the contract in-process: the responses tables are owned by the deployed app's SP, so an in-notebook predict (under the user's PAT) would hit `InsufficientPrivilege`.
+3. **Step 6 (deploy)** — pushes the agent to a Databricks App. First deploy is ~3-5 min for compute warm-up.
+4. **Step 7 polling loop** waits for `compute_status: ACTIVE` + `app_status: RUNNING`.
+5. **Step 7a (kickoff)** — `WorkspaceClient` mints a bearer token, `requests.post` to `<app_url>/invocations` with `"background": true`. Returns within ~1s with `status: in_progress` and a `resp_*` id.
+6. **Step 7b (retrieve)** — `requests.get` to `<app_url>/v1/responses/<resp_id>` polls every 5s until `completed`. ~30-90s wallclock for the analyst report.
+7. **Step 7c (cancel)** — second kickoff, immediate cancel via `operation: cancel`, status flips to `cancelled`.
 
 Deployed app name: `hardware-store-<your-username>`. (Same slot as Labs 1, 2, 3, 4, 11, 12, 13, 14 — redeploying replaces whichever lab's agent was last in the slot with this one.)
 
