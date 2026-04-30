@@ -60,7 +60,9 @@ from databricks.sdk import WorkspaceClient
 w: WorkspaceClient = WorkspaceClient()
 short_name: str = w.current_user.me().user_name.split("@")[0].lower()
 username: str = re.sub(r"[^a-z0-9]+", "-", short_name).strip("-")[:13]
-print(f"Derived username: {username}")
+# SQL-safe variant for table names (hyphens aren't valid postgres identifiers).
+username_sql: str = username.replace("-", "_")
+print(f"Derived username: {username}  (sql-safe: {username_sql})")
 
 dbutils.widgets.text("lakebase_project", "retail-consumer-goods", "Lakebase project")
 dbutils.widgets.text("llm_endpoint", "databricks-claude-sonnet-4-5", "LLM endpoint")
@@ -69,6 +71,7 @@ dbutils.widgets.text("poll_interval_seconds", "1.0", "Internal poll cadence (s)"
 
 params: dict[str, str] = {
     "username": username,
+    "username_sql": username_sql,
     "lakebase_project": dbutils.widgets.get("lakebase_project").strip(),
     "llm_endpoint": dbutils.widgets.get("llm_endpoint").strip(),
     "max_duration_seconds": dbutils.widgets.get("max_duration_seconds").strip(),

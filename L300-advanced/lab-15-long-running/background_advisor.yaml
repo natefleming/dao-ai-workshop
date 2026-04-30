@@ -48,6 +48,9 @@ parameters:
   username:
     description: Per-student username for unique deployment names. Auto-set by the notebook.
     # No default => required.
+  username_sql:
+    description: SQL-safe variant of username (hyphens replaced with underscores). Auto-set by the notebook.
+    # No default => required.
   lakebase_project:
     description: Lakebase autoscaling project name (also hosts checkpointer + long-running tables).
     default: retail-consumer-goods
@@ -162,5 +165,8 @@ app:
     default_background: false
     max_duration_seconds: ${var.max_duration_seconds}
     poll_interval_seconds: ${var.poll_interval_seconds}
-    responses_table_name: dao_ai_responses_${var.username}
-    messages_table_name: dao_ai_response_messages_${var.username}
+    # Hyphens aren't valid SQL identifiers, so replace with underscores
+    # via the notebook's `username_sql` parameter (mirrors `username`
+    # but with hyphens replaced by underscores).
+    responses_table_name: dao_ai_responses_${var.username_sql}
+    messages_table_name: dao_ai_response_messages_${var.username_sql}
