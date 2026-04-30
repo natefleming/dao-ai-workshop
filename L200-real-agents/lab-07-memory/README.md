@@ -36,6 +36,11 @@ All persistence is backed by Databricks **Lakebase** (managed Postgres).
 
 - Lakebase access (workshop default: `retail-consumer-goods` instance).
 - `databricks-claude-sonnet-4-5` (default LLM), `databricks-gpt-oss-120b` (memory query LLM), and `databricks-gpt-5-nano` (summarization LLM) foundation-model endpoints enabled.
+- **Run the workshop setup notebooks once** before this lab:
+  - `setup/create_service_principal.py` — creates the `dao-ai-workshop-sp` SP and the `dao_ai_workshop` secret scope with keys `DAO_AI_SP_CLIENT_ID` / `DAO_AI_SP_CLIENT_SECRET`.
+  - `setup/grant_lakebase_superuser.py` — grants the SP `DATABRICKS_SUPERUSER` on the Lakebase project so the deployed app can read/write its memory tables.
+
+  The YAML's `client_id` / `client_secret` resolve from the scope. If you skip the setup, `database.create()` raises `AttributeError: 'NoneType' object has no attribute 'lower'` because the credential resolves to `None`.
 
 ## Run
 
