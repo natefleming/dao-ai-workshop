@@ -166,7 +166,7 @@ mlflow.langchain.autolog()
 await agent.ainvoke(
     {"messages": [{"role": "user", "content": "I'm Jordan. I'm getting 401 errors on the API since 09:00 today."}]},
     config={"configurable": {"thread_id": f"lab7-thread-A-{username}"}},
-    context=Context(user_id=user_id, thread_id=f"lab7-thread-A-{username}"),
+    context=Context(user_id=user_id),
 )
 print("Fact established in thread A.")
 
@@ -175,7 +175,7 @@ print("Fact established in thread A.")
 resp: dict[str, Any] = await agent.ainvoke(
     {"messages": [{"role": "user", "content": "Do you remember what error I was investigating?"}]},
     config={"configurable": {"thread_id": f"lab7-thread-B-{username}"}},
-    context=Context(user_id=user_id, thread_id=f"lab7-thread-B-{username}"),
+    context=Context(user_id=user_id),
 )
 print(resp["messages"][-1].content)
 
@@ -206,7 +206,7 @@ for i, content in enumerate(turns, 1):
     resp = await agent.ainvoke(
         {"messages": [{"role": "user", "content": content}]},
         config={"configurable": {"thread_id": thread_id}},
-        context=Context(user_id=user_id, thread_id=thread_id),
+        context=Context(user_id=user_id),
     )
     msg_count = len(resp["messages"])
     last = resp["messages"][-1].content
