@@ -186,13 +186,23 @@ print(f"Deployed: app slot=hardware-store-{username}, MS endpoint={config.app.en
 # COMMAND ----------
 
 # Wait for the MS endpoint to become READY.
+# Right after deploy_agent(BOTH) the endpoint may take a moment to
+# show up in the listing -- tolerate ResourceDoesNotExist for the
+# first few polls.
+from databricks.sdk.errors import ResourceDoesNotExist
+
 endpoint_name: str = config.app.endpoint_name
 for i in range(40):  # up to ~10 min
-    ep = w.serving_endpoints.get(endpoint_name)
+    try:
+        ep = w.serving_endpoints.get(endpoint_name)
+    except ResourceDoesNotExist:
+        print(f"  attempt {i+1:>2d}  endpoint not yet visible, retrying...")
+        time.sleep(15)
+        continue
     ready = ep.state.ready if ep.state else None
     cfg_state = ep.state.config_update if ep.state else None
     print(f"  attempt {i+1:>2d}  ready={ready}  config={cfg_state}")
-    if ready and str(ready).endswith("READY"):
+    if ready and str(ready).endswith("READY") and (cfg_state is None or str(cfg_state).endswith("NOT_UPDATING")):
         break
     time.sleep(15)
 
