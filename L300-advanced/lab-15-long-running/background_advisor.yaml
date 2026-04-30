@@ -135,6 +135,11 @@ app:
   log_level: INFO
   deployment_target: apps
 
+  # Headless API endpoint -- skip the chat UI build. The lab exercises
+  # the long-running contract via direct HTTP to /invocations and
+  # /v1/responses/{id}; no browser-facing chat needed.
+  enable_chat_proxy: false
+
   agents:
     - *inventory_analyst
 
