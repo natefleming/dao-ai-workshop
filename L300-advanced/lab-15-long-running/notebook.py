@@ -214,6 +214,23 @@ exchange.raise_for_status()
 app_token: str = exchange.json()["access_token"]
 print(f"Minted app-scoped bearer (len={len(app_token)})")
 
+# COMMAND ----------
+
+# Warm up the long-running responses tables on the deployed app.
+# The wrapper auto-creates `dao_ai_responses` and
+# `dao_ai_response_messages` in Lakebase on the first request --
+# which can exceed gap-auth's request-timeout if it's the same
+# request that does real work. Warm-up with a tiny background
+# request, then proceed.
+warmup = requests.post(
+    f"{app.url}/v1/responses",
+    headers={"Authorization": f"Bearer {app_token}", "Content-Type": "application/json"},
+    json={"model": config.app.name, "input": [{"role": "user", "content": "warmup"}], "background": True},
+    timeout=120,
+)
+print(f"[warmup] status={warmup.status_code}  body[:200]={warmup.text[:200]!r}")
+warmup.raise_for_status()
+
 # Use the OpenAI Python SDK with the app-scoped bearer.
 # (Databricks ships `databricks_openai.DatabricksOpenAI` and
 # `databricks_langchain.ChatDatabricks` for the same purpose, but both
