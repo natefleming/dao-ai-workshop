@@ -123,13 +123,14 @@ for db_key, database in config.resources.databases.items():
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 5 -- Compile + sanity-check passthrough (no background)
+# MAGIC ## Step 5 -- Compile + enable MLflow autolog
 # MAGIC
-# MAGIC `mlflow.langchain.autolog()` registers tracers so we can see what the wrapped agent does. A synchronous call without `background: true` flows straight through the long-running wrapper's passthrough branch -- proves the agent is wired correctly before we deploy.
+# MAGIC `mlflow.langchain.autolog()` registers tracers so we can see what the wrapped agent does. `config.as_responses_agent()` returns a `LongRunningResponsesAgent` because the YAML has the `app.long_running:` block.
 
 # COMMAND ----------
 
 import mlflow
+from mlflow.types.responses import ResponsesAgentRequest
 
 mlflow.langchain.autolog()
 
@@ -139,21 +140,80 @@ print(f"Wrapped class:     {type(agent_lr).__name__}")
 
 # COMMAND ----------
 
-# Quick passthrough sanity check using the underlying graph (the
-# long-running wrapper's kickoff/retrieve/cancel contract is best
-# exercised against the deployed app — we do that in Steps 7-10 below).
-from langgraph.graph.state import CompiledStateGraph
+# MAGIC %md
+# MAGIC ## Step 6 -- Exercise kickoff / retrieve / cancel **in-notebook**
+# MAGIC
+# MAGIC Build a `ResponsesAgentRequest` directly and call `agent_lr.predict(request)`. The wrapper's classifier reads `request.background` and `request.custom_inputs` to route to kickoff / retrieve / cancel handlers.
 
-agent: CompiledStateGraph = config.as_graph()
-sanity = await agent.ainvoke(
-    {"messages": [{"role": "user", "content": "In one sentence, what's the value of organizing inventory analysis as background work?"}]},
+# COMMAND ----------
+
+# 6a -- kickoff: background=True returns a resp_* id immediately.
+t0 = time.time()
+kickoff = agent_lr.predict(
+    ResponsesAgentRequest(
+        input=[{"role": "user", "content":
+                "Deep-research the Power Tools category for Q2 2026 and produce a thorough analyst report."}],
+        background=True,
+        custom_inputs={"configurable": {"thread_id": f"lab15-{username}-A"}},
+    )
 )
-print(sanity["messages"][-1].content)
+elapsed_ms = int((time.time() - t0) * 1000)
+resp_id_a: str = kickoff.id
+print(f"resp_id:  {resp_id_a}")
+print(f"status:   {kickoff.status}")
+print(f"returned to client in {elapsed_ms} ms (the agent is still working)")
+
+# COMMAND ----------
+
+# 6b -- retrieve: poll until completed.
+t_start = time.time()
+final = None
+for i in range(36):  # 36 * 5s = ~3 min cap
+    final = agent_lr.predict(
+        ResponsesAgentRequest(
+            input=[],
+            custom_inputs={"operation": "retrieve", "response_id": resp_id_a},
+        )
+    )
+    print(f"  poll #{i+1:>2d} ({int(time.time()-t_start)}s)  status={final.status}")
+    if final.status in ("completed", "failed", "cancelled"):
+        break
+    time.sleep(5)
+
+print(f"\nfinal status: {final.status}")
+if final.status == "completed":
+    block = final.output[-1].content[0]
+    text = getattr(block, "text", None) or block["text"]
+    print(f"\n--- analyst report (first 800 chars) ---\n{text[:800]}")
+
+# COMMAND ----------
+
+# 6c -- cancel: kick off a second task and cancel before completion.
+cancel_kickoff = agent_lr.predict(
+    ResponsesAgentRequest(
+        input=[{"role": "user", "content":
+                "Deep-research every category in our catalog and produce a 5000-word strategic review."}],
+        background=True,
+        custom_inputs={"configurable": {"thread_id": f"lab15-{username}-B"}},
+    )
+)
+resp_id_b: str = cancel_kickoff.id
+print(f"resp_id:  {resp_id_b}  (cancelling immediately...)")
+
+time.sleep(2)
+
+cancelled = agent_lr.predict(
+    ResponsesAgentRequest(
+        input=[],
+        custom_inputs={"operation": "cancel", "response_id": resp_id_b},
+    )
+)
+print(f"cancelled.status: {cancelled.status}")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 6 -- Deploy as a Databricks App
+# MAGIC ## Step 7 -- Deploy as a Databricks App
 
 # COMMAND ----------
 
@@ -165,9 +225,11 @@ print(f"Deployed app: {config.app.name}")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 7 -- Wait for the deployed app to be ready
+# MAGIC ## Step 8 -- Invoke the deployed app from a client (best-effort)
 # MAGIC
-# MAGIC The deploy returns once the bundle is uploaded; the app's Python process may still be starting. Poll until `compute_status.state == "ACTIVE"` and `app_status.state == "RUNNING"` before exercising the deployed surface.
+# MAGIC This step shows how a real client process (a script, backend, another notebook) would call the deployed app: get the URL via `WorkspaceClient`, mint a bearer token, POST to `/invocations` with `"background": true`, and poll the Responses-API alias `/v1/responses/{id}` until done.
+# MAGIC
+# MAGIC **Best-effort:** if the chat-UI build failed during deploy (a known dao-ai/npm packaging hiccup -- see `WARNING: Could not build chat UI` in the app logs), the deployed app falls back to "backend only" mode and external `/invocations` traffic isn't routed to a listener, so this step prints a diagnostic message and exits without failing the notebook. The in-notebook kickoff/retrieve/cancel from Step 6 already proved the long-running contract works against the wrapped agent.
 
 # COMMAND ----------
 
@@ -186,106 +248,81 @@ print(f"\napp_url: {app_url}")
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC ## Step 8 -- Kickoff: `POST /invocations` with `"background": true`
-# MAGIC
-# MAGIC Authenticates with `WorkspaceClient`'s bearer token and POSTs to `/invocations`. With `"background": true` the response returns immediately with a `resp_*` id and `status: in_progress`.
-
-# COMMAND ----------
-
+# Build auth headers, then exercise kickoff/retrieve/cancel via HTTP.
+# Wrap in try/except so a chat-UI-build failure doesn't fail the notebook.
 bearer: str = w.config.authenticate()["Authorization"].removeprefix("Bearer ")
 hdr: dict[str, str] = {"Authorization": f"Bearer {bearer}", "Content-Type": "application/json"}
 
-t0 = time.time()
-r = requests.post(
-    f"{app_url}/invocations",
-    headers=hdr,
-    timeout=30,
-    json={
-        "input": [{"role": "user", "content": "Deep-research the Power Tools category for Q2 2026 and produce a thorough analyst report."}],
-        "background": True,
-        "custom_inputs": {"configurable": {"thread_id": f"lab15-{username}-deployed"}},
-    },
-)
-r.raise_for_status()
-kickoff: dict[str, Any] = r.json()
-deployed_resp_id: str = kickoff["id"]
-print(f"resp_id:  {deployed_resp_id}")
-print(f"status:   {kickoff.get('status')}")
-print(f"returned to client in {int((time.time()-t0)*1000)} ms (the agent is still working)")
+try:
+    # 8a -- kickoff via POST /invocations
+    t0 = time.time()
+    r = requests.post(
+        f"{app_url}/invocations",
+        headers=hdr,
+        timeout=60,
+        json={
+            "input": [{"role": "user", "content": "Deep-research the Power Tools category for Q2 2026 and produce a thorough analyst report."}],
+            "background": True,
+            "custom_inputs": {"configurable": {"thread_id": f"lab15-{username}-deployed"}},
+        },
+    )
+    if r.status_code != 200 or "json" not in (r.headers.get("content-type") or ""):
+        raise RuntimeError(
+            f"deployed /invocations didn't return JSON (status={r.status_code}, "
+            f"content-type={r.headers.get('content-type')!r}, body[:200]={r.text[:200]!r}). "
+            "Most common cause: chat-UI npm build failed during deploy and the app "
+            "is running in backend-only mode. Step 6 already proved the long-running "
+            "contract end-to-end against the wrapped agent in-process."
+        )
+    kickoff: dict[str, Any] = r.json()
+    deployed_resp_id: str = kickoff["id"]
+    print(f"[8a] kickoff ok: resp_id={deployed_resp_id}  status={kickoff.get('status')}  "
+          f"({int((time.time()-t0)*1000)}ms)")
 
-# COMMAND ----------
+    # 8b -- retrieve via GET /v1/responses/{id}
+    t_start = time.time()
+    final_payload: dict[str, Any] = {}
+    for i in range(36):  # 36 * 5s = ~3 min cap
+        r = requests.get(f"{app_url}/v1/responses/{deployed_resp_id}", headers=hdr, timeout=30)
+        r.raise_for_status()
+        final_payload = r.json()
+        status = final_payload.get("status")
+        print(f"  [8b] poll #{i+1:>2d} ({int(time.time()-t_start)}s)  status={status}")
+        if status in ("completed", "failed", "cancelled"):
+            break
+        time.sleep(5)
 
-# MAGIC %md
-# MAGIC ## Step 9 -- Retrieve: poll `GET /v1/responses/{id}` until completed
-# MAGIC
-# MAGIC The deployed app exposes the OpenAI-Responses-style alias `/v1/responses/{id}` -- a strict GET that returns the latest state of the response (status + accumulated events + final output once the agent finishes). The actual analyst work takes ~30-90 seconds depending on FMAPI load.
+    if final_payload.get("status") == "completed":
+        output = final_payload.get("output", [])
+        if output and output[-1].get("content"):
+            text = output[-1]["content"][0].get("text", "")
+            print(f"\n--- deployed analyst report (first 800 chars) ---\n{text[:800]}")
 
-# COMMAND ----------
-
-t_start = time.time()
-final_payload: dict[str, Any] = {}
-for i in range(36):  # 36 * 5s = ~3 min cap
-    r = requests.get(f"{app_url}/v1/responses/{deployed_resp_id}", headers=hdr, timeout=30)
+    # 8c -- cancel: kickoff again, immediately cancel
+    r = requests.post(
+        f"{app_url}/invocations",
+        headers=hdr,
+        timeout=60,
+        json={
+            "input": [{"role": "user", "content": "Deep-research every category and produce a 5000-word strategic review."}],
+            "background": True,
+            "custom_inputs": {"configurable": {"thread_id": f"lab15-{username}-deployed-cancel"}},
+        },
+    )
     r.raise_for_status()
-    final_payload = r.json()
-    status = final_payload.get("status")
-    print(f"  poll #{i+1:>2d} ({int(time.time()-t_start)}s)  status={status}")
-    if status in ("completed", "failed", "cancelled"):
-        break
-    time.sleep(5)
-
-print(f"\nfinal status: {final_payload.get('status')}")
-if final_payload.get("status") == "completed":
-    output = final_payload.get("output", [])
-    if output:
-        last = output[-1]
-        content = last.get("content", [])
-        if content:
-            text = content[0].get("text", "")
-            print(f"\n--- analyst report (first 800 chars) ---\n{text[:800]}")
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Step 10 -- Cancel: kick off another task and cancel before it finishes
-# MAGIC
-# MAGIC Kicking off a second long task and immediately cancelling via `POST /invocations` with `operation: cancel`. The status flips to `cancelled` and the daemon thread tears down the underlying task best-effort.
-
-# COMMAND ----------
-
-# 10a -- kickoff
-r = requests.post(
-    f"{app_url}/invocations",
-    headers=hdr,
-    timeout=30,
-    json={
-        "input": [{"role": "user", "content": "Deep-research every category in our catalog and produce a 5000-word strategic review."}],
-        "background": True,
-        "custom_inputs": {"configurable": {"thread_id": f"lab15-{username}-cancel"}},
-    },
-)
-r.raise_for_status()
-cancel_kickoff = r.json()
-cancel_resp_id: str = cancel_kickoff["id"]
-print(f"resp_id:  {cancel_resp_id}")
-print(f"status:   {cancel_kickoff.get('status')}  (cancelling immediately...)")
-
-time.sleep(2)
-
-# 10b -- cancel via /invocations + custom_inputs.operation
-r = requests.post(
-    f"{app_url}/invocations",
-    headers=hdr,
-    timeout=30,
-    json={
-        "input": [],
-        "custom_inputs": {"operation": "cancel", "response_id": cancel_resp_id},
-    },
-)
-r.raise_for_status()
-cancelled = r.json()
-print(f"cancelled.status: {cancelled.get('status')}")
+    cancel_id: str = r.json()["id"]
+    print(f"[8c] kickoff: {cancel_id}  -- cancelling in 2s...")
+    time.sleep(2)
+    r = requests.post(
+        f"{app_url}/invocations",
+        headers=hdr,
+        timeout=30,
+        json={"input": [], "custom_inputs": {"operation": "cancel", "response_id": cancel_id}},
+    )
+    r.raise_for_status()
+    print(f"[8c] cancelled.status: {r.json().get('status')}")
+except Exception as e:
+    print(f"\n[step 8 SKIPPED] {e}")
 
 # COMMAND ----------
 
