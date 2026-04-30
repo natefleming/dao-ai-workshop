@@ -7,8 +7,8 @@
 # MAGIC ## Goals
 # MAGIC
 # MAGIC - Configure `app.long_running:` so dao-ai wraps the agent with `LongRunningResponsesAgent`, persisting kickoff state in Lakebase.
-# MAGIC - Deploy to **both** targets (Apps for the chat-app slot, Model Serving for in-notebook SDK invocation) and exercise the **Responses-API contract end-to-end**. Three operations: **kickoff** (`background: true`), **retrieve** (`operation: retrieve`), **cancel** (`operation: cancel`).
-# MAGIC - Show two SDK-clean invocation patterns from a notebook: `WorkspaceClient.serving_endpoints.http_request(...)` and `databricks_langchain.ChatDatabricks(..., responses_api=True)`.
+# MAGIC - Deploy as a Databricks App and exercise the **Responses-API contract end-to-end**: kickoff (`background=True`), retrieve, cancel.
+# MAGIC - Show the canonical Databricks pattern for invoking an Apps-deployed agent from a notebook: OIDC token-exchange + `databricks_openai.DatabricksOpenAI` with `model="apps/<name>"`.
 # MAGIC - Understand why long-running agents need a checkpointer (state has to survive the kickoff / poll / cancel turns) and where dao-ai persists kickoff state.
 # MAGIC
 # MAGIC ## Deliverable
@@ -35,7 +35,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "dao-ai>=0.1.66" "databricks-langchain>=0.7"
+# MAGIC %pip install "dao-ai>=0.1.66" "databricks-openai>=0.6"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -64,8 +64,6 @@ username: str = re.sub(r"[^a-z0-9]+", "-", short_name).strip("-")[:13]
 username_sql: str = username.replace("-", "_")
 print(f"Derived username: {username}  (sql-safe: {username_sql})")
 
-dbutils.widgets.text("catalog", "workshop_nate_fleming", "Unity Catalog")
-dbutils.widgets.text("schema", "dao_ai_workshop_test", "UC schema")
 dbutils.widgets.text("lakebase_project", "retail-consumer-goods", "Lakebase project")
 dbutils.widgets.text("llm_endpoint", "databricks-claude-sonnet-4-5", "LLM endpoint")
 dbutils.widgets.text("max_duration_seconds", "1800", "Max background duration (s)")
@@ -74,8 +72,6 @@ dbutils.widgets.text("poll_interval_seconds", "1.0", "Internal poll cadence (s)"
 params: dict[str, str] = {
     "username": username,
     "username_sql": username_sql,
-    "catalog": dbutils.widgets.get("catalog").strip(),
-    "schema": dbutils.widgets.get("schema").strip(),
     "lakebase_project": dbutils.widgets.get("lakebase_project").strip(),
     "llm_endpoint": dbutils.widgets.get("llm_endpoint").strip(),
     "max_duration_seconds": dbutils.widgets.get("max_duration_seconds").strip(),
@@ -94,10 +90,6 @@ params: dict[str, str] = {
 from dao_ai.config import AppConfig
 
 config: AppConfig = AppConfig.from_file("background_advisor.yaml", params=params)
-
-for s_key, schema in config.schemas.items():
-    schema.create()
-    print(f"UC schema ready: {s_key} -> {schema.full_name}")
 
 for db_key, database in config.resources.databases.items():
     database.create()
@@ -152,133 +144,136 @@ print(f"Wrapped class:     {type(agent_lr).__name__}")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 6 -- Deploy to BOTH (Apps + Model Serving)
-# MAGIC
-# MAGIC `create_agent()` logs a new MLflow model version; `deploy_agent(BOTH)` wires that version into both a Databricks App slot **and** a Model Serving endpoint named `endpoint_name`. The Apps URL is the workshop-standard chat-app slot; the MS endpoint is what we use below for SDK-clean in-notebook invocation.
+# MAGIC ## Step 6 -- Deploy as a Databricks App
 
 # COMMAND ----------
 
 from dao_ai.config import DeploymentTarget
 
-config.create_agent()
-config.deploy_agent(target=DeploymentTarget.BOTH)
-print(f"Deployed: app slot=hardware-store-{username}, MS endpoint={config.app.endpoint_name}")
+config.deploy_agent(target=DeploymentTarget.APPS)
+print(f"Deployed app: {config.app.name}")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 7 -- Invoke the deployed agent via the SDK (Model Serving endpoint)
+# MAGIC ## Step 7 -- Invoke the deployed App from a notebook
 # MAGIC
-# MAGIC We invoke through the **Model Serving** endpoint because:
+# MAGIC The Apps URL (`*.databricksapps.com`) is fronted by **gap-auth**, an OAuth proxy that requires an audience-scoped OAuth U2M token (NOT a workspace-runtime token). A notebook's default `WorkspaceClient` has a runtime PAT, so calling `/invocations` directly with `w.config.authenticate()` returns `HTTP 302` to `/oidc/oauth2/v2.0/authorize`.
 # MAGIC
-# MAGIC - The SDK's `WorkspaceClient` already has workspace-scoped credentials. `/serving-endpoints/<name>/invocations` accepts those credentials directly -- no extra plumbing.
-# MAGIC - The Apps URL (`*.databricksapps.com`) is fronted by gap-auth which expects an OAuth U2M session token, not a workspace-runtime token, so calling it from a notebook would 302 to OIDC authorize.
+# MAGIC The canonical fix is the **Databricks token-exchange endpoint** (`POST /oidc/v1/token`): exchange the notebook's PAT for an OAuth access token whose `audience` is the App's OAuth client ID. Pure Python, no CLI, no shell:
 # MAGIC
-# MAGIC Two equivalent SDK-clean clients are shown:
+# MAGIC ```text
+# MAGIC notebook PAT  --[POST /oidc/v1/token, audience=<app_client_id>]-->  app-scoped OAuth bearer  -->  POST /invocations
+# MAGIC ```
 # MAGIC
-# MAGIC | client                                                                           | what it gives you                                |
-# MAGIC |---|---|
-# MAGIC | `WorkspaceClient.api_client.do("POST", "/serving-endpoints/<name>/invocations", body=...)` | SDK-managed HTTP + auth, returns the parsed JSON envelope -- direct access to `id`, `status`, `output`, etc. |
-# MAGIC | `databricks_langchain.ChatDatabricks(..., responses_api=True)`                   | LangChain `ChatModel` interface -- familiar `.invoke(messages, **kwargs)` shape |
+# MAGIC Once we have the bearer, we use Databricks' canonical client for Apps inference: **`databricks_openai.DatabricksOpenAI`** with `model="apps/<app-name>"`. It auto-resolves the App URL, manages the HTTP client, and exposes the OpenAI Responses API surface (`responses.create`, `responses.retrieve`, `responses.cancel`).
 # MAGIC
-# MAGIC Either works for kickoff / retrieve / cancel by setting the right body fields (`background`, `custom_inputs.operation`, `response_id`).
+# MAGIC Refs (canonical Databricks docs):
+# MAGIC - [Query an agent deployed on Databricks](https://docs.databricks.com/aws/en/generative-ai/agent-framework/query-agent) -- the `DatabricksOpenAI` + `apps/<name>` pattern.
+# MAGIC - [Connect to a Databricks App with token authentication](https://docs.databricks.com/aws/en/dev-tools/databricks-apps/connect-local) -- the OIDC token-exchange recipe.
 
 # COMMAND ----------
 
-# Wait for the MS endpoint to become READY.
-# Right after deploy_agent(BOTH) the endpoint may take a moment to
-# show up in the listing -- tolerate ResourceDoesNotExist for the
-# first few polls.
-from databricks.sdk.errors import ResourceDoesNotExist
-
-endpoint_name: str = config.app.endpoint_name
+# Wait for the deployed App to become ACTIVE / RUNNING.
+info: dict[str, Any] = {}
 for i in range(40):  # up to ~10 min
-    try:
-        ep = w.serving_endpoints.get(endpoint_name)
-    except ResourceDoesNotExist:
-        print(f"  attempt {i+1:>2d}  endpoint not yet visible, retrying...")
-        time.sleep(15)
-        continue
-    ready = ep.state.ready if ep.state else None
-    cfg_state = ep.state.config_update if ep.state else None
-    print(f"  attempt {i+1:>2d}  ready={ready}  config={cfg_state}")
-    if ready and str(ready).endswith("READY") and (cfg_state is None or str(cfg_state).endswith("NOT_UPDATING")):
+    info = w.api_client.do("GET", f"/api/2.0/apps/{config.app.name}")
+    cs = (info.get("compute_status") or {}).get("state")
+    aps = (info.get("app_status") or {}).get("state")
+    print(f"  attempt {i+1:>2d}  compute={cs}  app={aps}")
+    if cs == "ACTIVE" and aps == "RUNNING":
         break
     time.sleep(15)
 
-print(f"\nendpoint_name: {endpoint_name}")
+app = w.apps.get(config.app.name)
+print(f"\napp.url:               {app.url}")
+print(f"app.oauth2_app_client_id: {app.oauth2_app_client_id}")
 
 # COMMAND ----------
 
-# 7a -- kickoff via WorkspaceClient.api_client.do
-ms_path: str = f"/serving-endpoints/{endpoint_name}/invocations"
+# Mint an app-scoped OAuth bearer via OIDC token-exchange.
+# Subject = the notebook's runtime PAT (only available in a Databricks notebook).
+import requests
 
-t0 = time.time()
-kickoff: dict[str, Any] = w.api_client.do(
-    method="POST",
-    path=ms_path,
-    body={
-        "input": [{"role": "user", "content": "Deep-research the Power Tools category for Q2 2026 and produce a thorough analyst report."}],
-        "background": True,
-        "custom_inputs": {"configurable": {"thread_id": f"lab15-{username}-deployed"}},
-    },
+notebook_pat: str = (
+    dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().get()
 )
-deployed_resp_id: str = kickoff["id"]
-print(f"[7a] kickoff ok: resp_id={deployed_resp_id}  status={kickoff.get('status')}  "
+
+exchange = requests.post(
+    f"{w.config.host}/oidc/v1/token",
+    data={
+        "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
+        "subject_token": notebook_pat,
+        "subject_token_type": "urn:databricks:params:oauth:token-type:personal-access-token",
+        "requested_token_type": "urn:ietf:params:oauth:token-type:access_token",
+        "scope": "all-apis",
+        "audience": app.oauth2_app_client_id,
+    },
+    timeout=30,
+)
+exchange.raise_for_status()
+app_token: str = exchange.json()["access_token"]
+print(f"Minted app-scoped bearer (len={len(app_token)})")
+
+# Build an OAuth-backed WorkspaceClient that DatabricksOpenAI will accept,
+# then build the DatabricksOpenAI client. `model="apps/<name>"` auto-routes
+# to the App URL via WorkspaceClient.apps.get(name).url.
+from databricks.sdk import WorkspaceClient as WC
+from databricks_openai import DatabricksOpenAI
+
+w_app = WC(host=w.config.host, token=app_token, auth_type="pat")
+client = DatabricksOpenAI(workspace_client=w_app)
+model_ref: str = f"apps/{config.app.name}"
+
+# COMMAND ----------
+
+# 7a -- kickoff: responses.create with background=True returns a resp_* id immediately
+t0 = time.time()
+kickoff = client.responses.create(
+    model=model_ref,
+    input=[{"role": "user", "content": "Deep-research the Power Tools category for Q2 2026 and produce a thorough analyst report."}],
+    background=True,
+    extra_body={"custom_inputs": {"configurable": {"thread_id": f"lab15-{username}-deployed"}}},
+)
+deployed_resp_id: str = kickoff.id
+print(f"[7a] kickoff ok: resp_id={deployed_resp_id}  status={kickoff.status}  "
       f"({int((time.time()-t0)*1000)}ms)")
 
 # COMMAND ----------
 
-# 7b -- retrieve: poll with custom_inputs.operation = "retrieve"
+# 7b -- retrieve: GET /v1/responses/{id} until completed
 t_start = time.time()
-final_payload: dict[str, Any] = {}
+final = kickoff
 for i in range(36):  # 36 * 5s = ~3 min cap
-    final_payload = w.api_client.do(
-        method="POST",
-        path=ms_path,
-        body={"input": [], "custom_inputs": {"operation": "retrieve", "response_id": deployed_resp_id}},
-    )
-    status = final_payload.get("status")
-    print(f"  [7b] poll #{i+1:>2d} ({int(time.time()-t_start)}s)  status={status}")
-    if status in ("completed", "failed", "cancelled"):
+    final = client.responses.retrieve(deployed_resp_id)
+    print(f"  [7b] poll #{i+1:>2d} ({int(time.time()-t_start)}s)  status={final.status}")
+    if final.status in ("completed", "failed", "cancelled"):
         break
     time.sleep(5)
 
-if final_payload.get("status") == "completed":
-    output = final_payload.get("output", [])
-    if output and output[-1].get("content"):
-        text = output[-1]["content"][0].get("text", "")
-        print(f"\n--- deployed analyst report (first 800 chars) ---\n{text[:800]}")
+if final.status == "completed" and final.output:
+    last = final.output[-1]
+    text = ""
+    if hasattr(last, "content") and last.content:
+        block = last.content[0]
+        text = getattr(block, "text", "") or ""
+    print(f"\n--- deployed analyst report (first 800 chars) ---\n{text[:800]}")
 
 # COMMAND ----------
 
-# 7c -- cancel: kickoff again via ChatDatabricks (LangChain client), then cancel.
-# Demonstrates the same MS endpoint reachable via databricks_langchain.
-from databricks_langchain import ChatDatabricks
-
-chat = ChatDatabricks(endpoint=endpoint_name, responses_api=True, max_tokens=2048)
-
-cancel_kickoff = chat.invoke(
-    [{"role": "user", "content": "Deep-research every category and produce a 5000-word strategic review."}],
+# 7c -- cancel: kickoff again, immediately cancel
+cancel_kickoff = client.responses.create(
+    model=model_ref,
+    input=[{"role": "user", "content": "Deep-research every category and produce a 5000-word strategic review."}],
     background=True,
-    custom_inputs={"configurable": {"thread_id": f"lab15-{username}-deployed-cancel"}},
+    extra_body={"custom_inputs": {"configurable": {"thread_id": f"lab15-{username}-deployed-cancel"}}},
 )
-# ChatDatabricks returns an AIMessage with the kickoff envelope under
-# `additional_kwargs` / `response_metadata` depending on version. Pull the id robustly.
-cancel_id: str = (
-    getattr(cancel_kickoff, "id", None)
-    or cancel_kickoff.additional_kwargs.get("id")
-    or cancel_kickoff.response_metadata.get("id")
-)
-print(f"[7c] kickoff (via ChatDatabricks): {cancel_id}  -- cancelling in 2s...")
+cancel_id: str = cancel_kickoff.id
+print(f"[7c] kickoff: {cancel_id}  -- cancelling in 2s...")
 time.sleep(2)
 
-cancelled: dict[str, Any] = w.api_client.do(
-    method="POST",
-    path=ms_path,
-    body={"input": [], "custom_inputs": {"operation": "cancel", "response_id": cancel_id}},
-)
-print(f"[7c] cancelled.status: {cancelled.get('status')}")
+cancelled = client.responses.cancel(cancel_id)
+print(f"[7c] cancelled.status: {cancelled.status}")
 
 # COMMAND ----------
 
