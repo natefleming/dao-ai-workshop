@@ -214,18 +214,6 @@ exchange.raise_for_status()
 app_token: str = exchange.json()["access_token"]
 print(f"Minted app-scoped bearer (len={len(app_token)})")
 
-# Diagnostic: probe the App URL directly with the exchanged bearer.
-# If gap-auth accepts the token, this should return 200 with a `resp_*` id.
-probe = requests.post(
-    f"{app.url}/v1/responses",
-    headers={"Authorization": f"Bearer {app_token}", "Content-Type": "application/json"},
-    json={"model": config.app.name, "input": [{"role": "user", "content": "ping"}], "background": True},
-    timeout=30,
-)
-print(f"[probe] status={probe.status_code}  ct={probe.headers.get('content-type')}  "
-      f"body[:300]={probe.text[:300]!r}")
-probe.raise_for_status()
-
 # Use the OpenAI Python SDK with the app-scoped bearer.
 # (Databricks ships `databricks_openai.DatabricksOpenAI` and
 # `databricks_langchain.ChatDatabricks` for the same purpose, but both
