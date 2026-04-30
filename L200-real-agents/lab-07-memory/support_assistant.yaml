@@ -161,10 +161,12 @@ app:
   agents:
     - *support_agent
 
+  # Single-agent app: orchestration only wires the memory section
+  # into runtime. No swarm/supervisor router needed -- the support_agent
+  # is reached directly so the user-supplied `configurable` (thread_id,
+  # user_id, ...) flows straight into the middleware chain.
   orchestration:
     memory: *memory
-    swarm:
-      default_agent: *support_agent
 
   # Once the chat history exceeds max_tokens_before_summary, dao-ai
   # uses summarization_llm to compress older turns into a single
