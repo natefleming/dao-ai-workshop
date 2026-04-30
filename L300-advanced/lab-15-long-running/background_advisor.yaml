@@ -51,12 +51,6 @@ parameters:
   username_sql:
     description: SQL-safe variant of username (hyphens replaced with underscores). Auto-set by the notebook.
     # No default => required.
-  catalog:
-    description: Unity Catalog used to register the deployed Model Serving model.
-    # No default => required (passed by notebook / submit script).
-  schema:
-    description: UC schema (within `catalog`) used to register the deployed model.
-    # No default => required.
   lakebase_project:
     description: Lakebase autoscaling project name (also hosts checkpointer + long-running tables).
     default: retail-consumer-goods
@@ -96,11 +90,6 @@ variables:
       - scope: ${var.sp_secret_scope}
         secret: ${var.sp_client_secret_secret}
       - env: DAO_AI_SP_CLIENT_SECRET
-
-schemas:
-  workshop_schema: &workshop_schema
-    catalog_name: ${var.catalog}
-    schema_name: ${var.schema}
 
 resources:
   llms:
@@ -148,19 +137,12 @@ app:
   description: "Lab 15 (hardware_store++): long-running / background inventory analyst"
   log_level: INFO
 
-  # Deploy to Model Serving (not Databricks Apps): the long-running
-  # pattern is a headless API contract, and MS endpoints accept the
-  # notebook's SDK bearer for `/serving-endpoints/{name}/invocations`.
-  # Apps live behind gap-auth, which rejects in-notebook tokens with a
-  # 302 to OIDC -- a real client (CLI-issued OAuth) works against Apps,
-  # but in-notebook clients can't reach it without extra plumbing.
-  deployment_target: model_serving
+  deployment_target: apps
 
-  registered_model:
-    schema: *workshop_schema
-    name: ${var.username_sql}_lab15_inventory_analyst
-
-  endpoint_name: hardware-store-${var.username}
+  # Headless API endpoint -- skip the chat UI build. The lab exercises
+  # the long-running contract via direct HTTP to /invocations and
+  # /v1/responses/{id}; no browser-facing chat needed.
+  enable_chat_proxy: false
 
   agents:
     - *inventory_analyst

@@ -7,9 +7,8 @@
 # MAGIC ## Goals
 # MAGIC
 # MAGIC - Configure `app.long_running:` so dao-ai wraps the agent with `LongRunningResponsesAgent`, persisting kickoff state in Lakebase.
-# MAGIC - Deploy to **Model Serving** (`deployment_target: model_serving`) and exercise the **Responses-API contract end-to-end via HTTP** -- the way a real client process would. Three operations: **kickoff** (`background: true`), **retrieve** (`operation: retrieve`), **cancel** (`operation: cancel`).
-# MAGIC - Understand why long-running agents need a checkpointer (state has to survive the kickoff / poll / cancel turns) and why the contract is a deployed-endpoint contract -- the responses tables are owned by the deployed agent's service principal, so an in-notebook predict (under the user's PAT) would hit `InsufficientPrivilege`.
-# MAGIC - Notice why this lab targets Model Serving instead of Apps: MS's `/serving-endpoints/<name>/invocations` accepts the notebook's SDK bearer; Apps live behind gap-auth and require a CLI-minted OAuth token.
+# MAGIC - Deploy as a Databricks App and exercise the **Responses-API contract end-to-end via HTTP**. Three operations: **kickoff** (`background: true`), **retrieve** (`GET /v1/responses/{id}`), **cancel** (`operation: cancel`).
+# MAGIC - Understand why long-running agents need a checkpointer (state has to survive the kickoff / poll / cancel turns) and where dao-ai persists kickoff state.
 # MAGIC
 # MAGIC ## Deliverable
 # MAGIC
@@ -65,8 +64,6 @@ username: str = re.sub(r"[^a-z0-9]+", "-", short_name).strip("-")[:13]
 username_sql: str = username.replace("-", "_")
 print(f"Derived username: {username}  (sql-safe: {username_sql})")
 
-dbutils.widgets.text("catalog", "workshop_nate_fleming", "Unity Catalog")
-dbutils.widgets.text("schema", "dao_ai_workshop_test", "UC schema")
 dbutils.widgets.text("lakebase_project", "retail-consumer-goods", "Lakebase project")
 dbutils.widgets.text("llm_endpoint", "databricks-claude-sonnet-4-5", "LLM endpoint")
 dbutils.widgets.text("max_duration_seconds", "1800", "Max background duration (s)")
@@ -75,8 +72,6 @@ dbutils.widgets.text("poll_interval_seconds", "1.0", "Internal poll cadence (s)"
 params: dict[str, str] = {
     "username": username,
     "username_sql": username_sql,
-    "catalog": dbutils.widgets.get("catalog").strip(),
-    "schema": dbutils.widgets.get("schema").strip(),
     "lakebase_project": dbutils.widgets.get("lakebase_project").strip(),
     "llm_endpoint": dbutils.widgets.get("llm_endpoint").strip(),
     "max_duration_seconds": dbutils.widgets.get("max_duration_seconds").strip(),
@@ -95,10 +90,6 @@ params: dict[str, str] = {
 from dao_ai.config import AppConfig
 
 config: AppConfig = AppConfig.from_file("background_advisor.yaml", params=params)
-
-for s_key, schema in config.schemas.items():
-    schema.create()
-    print(f"UC schema ready: {s_key} -> {schema.full_name}")
 
 for db_key, database in config.resources.databases.items():
     database.create()
@@ -153,58 +144,52 @@ print(f"Wrapped class:     {type(agent_lr).__name__}")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 6 -- Deploy to Model Serving
-# MAGIC
-# MAGIC `create_agent()` logs a new MLflow model version; `deploy_agent()` wires that version into a Model Serving endpoint named `config.app.name`. (`deploy_agent` alone errors when the endpoint already serves the latest version, hence the explicit `create_agent()` first.)
+# MAGIC ## Step 6 -- Deploy as a Databricks App
 
 # COMMAND ----------
 
 from dao_ai.config import DeploymentTarget
 
-config.create_agent()
-config.deploy_agent(target=DeploymentTarget.MODEL_SERVING)
-print(f"Deployed serving endpoint: {config.app.name}")
+config.deploy_agent(target=DeploymentTarget.APPS)
+print(f"Deployed app: {config.app.name}")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 7 -- Invoke the deployed Model Serving endpoint
+# MAGIC ## Step 7 -- Invoke the deployed app from a client
 # MAGIC
-# MAGIC Real client processes (a backend service, a script, another notebook) call the endpoint over HTTP. Pattern:
+# MAGIC Real client processes call the deployed app over HTTP. Pattern:
 # MAGIC
-# MAGIC 1. Resolve the workspace host from `WorkspaceClient.config`.
-# MAGIC 2. Mint a bearer token from the same client (`w.config.authenticate()`).
-# MAGIC 3. **Kickoff:** `POST <host>/serving-endpoints/<name>/invocations` with `"background": true` -- returns a `resp_*` id and `status: in_progress` within ~1s.
-# MAGIC 4. **Retrieve:** repeat `POST` with `custom_inputs.operation: "retrieve"` until `status: completed`. (Apps also expose `GET /v1/responses/{id}` -- Model Serving does not, so we use the `operation: retrieve` form.)
-# MAGIC 5. **Cancel:** `POST` with `custom_inputs.operation: "cancel"` flips the status to `cancelled`.
-# MAGIC
-# MAGIC We deploy to Model Serving (not Databricks Apps) because the long-running pattern is a headless API contract: MS accepts the notebook's SDK bearer for `/serving-endpoints/<name>/invocations`. Apps live behind gap-auth, which rejects in-notebook tokens with a 302 to OIDC -- usable only from a CLI-minted OAuth client.
+# MAGIC 1. Resolve the app URL via `WorkspaceClient`.
+# MAGIC 2. Mint a bearer token from the same client.
+# MAGIC 3. **Kickoff:** `POST /invocations` with `"background": true` -- returns a `resp_*` id and `status: in_progress` within ~1s.
+# MAGIC 4. **Retrieve:** `GET /v1/responses/{id}` until `status: completed`.
+# MAGIC 5. **Cancel:** `POST /invocations` with `operation: cancel` flips the status to `cancelled`.
 
 # COMMAND ----------
 
-# Wait for the endpoint to become READY.
-endpoint_name: str = config.app.name
+info: dict[str, Any] = {}
 for i in range(40):  # up to ~10 min
-    ep = w.serving_endpoints.get(endpoint_name)
-    state = ep.state.ready if ep.state else None
-    cfg_state = ep.state.config_update if ep.state else None
-    print(f"  attempt {i+1:>2d}  ready={state}  config={cfg_state}")
-    if state and str(state).endswith("READY"):
+    info = w.api_client.do("GET", f"/api/2.0/apps/{config.app.name}")
+    cs = (info.get("compute_status") or {}).get("state")
+    aps = (info.get("app_status") or {}).get("state")
+    print(f"  attempt {i+1:>2d}  compute={cs}  app={aps}")
+    if cs == "ACTIVE" and aps == "RUNNING":
         break
     time.sleep(15)
 
-ms_url: str = f"{w.config.host.rstrip('/')}/serving-endpoints/{endpoint_name}/invocations"
-print(f"\nms_url: {ms_url}")
+app_url: str = info["url"]
+print(f"\napp_url: {app_url}")
 
 # COMMAND ----------
 
 bearer: str = w.config.authenticate()["Authorization"].removeprefix("Bearer ")
 hdr: dict[str, str] = {"Authorization": f"Bearer {bearer}", "Content-Type": "application/json"}
 
-# 7a -- kickoff via POST /serving-endpoints/<name>/invocations
+# 7a -- kickoff via POST /invocations
 t0 = time.time()
 r = requests.post(
-    ms_url,
+    f"{app_url}/invocations",
     headers=hdr,
     timeout=60,
     json={
@@ -221,16 +206,11 @@ print(f"[7a] kickoff ok: resp_id={deployed_resp_id}  status={kickoff.get('status
 
 # COMMAND ----------
 
-# 7b -- retrieve via POST with operation=retrieve
+# 7b -- retrieve via GET /v1/responses/{id}
 t_start = time.time()
 final_payload: dict[str, Any] = {}
 for i in range(36):  # 36 * 5s = ~3 min cap
-    r = requests.post(
-        ms_url,
-        headers=hdr,
-        timeout=30,
-        json={"input": [], "custom_inputs": {"operation": "retrieve", "response_id": deployed_resp_id}},
-    )
+    r = requests.get(f"{app_url}/v1/responses/{deployed_resp_id}", headers=hdr, timeout=30)
     r.raise_for_status()
     final_payload = r.json()
     status = final_payload.get("status")
@@ -249,7 +229,7 @@ if final_payload.get("status") == "completed":
 
 # 7c -- cancel: kickoff again, immediately cancel
 r = requests.post(
-    ms_url,
+    f"{app_url}/invocations",
     headers=hdr,
     timeout=60,
     json={
@@ -263,7 +243,7 @@ cancel_id: str = r.json()["id"]
 print(f"[7c] kickoff: {cancel_id}  -- cancelling in 2s...")
 time.sleep(2)
 r = requests.post(
-    ms_url,
+    f"{app_url}/invocations",
     headers=hdr,
     timeout=30,
     json={"input": [], "custom_inputs": {"operation": "cancel", "response_id": cancel_id}},
