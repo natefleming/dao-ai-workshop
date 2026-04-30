@@ -52,8 +52,8 @@ username: str = re.sub(r"[^a-z0-9]+", "-", short_name).strip("-")[:13]
 user_id: str = re.sub(r"[^a-z0-9]+", "-", w.current_user.me().user_name.lower()).strip("-")
 print(f"Derived username: {username} (user_id={user_id})")
 
-dbutils.widgets.text("lakebase_name", "retail-consumer-goods", "Lakebase instance")
 dbutils.widgets.text("lakebase_project", "retail-consumer-goods", "Lakebase project")
+dbutils.widgets.text("lakebase_branch", "", "Lakebase branch (empty = default branch)")
 dbutils.widgets.text("llm_endpoint", "databricks-claude-sonnet-4-5", "LLM endpoint")
 # Lower-than-default summarization thresholds so the demo triggers within a handful of turns.
 dbutils.widgets.text("max_tokens_before_summary", "1500", "Summarization trigger (low for demo)")
@@ -61,8 +61,8 @@ dbutils.widgets.text("max_tokens_after_summary", "500", "Kept budget after summa
 
 params: dict[str, str] = {
     "username": username,
-    "lakebase_name": dbutils.widgets.get("lakebase_name").strip(),
     "lakebase_project": dbutils.widgets.get("lakebase_project").strip(),
+    "lakebase_branch": dbutils.widgets.get("lakebase_branch").strip(),
     "llm_endpoint": dbutils.widgets.get("llm_endpoint").strip(),
     "max_tokens_before_summary": dbutils.widgets.get("max_tokens_before_summary").strip(),
     "max_tokens_after_summary": dbutils.widgets.get("max_tokens_after_summary").strip(),
@@ -80,8 +80,8 @@ params: dict[str, str] = {
 # MAGIC resources:
 # MAGIC   databases:
 # MAGIC     workshop_db: &workshop_db
-# MAGIC       name: ${var.lakebase_name}
 # MAGIC       project: ${var.lakebase_project}
+# MAGIC       branch: ${var.lakebase_branch}      # empty = default branch (auto-resolved)
 # MAGIC
 # MAGIC memory:
 # MAGIC   checkpointer:

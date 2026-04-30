@@ -54,6 +54,9 @@ parameters:
   lakebase_project:
     description: Lakebase autoscaling project name (also hosts checkpointer + long-running tables).
     default: retail-consumer-goods
+  lakebase_branch:
+    description: Lakebase branch within the project. Empty = auto-resolve the project's default branch.
+    default: ""
   llm_endpoint:
     description: Databricks LLM serving endpoint name.
     default: databricks-claude-sonnet-4-5
@@ -100,8 +103,8 @@ resources:
 
   databases:
     workshop_db: &workshop_db
-      name: ${var.lakebase_project}
       project: ${var.lakebase_project}
+      branch: ${var.lakebase_branch}
       description: "Lakebase backing the checkpointer + long-running responses store."
       client_id: *client_id
       client_secret: *client_secret

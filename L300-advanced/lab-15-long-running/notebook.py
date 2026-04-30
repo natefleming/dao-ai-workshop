@@ -65,6 +65,7 @@ username_sql: str = username.replace("-", "_")
 print(f"Derived username: {username}  (sql-safe: {username_sql})")
 
 dbutils.widgets.text("lakebase_project", "retail-consumer-goods", "Lakebase project")
+dbutils.widgets.text("lakebase_branch", "", "Lakebase branch (empty = default branch)")
 dbutils.widgets.text("llm_endpoint", "databricks-claude-sonnet-4-5", "LLM endpoint")
 dbutils.widgets.text("max_duration_seconds", "1800", "Max background duration (s)")
 dbutils.widgets.text("poll_interval_seconds", "1.0", "Internal poll cadence (s)")
@@ -73,6 +74,7 @@ params: dict[str, str] = {
     "username": username,
     "username_sql": username_sql,
     "lakebase_project": dbutils.widgets.get("lakebase_project").strip(),
+    "lakebase_branch": dbutils.widgets.get("lakebase_branch").strip(),
     "llm_endpoint": dbutils.widgets.get("llm_endpoint").strip(),
     "max_duration_seconds": dbutils.widgets.get("max_duration_seconds").strip(),
     "poll_interval_seconds": dbutils.widgets.get("poll_interval_seconds").strip(),

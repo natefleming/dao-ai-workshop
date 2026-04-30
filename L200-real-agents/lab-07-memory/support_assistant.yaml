@@ -34,12 +34,12 @@ parameters:
   username:
     description: Per-student username for unique deployment names. Auto-set by the notebook.
     # No default => required.
-  lakebase_name:
-    description: Lakebase instance name.
-    default: retail-consumer-goods
   lakebase_project:
-    description: Lakebase project name.
+    description: Lakebase autoscaling project name.
     default: retail-consumer-goods
+  lakebase_branch:
+    description: Lakebase branch within the project. Empty = auto-resolve the project's default branch.
+    default: ""
   llm_endpoint:
     description: Primary Databricks LLM serving endpoint name.
     default: databricks-claude-sonnet-4-5
@@ -106,8 +106,8 @@ resources:
 
   databases:
     workshop_db: &workshop_db
-      name: ${var.lakebase_name}
       project: ${var.lakebase_project}
+      branch: ${var.lakebase_branch}
       description: "Lakebase used by the workshop for persistent memory."
       # SP auth for the deployed app. Notebook runs ignore these
       # (ambient auth wins); the deployed app uses them.
