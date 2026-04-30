@@ -32,7 +32,7 @@ Lab-specific requirements:
 - **Lab 11**: Vector Search endpoint, `databricks-claude-haiku-4-5` (decomposition + instruction rerank), `databricks-gte-large-en` (embedding).
 - **Lab 12**: a Genie Space over the products table (Lab 3's space works), a SQL warehouse you can re-execute cached SQL on.
 - **Lab 14**: a Unity Catalog catalog you can write to (the `catalog` widget). The notebook self-provisions schema, products table, UC function.
-- **Lab 15**: same Lakebase / SP setup as Lab 7 (`setup/create_service_principal.sh` + `setup/grant_lakebase_superuser.sh` + the `retail-consumer-goods` Lakebase autoscaling project).
+- **Lab 15**: same Lakebase / SP setup as Lab 7 (`setup/create_service_principal.py` + `setup/grant_lakebase_superuser.py` + the `retail-consumer-goods` Lakebase autoscaling project).
 
 ## What you'll have at the end
 

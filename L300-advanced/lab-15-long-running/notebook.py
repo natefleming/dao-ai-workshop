@@ -24,8 +24,8 @@
 # MAGIC ## Pre-reqs
 # MAGIC
 # MAGIC Same Lakebase / SP setup Lab 7 needs:
-# MAGIC - `setup/create_service_principal.sh` (creates the `dao-ai-workshop-sp` SP and the `dao_ai_workshop` secret scope).
-# MAGIC - `setup/grant_lakebase_superuser.sh` (grants the SP `DATABRICKS_SUPERUSER` on the Lakebase project).
+# MAGIC - `setup/create_service_principal.py` (creates the `dao-ai-workshop-sp` SP and the `dao_ai_workshop` secret scope).
+# MAGIC - `setup/grant_lakebase_superuser.py` (grants the SP `DATABRICKS_SUPERUSER` on the Lakebase project).
 # MAGIC - The `retail-consumer-goods` Lakebase autoscaling project must exist in the workspace.
 
 # COMMAND ----------

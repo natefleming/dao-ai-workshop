@@ -36,22 +36,20 @@ A `hardware-store-<your-username>` agent that, when called with `background: tru
 
 Same Lakebase / SP setup Lab 7 needs:
 
-- `setup/create_service_principal.sh` (creates the `dao-ai-workshop-sp` SP and the `dao_ai_workshop` secret scope with `DAO_AI_SP_CLIENT_ID` + `DAO_AI_SP_CLIENT_SECRET`).
-- `setup/grant_lakebase_superuser.sh` (grants the SP `DATABRICKS_SUPERUSER` on the Lakebase project so the long-running wrapper can create its tables).
+- `setup/create_service_principal.py` (creates the `dao-ai-workshop-sp` SP and the `dao_ai_workshop` secret scope with `DAO_AI_SP_CLIENT_ID` + `DAO_AI_SP_CLIENT_SECRET`).
+- `setup/grant_lakebase_superuser.py` (grants the SP `DATABRICKS_SUPERUSER` on the Lakebase project so the long-running wrapper can create its tables).
 - The `retail-consumer-goods` Lakebase autoscaling project must exist in the workspace.
 
 ## Run
 
 Open `notebook.py` on Serverless compute. Run cell by cell. Watch:
 
-1. **Step 6a (kickoff)** — `process_messages(...)` returns within ~1s with `status: in_progress` and a `resp_*` id.
-2. **Step 6b (retrieve)** — repeated `operation: "retrieve"` calls show `in_progress` for ~30-90s, then `completed` with a multi-paragraph analyst report.
-3. **Step 6c (cancel)** — second kickoff, immediate cancel, status flips to `cancelled`.
-4. **Step 7 deploy** — pushes the same agent to a Databricks App.
-5. **Step 8** waits for compute / app to be ACTIVE / RUNNING.
-6. **Step 9** — `WorkspaceClient` mints a bearer token, `requests.post` to `<app_url>/invocations` with `background: true`, then poll `<app_url>/v1/responses/<resp_id>` until `completed`.
-
-The first deploy may take a couple of minutes for compute to come up; expect ~3-5 min wallclock for Step 8 the first time.
+1. **Step 5 (passthrough sanity)** — confirms the wrapped agent works for synchronous calls before we exercise the long-running surface.
+2. **Step 6 (deploy)** — pushes the agent to a Databricks App. The long-running contract is best exercised against the deployed endpoint, not the in-process compiled graph.
+3. **Step 7** waits for `compute_status: ACTIVE` + `app_status: RUNNING`. First deploy is ~3-5 min for compute warm-up.
+4. **Step 8 (kickoff)** — `WorkspaceClient` mints a bearer token, `requests.post` to `<app_url>/invocations` with `"background": true`. Returns within ~1s with `status: in_progress` and a `resp_*` id.
+5. **Step 9 (retrieve)** — `requests.get` to `<app_url>/v1/responses/<resp_id>` polls every 5s until `completed`. ~30-90s wallclock for the analyst report.
+6. **Step 10 (cancel)** — second kickoff, immediate cancel via `operation: cancel`, status flips to `cancelled`.
 
 Deployed app name: `hardware-store-<your-username>`. (Same slot as Labs 1, 2, 3, 4, 11, 12, 13, 14 — redeploying replaces whichever lab's agent was last in the slot with this one.)
 
