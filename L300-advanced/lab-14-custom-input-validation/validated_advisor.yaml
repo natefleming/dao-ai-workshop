@@ -1,0 +1,152 @@
+# yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
+#
+# Lab 14 -- Custom-Input Validation (L300, hardware_store++)
+# ----------------------------------------------------------
+# A hardware-store advisor that REQUIRES per-call context (store number,
+# customer tier) in `custom_inputs.configurable`. dao-ai's
+# CustomFieldValidationMiddleware short-circuits the request before the
+# agent runs and returns a copy-paste-ready "Configuration Required"
+# error when fields are missing.
+#
+# Builds on:
+#   - Lab 1 / Lab 2: parameters / resources / agents / app baseline,
+#                    schemas, resources.functions, tools (type:
+#                    unity_catalog), unity_catalog_functions, datasets.
+#   - Lab 9: agent.middleware list (Lab 9 used it for orchestration;
+#            here we use it for input validation).
+#
+# What's new vs prior labs:
+#   - top-level middleware: block declaring a reusable validator built
+#     from the dao-ai factory `dao_ai.middleware.create_custom_field_validation_middleware`.
+#   - agent.middleware: [*store_validation] pulls the validator into
+#     the agent's pre-execution chain; missing fields short-circuit
+#     with a markdown error before the model is called.
+#   - prompt references {store_num} / {customer_tier} / {region} --
+#     dao-ai injects validated context fields into the system prompt
+#     so the agent can use them naturally.
+#   - find_products_by_tier UC function: takes the validated
+#     customer_tier as a tool argument and applies a price ceiling
+#     (bronze <= $50, silver <= $150, gold <= $400, platinum unlimited).
+
+parameters:
+  username:
+    description: Per-student username for unique deployment names. Auto-set by the notebook.
+    # No default => required.
+  catalog:
+    description: Unity Catalog catalog containing the workshop tables / functions.
+    # No default => required.
+  schema:
+    description: Schema within the catalog for workshop assets.
+    default: dao_ai
+  llm_endpoint:
+    description: Databricks LLM serving endpoint name.
+    default: databricks-claude-sonnet-4-5
+
+# Workshop schema -- reused by the dataset, the UC function, and the
+# tool's resource binding via the *workshop_schema anchor.
+schemas:
+  workshop_schema: &workshop_schema
+    catalog_name: ${var.catalog}
+    schema_name: ${var.schema}
+
+resources:
+  llms:
+    default_llm: &default_llm
+      name: ${var.llm_endpoint}
+      temperature: 0.1
+      max_tokens: 4096
+
+  # UC function backing the tier_lookup tool below. Provisioned by
+  # the unity_catalog_functions: block at the bottom of the file.
+  functions:
+    find_products_by_tier: &find_products_by_tier
+      schema: *workshop_schema
+      name: find_products_by_tier
+
+# NEW vs prior labs: top-level `middleware:` block.
+# Each entry references a dao-ai factory that builds a LangChain
+# middleware on agent compile. The validator here checks for three
+# fields in `custom_inputs.configurable` before forwarding the request
+# to the model. Required fields that are missing short-circuit with a
+# markdown error; optional fields surface in the error template but
+# don't block.
+middleware:
+  store_validation: &store_validation
+    name: dao_ai.middleware.create_custom_field_validation_middleware
+    args:
+      fields:
+        # Required: the store handling the request.
+        - name: store_num
+          description: "Your store number for inventory lookups (e.g. DEN-FLAG)"
+          example_value: "DEN-FLAG"
+
+        # Required: drives the tier_lookup tool's price ceiling.
+        - name: customer_tier
+          description: "Loyalty tier (bronze | silver | gold | platinum)"
+          example_value: "gold"
+
+        # Optional: shown in the error message but doesn't block.
+        - name: region
+          description: "Region for inventory routing (northeast | southeast | midwest | west)"
+          required: false
+          example_value: "northeast"
+
+tools:
+  tier_lookup_tool: &tier_lookup_tool
+    name: find_products_by_tier
+    function:
+      type: unity_catalog
+      resource: *find_products_by_tier
+
+agents:
+  catalog_advisor: &catalog_advisor
+    name: catalog_advisor
+    description: Recommends products with tier-aware pricing for a specific store + customer.
+    model: *default_llm
+    tools:
+      - *tier_lookup_tool
+    # Validation runs before every turn of this agent. Missing required
+    # fields short-circuit with the formatted "Configuration Required"
+    # message; the agent never sees the request.
+    middleware:
+      - *store_validation
+    prompt: |
+      You are a hardware-store catalog advisor working for store {store_num}.
+      The customer in front of you is on the {customer_tier} loyalty tier
+      (region: {region}).
+
+      For any product question, call find_products_by_tier with the
+      customer's category of interest and `customer_tier={customer_tier}`.
+      The function returns rows with a `tier_match` label -- mention it
+      in your recommendation so the customer sees why each result fits
+      (or doesn't fit) their tier.
+
+      If the function returns no rows, suggest the next-tier-up upgrade
+      naturally ("you're close to the silver tier; upgrading would
+      open up these options...").
+
+app:
+  name: hardware-store-${var.username}
+  description: "Lab 14 (hardware_store++): custom-input validation via middleware"
+  log_level: INFO
+  deployment_target: apps
+
+  agents:
+    - *catalog_advisor
+
+# Self-contained provisioning: the products table (reused from Lab 2)
+# plus the tier-aware UC function the agent calls.
+unity_catalog_functions:
+  - function: *find_products_by_tier
+    ddl: ./functions/find_products_by_tier.sql
+    test:
+      parameters:
+        category: "Power Tools"
+        customer_tier: "gold"
+
+datasets:
+  - table:
+      schema: *workshop_schema
+      name: products
+    ddl: ./data/products.sql
+    format: sql

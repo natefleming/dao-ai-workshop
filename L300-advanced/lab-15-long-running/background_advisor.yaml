@@ -1,0 +1,149 @@
+# yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
+#
+# Lab 15 -- Long-Running / Background Agents (L300, hardware_store++)
+# -------------------------------------------------------------------
+# A hardware-store inventory analyst that takes its time to produce a
+# thorough analysis (multi-paragraph report on a category's trends,
+# supplier reliability, etc.). dao-ai's `app.long_running:` block wraps
+# the responses agent with `LongRunningResponsesAgent`, persisting
+# kickoff state in Lakebase so clients can poll/stream/cancel via the
+# OpenAI Responses-API surface.
+#
+# Builds on:
+#   - Lab 7 (memory): the same `parameters:` / `variables:` / `resources.databases:`
+#                     wiring backed by the `dao_ai_workshop` secret scope and the
+#                     `retail-consumer-goods` Lakebase autoscaling project.
+#                     `setup/create_service_principal.sh` + `setup/grant_lakebase_superuser.sh`
+#                     are prerequisites (same as Lab 7).
+#   - Lab 1: the agents / app baseline structure.
+#
+# What's new vs prior labs:
+#   - top-level memory.checkpointer:  required so the agent's state
+#     survives across the kickoff / poll / cancel turns.
+#   - app.long_running:               new app-level block. Tells dao-ai
+#     to wrap the responses agent with LongRunningResponsesAgent and
+#     persist response state in Lakebase. Three sub-fields:
+#       * database:               *workshop_db (reuses the same Lakebase
+#                                  the checkpointer uses).
+#       * default_background:     false -- caller opts in per-call via
+#                                  `custom_inputs.background: true`.
+#       * max_duration_seconds:   how long a single response may run
+#                                  before dao-ai forces it to fail.
+#       * poll_interval_seconds:  how often the long-running wrapper
+#                                  polls its own task on retrieve.
+#
+# Runtime contract (exercised in the notebook):
+#   - kickoff:  custom_inputs={"background": true}
+#               -> immediate response with `id=resp_*` and `status=in_progress`
+#   - retrieve: custom_inputs={"operation": "retrieve", "response_id": id}
+#               -> latest events / final output once `status=completed`
+#   - cancel:   custom_inputs={"operation": "cancel", "response_id": id}
+#               -> `status=cancelled`
+#
+# After deploy, the same surface is reachable via /v1/responses/{id} on
+# the deployed Databricks App (Step 9 of the notebook hits it via
+# WorkspaceClient).
+
+parameters:
+  username:
+    description: Per-student username for unique deployment names. Auto-set by the notebook.
+    # No default => required.
+  lakebase_project:
+    description: Lakebase autoscaling project name (also hosts checkpointer + long-running tables).
+    default: retail-consumer-goods
+  llm_endpoint:
+    description: Databricks LLM serving endpoint name.
+    default: databricks-claude-sonnet-4-5
+  max_duration_seconds:
+    description: Hard cap on a single long-running response (seconds).
+    default: "1800"
+  poll_interval_seconds:
+    description: Internal poll cadence for the long-running wrapper (seconds; floats accepted).
+    default: "1.0"
+  # Service-principal credentials for the Lakebase project. Same wiring
+  # as Lab 7 -- secret scope wins, env vars are the notebook fallback.
+  sp_secret_scope:
+    description: Databricks secret scope holding the Lakebase SP credentials.
+    default: dao_ai_workshop
+  sp_client_id_secret:
+    description: Secret key within the scope for the SP client_id.
+    default: DAO_AI_SP_CLIENT_ID
+  sp_client_secret_secret:
+    description: Secret key within the scope for the SP client_secret.
+    default: DAO_AI_SP_CLIENT_SECRET
+
+variables:
+  # Composite variables try sources in order, return the first non-None.
+  # Secret-scope wins; env-var fallback lets local notebook runs work
+  # without Databricks-secret access.
+  client_id: &client_id
+    options:
+      - scope: ${var.sp_secret_scope}
+        secret: ${var.sp_client_id_secret}
+      - env: DAO_AI_SP_CLIENT_ID
+
+  client_secret: &client_secret
+    options:
+      - scope: ${var.sp_secret_scope}
+        secret: ${var.sp_client_secret_secret}
+      - env: DAO_AI_SP_CLIENT_SECRET
+
+resources:
+  llms:
+    default_llm: &default_llm
+      name: ${var.llm_endpoint}
+      temperature: 0.3
+      max_tokens: 2048
+
+  databases:
+    workshop_db: &workshop_db
+      name: ${var.lakebase_project}
+      project: ${var.lakebase_project}
+      description: "Lakebase backing the checkpointer + long-running responses store."
+      client_id: *client_id
+      client_secret: *client_secret
+      on_behalf_of_user: false
+
+memory:
+  checkpointer:
+    name: long_running_checkpointer
+    database: *workshop_db
+
+agents:
+  inventory_analyst: &inventory_analyst
+    name: inventory_analyst
+    description: Deep-research hardware-store inventory analyst that takes its time.
+    model: *default_llm
+    prompt: |
+      You are a hardware-store inventory analyst. When asked about a
+      category's trends, supplier reliability, or assortment health,
+      take your time and produce a thorough multi-paragraph report.
+
+      Structure each report as:
+        1. Top-level summary (one paragraph).
+        2. Category breakdown (per-subcategory bullets with the
+           reasoning behind each conclusion).
+        3. Recommendations (3-5 concrete actions, each with a
+           one-line rationale).
+
+      Don't cut corners -- a longer, well-justified answer is more
+      valuable here than a quick summary.
+
+app:
+  name: hardware-store-${var.username}
+  description: "Lab 15 (hardware_store++): long-running / background inventory analyst"
+  log_level: INFO
+  deployment_target: apps
+
+  agents:
+    - *inventory_analyst
+
+  # Triggers dao-ai to wrap the responses agent with
+  # LongRunningResponsesAgent. State is persisted in `database`'s
+  # Lakebase project (the wrapper auto-creates `dao_ai_responses` and
+  # `dao_ai_response_messages` tables on first request).
+  long_running:
+    database: *workshop_db
+    default_background: false
+    max_duration_seconds: ${var.max_duration_seconds}
+    poll_interval_seconds: ${var.poll_interval_seconds}
