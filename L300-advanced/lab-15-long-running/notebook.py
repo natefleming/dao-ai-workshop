@@ -194,12 +194,15 @@ r = requests.post(
     f"{app_url}/invocations",
     headers=hdr,
     timeout=60,
+    allow_redirects=False,
     json={
         "input": [{"role": "user", "content": "Deep-research the Power Tools category for Q2 2026 and produce a thorough analyst report."}],
         "background": True,
         "custom_inputs": {"configurable": {"thread_id": f"lab15-{username}-deployed"}},
     },
 )
+print(f"[7a] status={r.status_code}  content-type={r.headers.get('content-type')!r}  "
+      f"len={len(r.content)}  body[:200]={r.text[:200]!r}")
 r.raise_for_status()
 kickoff: dict[str, Any] = r.json()
 deployed_resp_id: str = kickoff["id"]
