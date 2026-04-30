@@ -204,7 +204,14 @@ r = requests.post(
 print(f"[7a] status={r.status_code}  content-type={r.headers.get('content-type')!r}  "
       f"len={len(r.content)}  body[:200]={r.text[:200]!r}")
 r.raise_for_status()
-kickoff: dict[str, Any] = r.json()
+try:
+    kickoff: dict[str, Any] = r.json()
+except Exception:
+    raise RuntimeError(
+        f"[7a] non-JSON response: status={r.status_code} "
+        f"ct={r.headers.get('content-type')!r} loc={r.headers.get('location')!r} "
+        f"body[:500]={r.text[:500]!r}"
+    )
 deployed_resp_id: str = kickoff["id"]
 print(f"[7a] kickoff ok: resp_id={deployed_resp_id}  status={kickoff.get('status')}  "
       f"({int((time.time()-t0)*1000)}ms)")
