@@ -223,15 +223,27 @@ print(f"Minted app-scoped bearer (len={len(app_token)})")
 # `dao_ai_response_messages` in Lakebase on the first request --
 # which can exceed gap-auth's request-timeout if it's the same
 # request that does real work. Warm-up with a tiny background
-# request, then proceed.
-warmup = requests.post(
-    f"{app.url}/v1/responses",
-    headers={"Authorization": f"Bearer {app_token}", "Content-Type": "application/json"},
-    json={"model": config.app.name, "input": [{"role": "user", "content": "warmup"}], "background": True},
-    timeout=120,
-)
-print(f"[warmup] status={warmup.status_code}  body[:200]={warmup.text[:200]!r}")
-warmup.raise_for_status()
+# request. Retry on 5xx / timeout because gap-auth occasionally
+# 502s on the first request after a fresh deploy while the upstream
+# pod is still booting.
+warmup_url = f"{app.url}/v1/responses"
+warmup_headers = {"Authorization": f"Bearer {app_token}", "Content-Type": "application/json"}
+warmup_body = {"model": config.app.name, "input": [{"role": "user", "content": "warmup"}], "background": True}
+last_warmup_err: str | None = None
+for attempt in range(8):  # ~8 * 30s = ~4 min total cap
+    try:
+        warmup = requests.post(warmup_url, headers=warmup_headers, json=warmup_body, timeout=60)
+        print(f"[warmup attempt {attempt+1}] status={warmup.status_code} ct={warmup.headers.get('content-type')}")
+        if warmup.status_code < 500:
+            warmup.raise_for_status()
+            break
+        last_warmup_err = f"status={warmup.status_code} body[:200]={warmup.text[:200]!r}"
+    except requests.RequestException as e:
+        last_warmup_err = repr(e)
+        print(f"[warmup attempt {attempt+1}] exception: {last_warmup_err}")
+    time.sleep(15)
+else:
+    raise RuntimeError(f"warmup never succeeded: {last_warmup_err}")
 
 # Use the OpenAI Python SDK with the app-scoped bearer.
 # (Databricks ships `databricks_openai.DatabricksOpenAI` and
