@@ -22,7 +22,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "dao-ai>=0.1.67" databricks-vectorsearch
+# MAGIC %pip install "dao-ai>=0.1.68" databricks-vectorsearch
 # MAGIC %restart_python
 
 # COMMAND ----------

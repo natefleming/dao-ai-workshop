@@ -4,5 +4,5 @@ version = "0.1.0"
 description = "Lab 13 of the dao-ai workshop -- programmatic construction."
 requires-python = ">=3.11,<3.12"
 dependencies = [
-    "dao-ai>=0.1.67",
+    "dao-ai>=0.1.68",
 ]
