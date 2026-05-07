@@ -1,0 +1,260 @@
+# yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
+#
+# Lab 16 - Declarative Genie Space Provisioning
+# ----------------------------------------------
+# Provisions a fully-configured Genie space from pure YAML — no agents,
+# no app block, just resources. Exercises every field on GenieRoomModel:
+#
+#   table_sources, metric_view_sources, function_sources,
+#   text_instructions, example_sqls (with parameters + usage_guidance),
+#   sql_filters, sql_expressions, sql_measures,
+#   sample_questions, benchmarks, entitlements
+#
+# Run the companion notebook.py to materialize schemas, tables, views,
+# UC functions, and the Genie space itself via .create() calls.
+
+parameters:
+  username:
+    description: Per-student username for unique naming. Auto-set by the notebook.
+  catalog:
+    description: Unity Catalog catalog containing workshop assets.
+  schema:
+    description: Schema within the catalog.
+    default: dao_ai
+  warehouse_id:
+    description: SQL warehouse ID the Genie space queries against.
+  genie_parent_path:
+    description: >
+      Workspace folder where the Genie space is created
+      (e.g. /Users/you@databricks.com/genie).
+
+schemas:
+  workshop_schema: &workshop_schema
+    catalog_name: ${var.catalog}
+    schema_name: ${var.schema}
+
+resources:
+  warehouses:
+    workshop_warehouse: &workshop_warehouse
+      name: workshop_warehouse
+      warehouse_id: ${var.warehouse_id}
+
+  tables:
+    products: &products_table
+      schema: *workshop_schema
+      name: products
+    orders: &orders_table
+      schema: *workshop_schema
+      name: orders
+    active_products_v: &active_products_v
+      schema: *workshop_schema
+      name: active_products_v
+    daily_sales_mv: &daily_sales_mv
+      schema: *workshop_schema
+      name: daily_sales_mv
+
+  functions:
+    find_product_by_sku: &find_product_by_sku_fn
+      schema: *workshop_schema
+      name: find_product_by_sku
+    find_orders_in_date_range: &find_orders_in_date_range_fn
+      schema: *workshop_schema
+      name: find_orders_in_date_range
+
+  genie_rooms:
+    workshop_genie:
+      name: "Workshop Provisioned Genie (${var.username})"
+      description: >
+        Provisioned by dao-ai lab 16. A hardware-store analytics space
+        with products, orders, a view, a metric view, and UC functions.
+      parent_path: ${var.genie_parent_path}
+      warehouse: *workshop_warehouse
+
+      # -- data_sources.tables[] ------------------------------------------
+      table_sources:
+        - table: *products_table
+          description: "Product catalog with SKU, category, price, and stock status."
+          column_configs:
+            - name: sku
+              description: "Stock-keeping unit identifier."
+              synonyms: ["item id", "product code"]
+              sample_values: true
+              build_value_dictionary: true
+              excluded: false
+            - name: product_name
+              description: "Human-readable product name."
+              synonyms: ["title", "name"]
+            - name: category
+              description: "Product department (e.g. Power Tools, Paint)."
+              synonyms: ["department", "type"]
+              build_value_dictionary: true
+            - name: status
+              description: "Product lifecycle status (ACTIVE or DISCONTINUED)."
+              excluded: false
+              build_value_dictionary: true
+            - name: internal_notes
+              description: "Internal notes not relevant to analytics."
+              excluded: true
+              sample_values: false
+        - table: *orders_table
+          description: "Order line items with quantity, amount, and date."
+        - table: *active_products_v
+          description: "View of products filtered to status = ACTIVE."
+
+      # -- data_sources.metric_views[] ------------------------------------
+      metric_view_sources:
+        - table: *daily_sales_mv
+          description: "Pre-aggregated daily sales metric view for trend analysis."
+
+      # -- instructions.sql_functions[] -----------------------------------
+      function_sources:
+        - function: *find_product_by_sku_fn
+        - function: *find_orders_in_date_range_fn
+
+      # -- instructions.text_instructions[] -------------------------------
+      text_instructions:
+        - "Always join orders to products via the sku column."
+        - "Prefer the daily_sales_mv metric view when asked about revenue totals over a date range."
+        - "When filtering by product status, use the status column (values: ACTIVE, DISCONTINUED)."
+
+      # -- instructions.example_question_sqls[] ---------------------------
+      example_sqls:
+        - question: "Top selling products last month"
+          sql: >
+            SELECT o.sku, p.product_name, SUM(o.qty) AS total_qty
+            FROM ${var.catalog}.${var.schema}.orders o
+            JOIN ${var.catalog}.${var.schema}.products p ON o.sku = p.sku
+            WHERE o.order_date >= current_date - INTERVAL 30 DAYS
+            GROUP BY 1, 2
+            ORDER BY total_qty DESC
+            LIMIT 10
+          usage_guidance: "Use when ranking products by sales volume over a recent window."
+        - question: "Revenue for a specific category in a date range"
+          sql: >
+            SELECT p.category, SUM(o.amount) AS total_revenue
+            FROM ${var.catalog}.${var.schema}.orders o
+            JOIN ${var.catalog}.${var.schema}.products p ON o.sku = p.sku
+            WHERE p.category = :category
+              AND o.order_date BETWEEN :start_date AND :end_date
+            GROUP BY 1
+          parameters:
+            - name: category
+              type_hint: STRING
+              description: "Product category to filter on."
+            - name: start_date
+              type_hint: DATE
+              description: "Start of the date range (inclusive)."
+            - name: end_date
+              type_hint: DATE
+              description: "End of the date range (inclusive)."
+          usage_guidance: "Use when the user asks about revenue for a category within a specific date window."
+
+      # -- instructions.join_specs[] --------------------------------------
+      # Note: join_specs are declared in the model but the Genie v2 API's
+      # SQL expression parser does not yet accept all join condition formats.
+      # Uncomment and adjust when the API supports your expression syntax.
+      # join_specs:
+      #   - left: *orders_table
+      #     right: *products_table
+      #     sql: "orders.sku = products.sku"
+      #     relationship_type: MANY_TO_ONE
+      #     comment: "Each order line references exactly one product."
+
+      # -- instructions.sql_snippets.filters[] ----------------------------
+      sql_filters:
+        - display_name: "Active products only"
+          sql: "status = 'ACTIVE'"
+          instruction: "Use when the user asks about current or available products."
+          synonyms: ["live", "available", "current"]
+        - display_name: "Recent orders (last 30 days)"
+          sql: "order_date >= current_date - INTERVAL 30 DAYS"
+          instruction: "Use when the user says 'recent' or 'last month' without a specific date."
+          synonyms: ["recent", "last month"]
+
+      # -- instructions.sql_snippets.expressions[] ------------------------
+      sql_expressions:
+        - display_name: "Unit price"
+          sql: "amount / NULLIF(qty, 0)"
+          instruction: "Use when the user asks about per-unit or average price per item in an order."
+          synonyms: ["price per unit", "per-item cost"]
+
+      # -- instructions.sql_snippets.measures[] ---------------------------
+      sql_measures:
+        - display_name: "Total revenue"
+          sql: "SUM(amount)"
+          instruction: "Use for any revenue or sales total aggregation."
+          synonyms: ["total sales", "gross revenue"]
+        - display_name: "Total units sold"
+          sql: "SUM(qty)"
+          instruction: "Use when the user asks about quantity or volume sold."
+          synonyms: ["units", "quantity sold", "volume"]
+
+      # -- config.sample_questions[] --------------------------------------
+      sample_questions:
+        - "What were the top selling products last month?"
+        - "Which categories generated the most revenue?"
+        - "How many units of Power Tools were sold this quarter?"
+        - "Show me all discontinued products."
+
+      # -- benchmarks.questions[] -----------------------------------------
+      benchmarks:
+        - question: "How many active products are in the catalog?"
+          expected_sql: >
+            SELECT COUNT(*)
+            FROM ${var.catalog}.${var.schema}.products
+            WHERE status = 'ACTIVE'
+        - question: "Total revenue last 30 days"
+          expected_sql: >
+            SELECT SUM(amount)
+            FROM ${var.catalog}.${var.schema}.orders
+            WHERE order_date >= current_date - INTERVAL 30 DAYS
+
+      # -- workspace permissions ------------------------------------------
+      entitlements:
+        - principals: ["users"]
+          permission_level: CAN_RUN
+        - principals: ["admins"]
+          permission_level: CAN_MANAGE
+
+# ==========================================================================
+# UC SQL Functions — provisioned via UnityCatalogFunctionSqlModel.create()
+# ==========================================================================
+
+unity_catalog_functions:
+  - function: *find_product_by_sku_fn
+    ddl: ./functions/find_product_by_sku.sql
+    test:
+      parameters:
+        sku: ["SKU-0001"]
+  - function: *find_orders_in_date_range_fn
+    ddl: ./functions/find_orders_in_date_range.sql
+    test:
+      parameters:
+        start_date: "2025-01-01"
+        end_date: "2025-12-31"
+
+# ==========================================================================
+# Datasets — provisioned via DatasetModel.create()
+# ==========================================================================
+
+datasets:
+  - table:
+      schema: *workshop_schema
+      name: products
+    ddl: ./data/products.sql
+    format: sql
+  - table:
+      schema: *workshop_schema
+      name: orders
+    ddl: ./data/orders.sql
+    format: sql
+  - table:
+      schema: *workshop_schema
+      name: active_products_v
+    ddl: ./data/active_products_v.sql
+    format: sql
+  - table:
+      schema: *workshop_schema
+      name: daily_sales_mv
+    ddl: ./data/daily_sales_mv.sql
+    format: sql

@@ -19,7 +19,7 @@ The workshop is organized as **L100 → L200 → L300**, mirroring the level sys
 |---|---|---|---|
 | **L100 Foundations** | [`L100-foundations/`](L100-foundations/) | hardware_store (consumer retail) | 4 labs |
 | **L200 Building Real Agents** | [`L200-real-agents/`](L200-real-agents/) | saas_helpdesk (support ops) | 6 labs |
-| **L300 Advanced** | [`L300-advanced/`](L300-advanced/) | hardware_store++ (extended) | 5 labs |
+| **L300 Advanced** | [`L300-advanced/`](L300-advanced/) | hardware_store++ (extended) | 6 labs |
 
 ## Lab index
 
@@ -56,6 +56,7 @@ L200 starts with the [Building Real Agents](L200-real-agents/building-real-agent
 | **Lab 13** | Programmatic Construction | Build the same `AppConfig` in pure Python instead of YAML | [`L300-advanced/lab-13-programmatic/`](L300-advanced/lab-13-programmatic/) |
 | **Lab 14** | Custom-Input Validation | Middleware-based validation of `custom_inputs.configurable` (`store_num`, `customer_tier`, `region`) | [`L300-advanced/lab-14-custom-input-validation/`](L300-advanced/lab-14-custom-input-validation/) |
 | **Lab 15** | Long-Running / Background Agents | `app.long_running:` + Lakebase-backed responses store + Responses-API kickoff/poll/cancel | [`L300-advanced/lab-15-long-running/`](L300-advanced/lab-15-long-running/) |
+| **Lab 16** | Declarative Genie Space Provisioning | Provision a fully-configured Genie space from pure YAML via `GenieRoomModel.create()` | [`L300-advanced/lab-16-genie-provisioning/`](L300-advanced/lab-16-genie-provisioning/) |
 
 See the [L300 README](L300-advanced/README.md) for production-deployment guidance.
 

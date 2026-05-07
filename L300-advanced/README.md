@@ -7,6 +7,7 @@ The third level of the DAO-AI workshop. L300 covers production-grade patterns th
 - **Lab 13 -- Programmatic Construction.** Build the same `AppConfig` in pure Python instead of YAML -- the entry point you reach for when generating agents dynamically (one per tenant, one per dataset) or embedding DAO-AI inside a larger Python application.
 - **Lab 14 -- Custom-Input Validation.** Wire `dao_ai.middleware.create_custom_field_validation_middleware` into an agent so missing per-call context (`store_num`, `customer_tier`) returns a copy-paste-ready error before the model runs. Demonstrates the **input contract** dimension of production agents.
 - **Lab 15 -- Long-Running / Background Agents.** `app.long_running:` block + Lakebase-backed responses store. Kickoff returns a `resp_*` ID immediately; the client polls `operation: retrieve` (or the deployed app's `/v1/responses/{id}` route) until `completed`. Demonstrates the **async lifecycle** dimension.
+- **Lab 16 -- Declarative Genie Space Provisioning.** Provision a Genie space from pure YAML -- no agents, no app block. Exercises every `GenieRoomModel` field: table sources with column configs, metric view sources, UC function sources, text instructions, example SQLs with parameters, join specs, SQL snippets, sample questions, benchmarks, and entitlements.
 
 Lab 11 and Lab 12 reuse the products catalog from Lab 2 (extended with metadata for Lab 11) and a Genie Space pointed at it (for Lab 12). Lab 13 is concept-only -- no extra resources required. Lab 14 reuses Lab 2's products table plus a tier-aware UC function. Lab 15 reuses Lab 7's Lakebase wiring.
 
@@ -19,6 +20,7 @@ Lab 11 and Lab 12 reuse the products catalog from Lab 2 (extended with metadata 
 | 3 | [lab-13-programmatic/](lab-13-programmatic/) | Lab | Build the same `AppConfig` from Python instead of YAML. |
 | 4 | [lab-14-custom-input-validation/](lab-14-custom-input-validation/) | Lab | Middleware-based validation of `custom_inputs.configurable`. |
 | 5 | [lab-15-long-running/](lab-15-long-running/) | Lab | Responses-API kickoff/poll/cancel + Lakebase-persisted state. |
+| 6 | [lab-16-genie-provisioning/](lab-16-genie-provisioning/) | Lab | Declarative Genie space provisioning from YAML. |
 
 ## Prerequisites
 
