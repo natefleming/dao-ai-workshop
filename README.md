@@ -1,4 +1,5 @@
 # Aswin DAO-AI Workshop
+# update the notes here. I have tested teh feateure 
 
 Self-paced, hands-on workshop for building declarative AI agents on Databricks with the [DAO-AI](https://github.com/natefleming/dao-ai) framework. Designed for solution architects, data engineers, and analysts who want to go from zero to a deployed, governed agent. By the end you'll have built, tested, and deployed a multi-agent system that combines tool use, NL-to-SQL, vector search, memory + chat-history summarization, prompts + guardrails, and orchestration -- all defined in YAML and running as a Databricks App.
 
