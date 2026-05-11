@@ -9,6 +9,7 @@ The third level of the DAO-AI workshop. L300 covers production-grade patterns th
 - **Lab 15 -- Long-Running / Background Agents.** `app.long_running:` block + Lakebase-backed responses store. Kickoff returns a `resp_*` ID immediately; the client polls `operation: retrieve` (or the deployed app's `/v1/responses/{id}` route) until `completed`. Demonstrates the **async lifecycle** dimension.
 - **Lab 16 -- Declarative Genie Space Provisioning.** Provision a Genie space from pure YAML -- no agents, no app block. Exercises every `GenieRoomModel` field: table sources with column configs, metric view sources, UC function sources, text instructions, example SQLs with parameters, join specs, SQL snippets, sample questions, benchmarks, and entitlements.
 - **Lab 17 -- Deep Agent Orchestration.** dao-ai 0.1.73+'s third orchestration option alongside supervisor / swarm. A single planning agent built on `deepagents.create_deep_agent` with built-in `todo` / `filesystem` / `shell` tools, first-class **Skills** (directory-of-Markdown methodology), `AGENTS.md`-style **instruction files**, and sub-agents callable via the `task` tool. Self-provisioning — no external resources required.
+- **Lab 18 -- Skills-only Deep Agent.** The minimum viable deep_agent: zero top-level agents and zero sub-agents — only a Skill + system prompt. Exercises dao-ai's `app.agents: []` carve-out under the deep_agent pattern (`AppModel.validate_agents_not_empty` at `config.py:6531-6540`). Use this when you need a single specialist (code reviewer / bug triager / release-notes author) and the planner can do all the work itself.
 
 Lab 11 and Lab 12 reuse the products catalog from Lab 2 (extended with metadata for Lab 11) and a Genie Space pointed at it (for Lab 12). Lab 13 is concept-only -- no extra resources required. Lab 14 reuses Lab 2's products table plus a tier-aware UC function. Lab 15 reuses Lab 7's Lakebase wiring.
 
@@ -23,6 +24,7 @@ Lab 11 and Lab 12 reuse the products catalog from Lab 2 (extended with metadata 
 | 5 | [lab-15-long-running/](lab-15-long-running/) | Lab | Responses-API kickoff/poll/cancel + Lakebase-persisted state. |
 | 6 | [lab-16-genie-provisioning/](lab-16-genie-provisioning/) | Lab | Declarative Genie space provisioning from YAML. |
 | 7 | [lab-17-deep-agents/](lab-17-deep-agents/) | Lab | Deep Agent orchestration (planning + skills + sub-agents). |
+| 8 | [lab-18-skills-only-deep-agent/](lab-18-skills-only-deep-agent/) | Lab | Skills-only Deep Agent (zero top-level agents, zero sub-agents). |
 
 ## Prerequisites
 

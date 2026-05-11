@@ -1,0 +1,92 @@
+# yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
+#
+# Lab 18 -- Skills-only Deep Agent (L300)
+# ---------------------------------------
+# A deep_agent configured with ONE skill, ONE instruction file, and ZERO
+# top-level agents. Demonstrates dao-ai's `app.agents: []` carve-out for
+# the deep_agent orchestration pattern (added in dao-ai 0.1.73+) — the
+# planning agent IS the orchestration block, so a separate top-level
+# agent entry is redundant.
+#
+# Lab 17 introduced the deep_agent pattern with a research assistant +
+# a summarizer sub-agent. This lab simplifies that to the minimal viable
+# deep agent: ONLY a skill + system prompt. No sub-agents. No top-level
+# agents. Pure planner.
+#
+# When to choose skills-only over agents+sub-agents:
+#   - You need a single specialist agent (code reviewer, bug triager,
+#     release-notes author, API critic, etc.).
+#   - You want to govern *methodology* via Skills (versioned Markdown
+#     directories) rather than via inline prompt strings.
+#   - You don't need delegation to a separate sub-agent (the planner
+#     can do it all with the built-in todo / filesystem / shell tools).
+#
+# What dao-ai validates here:
+#   - AppModel.validate_agents_not_empty allows `agents: []` when
+#     `orchestration.deep_agent` is set
+#     (dao-ai/src/dao_ai/config.py:6531-6540).
+#   - test_empty_app_agents_allowed_with_deep_agent in
+#     tests/dao_ai/test_deep_agent_refinements.py confirms.
+
+parameters:
+  username:
+    description: Per-student username for unique deployment names.
+    # No default => required (set from the notebook).
+  llm_endpoint:
+    description: Databricks LLM serving endpoint for the deep agent's planning model.
+    default: databricks-claude-sonnet-4-5
+
+resources:
+  llms:
+    reviewer_llm: &reviewer_llm
+      name: ${var.llm_endpoint}
+      temperature: 0.2
+      max_tokens: 4096
+
+  # dao-ai 0.1.73+: Skills are first-class resources. The code_review
+  # skill teaches the planning agent how to do a review.
+  skills:
+    code_review_skill:
+      name: code_review
+      path: skills/code_review
+      description: Senior-engineer code review methodology.
+
+# NOTE: no top-level `agents:` block.
+# This is the deep_agent skills-only pattern — under deep_agent the
+# planning agent is configured directly in orchestration.deep_agent,
+# so no separate agent definition is required. dao-ai's
+# AppModel.validate_agents_not_empty validator allows app.agents: []
+# specifically when orchestration.deep_agent is present.
+
+app:
+  name: code-reviewer-${var.username}
+  description: "Lab 18 (L300): Skills-only deep agent — no top-level agents, no sub-agents"
+  log_level: INFO
+
+  # Bundle the skill directory + instruction file with the model
+  # artifact so they're available at runtime.
+  code_paths:
+    - skills
+    - instructions
+
+  # Apps deployment doesn't require a registered_model block, so the
+  # config compiles for in-notebook inference without any UC catalog /
+  # schema setup. Same pattern as Lab 17.
+  deployment_target: apps
+
+  # Empty agents list — explicitly allowed under deep_agent.
+  agents: []
+
+  orchestration:
+    deep_agent:
+      model: *reviewer_llm
+      system_prompt: |
+        You are a senior staff engineer performing a code review.
+        Apply the code_review skill to every submitted snippet.
+        Always produce a structured review.
+      skills:
+        - code_review_skill
+      instruction_files:
+        - instructions/AGENTS.md
+      recursion_limit: 25
+      # No `subagents:` — the planner does all the work.
