@@ -1,0 +1,133 @@
+# yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
+#
+# Lab 17 -- Deep Agent orchestration (L300)
+# -----------------------------------------
+# A single planning agent built on `deepagents.create_deep_agent` that
+# wraps the dao-ai responses agent. The deep_agent pattern ships built-in
+# `todo` / `filesystem` / `shell` tools, plus first-class **Skills**
+# (markdown directories that teach the agent how to do a task) and
+# **instruction_files** (AGENTS.md content loaded into the system prompt).
+#
+# What's new vs Labs 9 / 10 (supervisor / swarm):
+#   - orchestration.deep_agent:   the new third option (alongside
+#                                  supervisor / swarm). Single planning
+#                                  agent rather than multi-agent routing.
+#   - resources.skills:           reusable Skill resources (dao-ai 0.1.73+).
+#                                  Each skill is a directory containing
+#                                  at least `SKILL.md`. Skills can be
+#                                  local (bundled via code_paths) or
+#                                  volume-backed (governed by UC).
+#   - deep_agent.instruction_files: AGENTS.md-style files loaded into
+#                                  the system prompt at startup.
+#   - deep_agent.subagents:       sub-agents callable via the built-in
+#                                  `task` tool. References an entry in
+#                                  the top-level `agents:` block by name.
+#
+# Builds on:
+#   - Lab 1: agents / app baseline structure.
+#   - Lab 9: orchestration concepts (supervisor / swarm patterns).
+
+parameters:
+  username:
+    description: Per-student username for unique deployment names.
+    # No default => required (set from the notebook).
+  llm_endpoint:
+    description: Databricks LLM serving endpoint for the deep agent's planning model.
+    default: databricks-claude-sonnet-4-5
+
+resources:
+  llms:
+    deep_agent_llm: &deep_agent_llm
+      name: ${var.llm_endpoint}
+      temperature: 0.2
+      max_tokens: 4096
+
+    summarizer_llm: &summarizer_llm
+      name: ${var.llm_endpoint}
+      temperature: 0.1
+      max_tokens: 1024
+
+  # dao-ai 0.1.73+: Skills are first-class resources.
+  # Local skills (`path:` as a string) are bundled with the model
+  # artifact via code_paths and shipped to both Model Serving and
+  # Databricks Apps deployments. For governed deployments use
+  # VolumePathModel (volume + path) so the skill is read from a UC
+  # volume at runtime.
+  skills:
+    research_skill:
+      name: research
+      path: skills/research
+      description: Research / decomposition methodology for the deep agent.
+
+agents:
+  # A lightweight summarizer subagent. The deep agent will delegate to
+  # this via the built-in `task` tool when it needs a tight summary of
+  # a long intermediate result.
+  summarizer: &summarizer
+    name: summarizer
+    description: Condenses a multi-paragraph passage into 3 sentences.
+    model: *summarizer_llm
+    prompt: |
+      You are a summarizer. Given any input passage, produce a
+      3-sentence summary that preserves the main claim, the strongest
+      supporting reason, and the most important caveat. No bullet
+      points, no headings — just three sentences.
+
+  # The deep agent itself is registered as an agent so it can be the
+  # primary agent in app.agents. The deep_agent orchestration block
+  # below configures the planning behaviour, skills, and subagents.
+  researcher: &researcher
+    name: researcher
+    description: Deep-research planning agent with skills and a summarizer sub-agent.
+    model: *deep_agent_llm
+    prompt: |
+      You are a research assistant. Use the workshop's research skill
+      to decompose questions; delegate condensation to the summarizer
+      sub-agent when intermediate context grows long.
+
+app:
+  name: deep-research-${var.username}
+  description: "Lab 17 (L300): Deep Agent orchestration with skills + sub-agents"
+  log_level: INFO
+
+  # Bundle the skill directory + instruction file with the model
+  # artifact so they're available at both Model Serving and Apps
+  # runtime. Required when skill paths / instruction_files are
+  # relative local paths.
+  code_paths:
+    - skills
+    - instructions
+
+  # Use deployment_target: apps so the lab compiles without requiring
+  # a registered_model: block (Apps deployments register the model at
+  # runtime inside the App container). The lab's primary verification
+  # is in-notebook inference; the optional deploy in Step 7 will deploy
+  # to Databricks Apps with this target.
+  deployment_target: apps
+
+  agents:
+    - *researcher
+    - *summarizer
+
+  orchestration:
+    # dao-ai 0.1.73+: third orchestration option alongside supervisor / swarm.
+    # Wraps deepagents.create_deep_agent. The planning agent gets:
+    #   - The model + system_prompt below.
+    #   - Built-in tools (todo, filesystem, shell, task) from deepagents.
+    #   - The `research_skill` skill (loaded via SkillsMiddleware).
+    #   - The `summarizer` sub-agent (callable via the `task` tool).
+    #   - The AGENTS.md content prepended to the system prompt
+    #     (via instruction_files / MemoryMiddleware).
+    deep_agent:
+      model: *deep_agent_llm
+      system_prompt: |
+        You are a research planner. Use the research skill to
+        decompose, plan, and synthesize. Delegate condensation to
+        the summarizer sub-agent.
+      skills:
+        - research_skill
+      subagents:
+        - summarizer
+      instruction_files:
+        - instructions/AGENTS.md
+      recursion_limit: 50
