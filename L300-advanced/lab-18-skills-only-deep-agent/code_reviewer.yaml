@@ -37,7 +37,7 @@ parameters:
     default: databricks-claude-sonnet-4-5
 
 resources:
-  llms:
+  models:
     reviewer_llm: &reviewer_llm
       name: ${var.llm_endpoint}
       temperature: 0.2
@@ -66,8 +66,8 @@ app:
   # Bundle the skill directory + instruction file with the model
   # artifact so they're available at runtime.
   code_paths:
-    - skills
-    - instructions
+  - skills
+  - instructions
 
   # Apps deployment doesn't require a registered_model block, so the
   # config compiles for in-notebook inference without any UC catalog /
@@ -85,8 +85,8 @@ app:
         Apply the code_review skill to every submitted snippet.
         Always produce a structured review.
       skills:
-        - code_review_skill
+      - code_review_skill
       instruction_files:
-        - instructions/AGENTS.md
+      - instructions/AGENTS.md
       recursion_limit: 25
       # No `subagents:` — the planner does all the work.

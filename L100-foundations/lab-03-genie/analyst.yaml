@@ -38,7 +38,7 @@ parameters:
     default: databricks-claude-sonnet-4-5
 
 resources:
-  llms:
+  models:
     default_llm: &default_llm
       name: ${var.llm_endpoint}
       temperature: 0.1
@@ -75,7 +75,7 @@ agents:
     description: A data analyst agent backed by a Genie Space.
     model: *default_llm
     tools:
-      - *genie_tool
+    - *genie_tool
     prompt: |
       You are a data analyst. For any question about products, inventory,
       or sales, call the ask_genie tool and summarize the result in plain
@@ -89,5 +89,5 @@ app:
   deployment_target: apps
 
   agents:
-    - *analyst
+  - *analyst
 

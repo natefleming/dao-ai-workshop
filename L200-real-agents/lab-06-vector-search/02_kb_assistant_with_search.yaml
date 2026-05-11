@@ -39,7 +39,7 @@ schemas:
     schema_name: ${var.schema}
 
 resources:
-  llms:
+  models:
     default_llm: &default_llm
       name: ${var.llm_endpoint}
       temperature: 0.1
@@ -66,11 +66,11 @@ resources:
       primary_key: article_id
       embedding_source_column: body
       columns:
-        - article_id
-        - title
-        - topic
-        - body
-        - published_at
+      - article_id
+      - title
+      - topic
+      - body
+      - published_at
 
 # NEW in step 2: retrievers wraps the vector store with the search
 # parameters the agent will actually use at query time.
@@ -105,7 +105,7 @@ agents:
     model: *default_llm
     # NEW in step 2: agent.tools list (step 1 had no tools).
     tools:
-      - *kb_search
+    - *kb_search
     prompt: |
       You are a tier-1 support assistant. When a customer asks a
       how-to or troubleshooting question, call kb_search to find
@@ -118,12 +118,12 @@ app:
   log_level: INFO
   deployment_target: apps
   agents:
-    - *kb_assistant
+  - *kb_assistant
 # NEW in step 2: datasets block seeds the kb_articles table dao-ai
 # uses as the vector store's source. Step 1 had no grounded data.
 datasets:
-  - table:
-      schema: *workshop_schema
-      name: kb_articles
-    ddl: ./data/kb_articles.sql
-    format: sql
+- table:
+    schema: *workshop_schema
+    name: kb_articles
+  ddl: ./data/kb_articles.sql
+  format: sql

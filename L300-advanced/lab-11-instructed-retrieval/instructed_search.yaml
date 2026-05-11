@@ -68,7 +68,7 @@ schemas:
     schema_name: ${var.schema}
 
 resources:
-  llms:
+  models:
     default_llm: &default_llm
       name: ${var.llm_endpoint}
       temperature: 0.4
@@ -96,14 +96,14 @@ resources:
       primary_key: sku
       embedding_source_column: description
       columns:
-        - sku
-        - product_name
-        - category
-        - description
-        - price
-        - brand_name
-        - price_tier
-        - weight_lbs
+      - sku
+      - product_name
+      - category
+      - description
+      - price
+      - brand_name
+      - price_tier
+      - weight_lbs
 
 retrievers:
   instructed_retriever: &instructed_retriever
@@ -116,40 +116,40 @@ retrievers:
       # Column metadata is the source of truth -- the decomposer and the
       # instruction reranker both read this.
       columns:
-        - name: product_name
-          type: string
-          description: "Product display name"
-        - name: category
-          type: string
-          description: "Top-level category (Power Tools, Hand Tools, Paint, etc.)"
-        - name: brand_name
-          type: string
-          description: "Brand / manufacturer (MILWAUKEE, DEWALT, STANLEY, etc.)"
-        - name: price_tier
-          type: string
-          description: "Price band: budget, mid, premium"
-        - name: price
-          type: number
-          description: "Retail price in USD"
-        - name: weight_lbs
-          type: number
-          description: "Shipping weight in pounds"
+      - name: product_name
+        type: string
+        description: "Product display name"
+      - name: category
+        type: string
+        description: "Top-level category (Power Tools, Hand Tools, Paint, etc.)"
+      - name: brand_name
+        type: string
+        description: "Brand / manufacturer (MILWAUKEE, DEWALT, STANLEY, etc.)"
+      - name: price_tier
+        type: string
+        description: "Price band: budget, mid, premium"
+      - name: price
+        type: number
+        description: "Retail price in USD"
+      - name: weight_lbs
+        type: number
+        description: "Shipping weight in pounds"
       constraints:
-        - "Use category for category filtering"
-        - "Use brand_name for brand filtering (uppercase)"
-        - "Use price_tier for budget vs mid vs premium queries"
+      - "Use category for category filtering"
+      - "Use brand_name for brand filtering (uppercase)"
+      - "Use price_tier for budget vs mid vs premium queries"
       decomposition:
         model: *decomposition_llm
         normalize_filter_case: uppercase
         max_subqueries: 3
         rrf_k: 60
         examples:
-          - query: "Milwaukee power tools under $100"
-            filters: {"brand_name": "MILWAUKEE", "category": "POWER TOOLS", "price <": 100}
-          - query: "premium paint products"
-            filters: {"category": "PAINT", "price_tier": "PREMIUM"}
-          - query: "lightweight hand tools from Stanley"
-            filters: {"brand_name": "STANLEY", "category": "HAND TOOLS", "weight_lbs <": 1.0}
+        - query: "Milwaukee power tools under $100"
+          filters: {"brand_name": "MILWAUKEE", "category": "POWER TOOLS", "price <": 100}
+        - query: "premium paint products"
+          filters: {"category": "PAINT", "price_tier": "PREMIUM"}
+        - query: "lightweight hand tools from Stanley"
+          filters: {"brand_name": "STANLEY", "category": "HAND TOOLS", "weight_lbs <": 1.0}
       rerank:
         model: *decomposition_llm
         instructions: |
@@ -185,7 +185,7 @@ agents:
     description: A product advisor that uses instructed retrieval to filter and rank by intent.
     model: *default_llm
     tools:
-      - *instructed_product_search
+    - *instructed_product_search
     prompt: |
       You are a product advisor for a hardware store. Customers describe
       what they're trying to do; you help them shortlist products.
@@ -203,13 +203,13 @@ app:
   deployment_target: apps
 
   agents:
-    - *catalog_advisor
+  - *catalog_advisor
 
 datasets:
   # Self-contained: DROP + CREATE + INSERT in one DDL with the full
   # 10-column extended schema. Idempotent on re-runs.
-  - table:
-      schema: *workshop_schema
-      name: products
-    ddl: ./data/products_extended.sql
-    format: sql
+- table:
+    schema: *workshop_schema
+    name: products
+  ddl: ./data/products_extended.sql
+  format: sql

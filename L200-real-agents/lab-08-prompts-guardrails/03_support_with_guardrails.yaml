@@ -31,7 +31,7 @@ schemas:
     schema_name: ${var.schema}
 
 resources:
-  llms:
+  models:
     default_llm: &default_llm
       name: ${var.llm_endpoint}
       temperature: 0.2
@@ -92,7 +92,7 @@ agents:
     # NEW in step 3: agent.guardrails list. Step 2's agent had no
     # guardrails -- responses went straight to the user.
     guardrails:
-      - *accuracy_guardrail
+    - *accuracy_guardrail
 
 app:
   name: saas-helpdesk-${var.username}
@@ -100,4 +100,4 @@ app:
   log_level: INFO
   deployment_target: apps
   agents:
-    - *support_agent
+  - *support_agent

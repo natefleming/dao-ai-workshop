@@ -36,7 +36,7 @@ parameters:
     default: databricks-claude-sonnet-4-5
 
 resources:
-  llms:
+  models:
     deep_agent_llm: &deep_agent_llm
       name: ${var.llm_endpoint}
       temperature: 0.2
@@ -95,8 +95,8 @@ app:
   # runtime. Required when skill paths / instruction_files are
   # relative local paths.
   code_paths:
-    - skills
-    - instructions
+  - skills
+  - instructions
 
   # Use deployment_target: apps so the lab compiles without requiring
   # a registered_model: block (Apps deployments register the model at
@@ -106,8 +106,8 @@ app:
   deployment_target: apps
 
   agents:
-    - *researcher
-    - *summarizer
+  - *researcher
+  - *summarizer
 
   orchestration:
     # dao-ai 0.1.73+: third orchestration option alongside supervisor / swarm.
@@ -125,9 +125,9 @@ app:
         decompose, plan, and synthesize. Delegate condensation to
         the summarizer sub-agent.
       skills:
-        - research_skill
+      - research_skill
       subagents:
-        - summarizer
+      - summarizer
       instruction_files:
-        - instructions/AGENTS.md
+      - instructions/AGENTS.md
       recursion_limit: 50

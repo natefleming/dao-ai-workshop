@@ -36,7 +36,7 @@
 # MAGIC
 # MAGIC ## Files in this lab
 # MAGIC
-# MAGIC - `deep_research.yaml` — config: `parameters`, two `llms`, one `skills` entry, a `summarizer` sub-agent, a `researcher` deep agent.
+# MAGIC - `deep_research.yaml` — config: `parameters`, two `models`, one `skills` entry, a `summarizer` sub-agent, a `researcher` deep agent.
 # MAGIC - `skills/research/SKILL.md` — the bundled research skill (decompose → plan → draft → synthesize).
 # MAGIC - `instructions/AGENTS.md` — workshop behavioral guidance loaded into the prompt.
 # MAGIC - `notebook.py` — this notebook.
@@ -59,7 +59,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "dao-ai>=0.1.73"
+# MAGIC %pip install "dao-ai>=0.1.75"
 # MAGIC %restart_python
 
 # COMMAND ----------

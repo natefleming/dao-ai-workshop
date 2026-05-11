@@ -48,7 +48,7 @@ schemas:
     schema_name: ${var.schema}
 
 resources:
-  llms:
+  models:
     default_llm: &default_llm
       name: ${var.llm_endpoint}
       temperature: 0.1
@@ -77,9 +77,9 @@ tools:
             - edit:    adjust the amount or reason before issuing
             - reject:  block the refund and tell the agent why
         allowed_decisions:
-          - approve
-          - edit
-          - reject
+        - approve
+        - edit
+        - reject
 
 # HITL needs a checkpointer at the top-level graph: `Command(resume=...)`
 # only works when the workflow can hydrate state from a saved snapshot.
@@ -96,7 +96,7 @@ agents:
     description: Tier-1 SaaS support assistant with a HITL-gated refund tool.
     model: *default_llm
     tools:
-      - *issue_refund_tool
+    - *issue_refund_tool
     prompt: |
       You are a tier-1 support assistant for a SaaS product. Customers
       can ask about their account, charges, or features.
@@ -119,7 +119,7 @@ app:
   deployment_target: apps
 
   agents:
-    - *support_agent
+  - *support_agent
 
   orchestration:
     memory: *memory
@@ -127,10 +127,10 @@ app:
       default_agent: *support_agent
 # Self-contained provisioning: just the issue_refund UC function.
 unity_catalog_functions:
-  - function: *issue_refund
-    ddl: ./functions/issue_refund.sql
-    test:
-      parameters:
-        order_id: "ORD-0001"
-        amount: 9.99
-        reason: "test"
+- function: *issue_refund
+  ddl: ./functions/issue_refund.sql
+  test:
+    parameters:
+      order_id: "ORD-0001"
+      amount: 9.99
+      reason: "test"

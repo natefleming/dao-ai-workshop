@@ -48,7 +48,7 @@ parameters:
     default: databricks-meta-llama-3-1-8b-instruct
 
 resources:
-  llms:
+  models:
     default_llm: &default_llm
       name: ${var.llm_endpoint}
       temperature: 0.2
@@ -108,9 +108,9 @@ app:
   log_level: INFO
   deployment_target: apps
   agents:
-    - *tier1_support
-    - *tier2_engineer
-    - *escalation_lead
+  - *tier1_support
+  - *tier2_engineer
+  - *escalation_lead
 
   orchestration:
     swarm:
@@ -119,16 +119,16 @@ app:
         # Agentic: triage LLM reads the customer's question and picks
         # one specialist on its own.
         tier1_support:
-          - tier2_engineer
-          - escalation_lead
+        - tier2_engineer
+        - escalation_lead
 
         # Deterministic: every tier-2 case is forwarded to escalation
         # for manager review after the technical fix lands. The edge
         # is acyclic (escalation has no outgoing handoffs), so the
         # 0.1.62 cycle validator accepts it.
         tier2_engineer:
-          - agent: escalation_lead
-            is_deterministic: true
+        - agent: escalation_lead
+          is_deterministic: true
 
         # Terminal: escalation_lead has no outgoing handoffs. Adding
         # one back to tier2_engineer would form a cycle with the

@@ -79,7 +79,7 @@ parameters:
     default: "3"
 
 resources:
-  llms:
+  models:
     default_llm: &default_llm
       name: ${var.llm_endpoint}
       temperature: 0.1
@@ -144,7 +144,7 @@ agents:
     description: A products analyst whose Genie tool calls are cached at two layers.
     model: *default_llm
     tools:
-      - *cached_genie
+    - *cached_genie
     prompt: |
       You answer analytical questions about the product catalog by
       calling ask_products_genie. Identical or near-duplicate
@@ -159,5 +159,5 @@ app:
   deployment_target: apps
 
   agents:
-    - *cached_analyst
+  - *cached_analyst
 

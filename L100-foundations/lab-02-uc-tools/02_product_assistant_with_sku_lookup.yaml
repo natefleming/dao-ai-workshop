@@ -46,7 +46,7 @@ schemas:
     schema_name: ${var.schema}
 
 resources:
-  llms:
+  models:
     default_llm: &default_llm
       name: ${var.llm_endpoint}
       temperature: 0.1
@@ -85,7 +85,7 @@ agents:
     # NEW in step 2: agent.tools list. The agent gets one tool now;
     # in step 1 the agent had no tools at all.
     tools:
-      - *sku_lookup_tool
+    - *sku_lookup_tool
     prompt: |
       You are a product assistant for a small hardware store.
       You have one tool:
@@ -103,7 +103,7 @@ app:
   log_level: INFO
   deployment_target: apps
   agents:
-    - *product_agent
+  - *product_agent
 # NEW in step 2: provisioning blocks.
 # `unity_catalog_functions` and `datasets` describe how dao-ai
 # **materializes** workspace state from local DDL files. The notebook
@@ -115,15 +115,15 @@ app:
 # by Lab 4 (also UC functions), Lab 6 (kb_articles dataset), Lab 11
 # (extended products dataset), Lab 13 (programmatic equivalents).
 unity_catalog_functions:
-  - function: *find_product_by_sku
-    ddl: ./functions/find_product_by_sku.sql
-    test:
-      parameters:
-        sku: ["SKU-0001"]
+- function: *find_product_by_sku
+  ddl: ./functions/find_product_by_sku.sql
+  test:
+    parameters:
+      sku: ["SKU-0001"]
 
 datasets:
-  - table:
-      schema: *workshop_schema
-      name: products
-    ddl: ./data/products.sql
-    format: sql
+- table:
+    schema: *workshop_schema
+    name: products
+  ddl: ./data/products.sql
+  format: sql

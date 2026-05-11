@@ -51,7 +51,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "dao-ai>=0.1.73"
+# MAGIC %pip install "dao-ai>=0.1.75"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -106,7 +106,7 @@ import yaml
 with open("code_reviewer.yaml") as f:
     config_yaml = yaml.safe_load(f)
 
-print(f"Top-level agents in resources: {list(config_yaml.get('resources', {}).get('llms', {}).keys())}")
+print(f"Models in resources:                    {list(config_yaml.get('resources', {}).get('models', {}).keys())}")
 print(f"app.agents:                    {config_yaml['app'].get('agents', '<not set>')}")
 print(f"orchestration.deep_agent keys: {list(config_yaml['app']['orchestration']['deep_agent'].keys())}")
 print(f"  -> subagents present?        {'subagents' in config_yaml['app']['orchestration']['deep_agent']}")

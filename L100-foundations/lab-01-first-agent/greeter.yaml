@@ -31,7 +31,7 @@ parameters:
 # Lab 1 only needs an LLM. Anchors (&default_llm) let later blocks
 # reference the same resource via *default_llm without duplicating.
 resources:
-  llms:
+  models:
     default_llm: &default_llm
       name: ${var.llm_endpoint}
       temperature: 0.1
@@ -62,5 +62,5 @@ app:
   deployment_target: apps
 
   agents:
-    - *greeter
+  - *greeter
 

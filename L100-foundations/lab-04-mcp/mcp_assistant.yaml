@@ -49,7 +49,7 @@ schemas:
     schema_name: ${var.schema}
 
 resources:
-  llms:
+  models:
     default_llm: &default_llm
       name: ${var.llm_endpoint}
       temperature: 0.1
@@ -94,8 +94,8 @@ agents:
     description: Agent backed by managed MCP servers for UC functions and SQL.
     model: *default_llm
     tools:
-      - *functions_mcp
-      - *sql_mcp
+    - *functions_mcp
+    - *sql_mcp
     prompt: |
       You have access to Unity Catalog functions and a SQL execution
       tool through MCP. Prefer UC functions when available (they have
@@ -113,27 +113,27 @@ app:
   deployment_target: apps
 
   agents:
-    - *mcp_agent
+  - *mcp_agent
 
 # Self-contained provisioning: products table + UC functions that MCP
 # will discover. The notebook calls dataset.create() and uc_fn.create()
 # before building the agent.
 unity_catalog_functions:
-  - function: *find_product_by_sku
-    ddl: ./functions/find_product_by_sku.sql
-    test:
-      parameters:
-        sku: ["SKU-0001"]
+- function: *find_product_by_sku
+  ddl: ./functions/find_product_by_sku.sql
+  test:
+    parameters:
+      sku: ["SKU-0001"]
 
-  - function: *find_products_by_category
-    ddl: ./functions/find_products_by_category.sql
-    test:
-      parameters:
-        category: "Power Tools"
+- function: *find_products_by_category
+  ddl: ./functions/find_products_by_category.sql
+  test:
+    parameters:
+      category: "Power Tools"
 
 datasets:
-  - table:
-      schema: *workshop_schema
-      name: products
-    ddl: ./data/products.sql
-    format: sql
+- table:
+    schema: *workshop_schema
+    name: products
+  ddl: ./data/products.sql
+  format: sql

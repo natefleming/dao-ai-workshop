@@ -32,7 +32,7 @@ parameters:
     default: databricks-claude-sonnet-4-5
 
 resources:
-  llms:
+  models:
     default_llm: &default_llm
       name: ${var.llm_endpoint}
       temperature: 0.1
@@ -58,7 +58,7 @@ agents:
     description: Support agent that can check upstream service status before triaging.
     model: *default_llm
     tools:
-      - *call_status_api
+    - *call_status_api
     prompt: |
       You are a tier-1 support agent. When a user asks whether an
       upstream service is down (or wonders if their issue is on the
@@ -72,4 +72,4 @@ app:
   log_level: INFO
   deployment_target: apps
   agents:
-    - *status_agent
+  - *status_agent

@@ -38,7 +38,7 @@ schemas:
     schema_name: ${var.schema}
 
 resources:
-  llms:
+  models:
     default_llm: &default_llm
       name: ${var.llm_endpoint}
       temperature: 0.1
@@ -76,8 +76,8 @@ agents:
     # NEW in step 3: agent now has BOTH tools, and the prompt below
     # teaches it when to pick each one.
     tools:
-      - *sku_lookup_tool
-      - *category_lookup_tool
+    - *sku_lookup_tool
+    - *category_lookup_tool
     prompt: |
       You are a product assistant for a small hardware store.
       You have two tools:
@@ -98,24 +98,24 @@ app:
   log_level: INFO
   deployment_target: apps
   agents:
-    - *product_agent
+  - *product_agent
 unity_catalog_functions:
-  - function: *find_product_by_sku
-    ddl: ./functions/find_product_by_sku.sql
-    test:
-      parameters:
-        sku: ["SKU-0001"]
+- function: *find_product_by_sku
+  ddl: ./functions/find_product_by_sku.sql
+  test:
+    parameters:
+      sku: ["SKU-0001"]
 
   # NEW in step 3: provisioning entry for the second UC function.
-  - function: *find_products_by_category
-    ddl: ./functions/find_products_by_category.sql
-    test:
-      parameters:
-        category: "Power Tools"
+- function: *find_products_by_category
+  ddl: ./functions/find_products_by_category.sql
+  test:
+    parameters:
+      category: "Power Tools"
 
 datasets:
-  - table:
-      schema: *workshop_schema
-      name: products
-    ddl: ./data/products.sql
-    format: sql
+- table:
+    schema: *workshop_schema
+    name: products
+  ddl: ./data/products.sql
+  format: sql

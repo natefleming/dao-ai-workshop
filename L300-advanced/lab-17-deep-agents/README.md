@@ -37,7 +37,7 @@ A compiled `deep-research-<your-username>` agent that, given a research question
 
 ## Files
 
-- `deep_research.yaml` — config: `parameters`, two `llms`, one `skills` entry, two agents (`summarizer` sub-agent + `researcher` deep agent), and the new `orchestration.deep_agent:` block.
+- `deep_research.yaml` — config: `parameters`, two `models`, one `skills` entry, two agents (`summarizer` sub-agent + `researcher` deep agent), and the new `orchestration.deep_agent:` block.
 - `skills/research/SKILL.md` — bundled research methodology skill (decompose → plan → draft → synthesize).
 - `instructions/AGENTS.md` — behavioral guidance loaded into the system prompt.
 - `notebook.py` — install / params / inspect-config / compile / inference / structural-marker assertions / optional deploy.
@@ -50,7 +50,7 @@ A compiled `deep-research-<your-username>` agent that, given a research question
 
 Open `notebook.py` on Serverless compute. Run cell by cell. Watch:
 
-1. **Step 1** — installs `dao-ai>=0.1.73` (earlier versions reject the `deep_agent` key).
+1. **Step 1** — installs `dao-ai>=0.1.75` (earlier versions reject the `deep_agent` key).
 2. **Step 3 (inspect config)** — dumps the `orchestration.deep_agent` block so you can see the new shape.
 3. **Step 4 (compile)** — `config.as_responses_agent()` builds the LangGraph from the deep_agent config and prints the resolved Skills / sub-agents / instruction files.
 4. **Step 5 (inference)** — runs `agent.predict(...)` against a hardware-store-category research question. The deep agent decomposes the question with the `todo` tool, optionally `task`-delegates condensation to `summarizer`, then synthesizes a structured response.

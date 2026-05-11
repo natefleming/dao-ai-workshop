@@ -30,7 +30,7 @@ parameters:
     default: databricks-claude-sonnet-4-5
 
 resources:
-  llms:
+  models:
     default_llm: &default_llm
       name: ${var.llm_endpoint}
       temperature: 0.2
@@ -52,4 +52,4 @@ app:
   log_level: INFO
   deployment_target: apps
   agents:
-    - *support_agent
+  - *support_agent

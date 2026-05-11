@@ -84,18 +84,18 @@ variables:
   # without Databricks-secret access.
   client_id: &client_id
     options:
-      - scope: ${var.sp_secret_scope}
-        secret: ${var.sp_client_id_secret}
-      - env: DAO_AI_SP_CLIENT_ID
+    - scope: ${var.sp_secret_scope}
+      secret: ${var.sp_client_id_secret}
+    - env: DAO_AI_SP_CLIENT_ID
 
   client_secret: &client_secret
     options:
-      - scope: ${var.sp_secret_scope}
-        secret: ${var.sp_client_secret_secret}
-      - env: DAO_AI_SP_CLIENT_SECRET
+    - scope: ${var.sp_secret_scope}
+      secret: ${var.sp_client_secret_secret}
+    - env: DAO_AI_SP_CLIENT_SECRET
 
 resources:
-  llms:
+  models:
     default_llm: &default_llm
       name: ${var.llm_endpoint}
       temperature: 0.3
@@ -148,7 +148,7 @@ app:
   enable_chat_proxy: false
 
   agents:
-    - *inventory_analyst
+  - *inventory_analyst
 
   # Triggers dao-ai to wrap the responses agent with
   # LongRunningResponsesAgent. State is persisted in `database`'s

@@ -44,7 +44,7 @@ parameters:
     default: databricks-meta-llama-3-1-8b-instruct
 
 resources:
-  llms:
+  models:
     default_llm: &default_llm
       name: ${var.llm_endpoint}
       temperature: 0.2
@@ -111,9 +111,9 @@ app:
   log_level: INFO
   deployment_target: apps
   agents:
-    - *tier1_support
-    - *tier2_engineer
-    - *escalation_lead
+  - *tier1_support
+  - *tier2_engineer
+  - *escalation_lead
 
   orchestration:
     supervisor:
