@@ -21,7 +21,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "dao-ai>=0.1.75"
+# MAGIC %pip install "dao-ai>=0.1.76"
 # MAGIC %restart_python
 
 # COMMAND ----------
