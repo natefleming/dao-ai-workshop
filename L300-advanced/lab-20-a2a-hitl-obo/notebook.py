@@ -32,7 +32,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "dao-ai>=0.1.80" "a2a-sdk>=0.3.0,<1.0.0"
+# MAGIC %pip install "dao-ai>=0.1.80" "a2a-sdk>=0.3.0,<1.0.0" "nest-asyncio>=1.5"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -153,7 +153,14 @@ print(f"Minted app-scoped bearer (len={len(app_token)})")
 import asyncio
 
 import httpx
+import nest_asyncio
 from a2a.client import A2ACardResolver
+
+# Databricks notebooks run inside an active asyncio loop. nest_asyncio
+# patches the loop so asyncio.run() can be called from cells without
+# raising "asyncio.run() cannot be called from a running event loop".
+nest_asyncio.apply()
+
 
 async def fetch_card() -> Any:
     async with httpx.AsyncClient(headers={"Authorization": f"Bearer {app_token}"}, timeout=30) as http:
