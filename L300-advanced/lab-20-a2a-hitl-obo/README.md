@@ -20,7 +20,7 @@
 
 ## Steps
 
-1. **Step 1** — install `dao-ai>=0.1.80` + `a2a-sdk>=0.3.0,<1.0.0`.
+1. **Step 1** — install `dao-ai>=0.1.80` (which transitively brings `a2a-sdk`) + `nest-asyncio` (for notebook async).
 2. **Step 2** — configure widgets.
 3. **Step 3** — load `hitl_obo_agent.yaml`, compile, deploy to Apps.
 4. **Step 4** — wait for the Apps proxy to come up.

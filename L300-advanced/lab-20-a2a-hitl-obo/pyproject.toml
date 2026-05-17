@@ -5,6 +5,10 @@ description = "Lab 20 — A2A + HITL + OBO — auto-derived OAuth2 scheme, resum
 requires-python = ">=3.11"
 dependencies = [
     "dao-ai>=0.1.80",
-    "a2a-sdk>=0.3.0,<1.0.0",
+    # a2a-sdk ships as a transitive dep of dao-ai (>=0.3.0,<1.0.0).
+    # nest-asyncio is workshop-only: Databricks serverless notebooks run
+    # cells inside an active asyncio loop, so bare asyncio.run() raises
+    # "asyncio.run() cannot be called from a running event loop" unless
+    # the loop is patched.
     "nest-asyncio>=1.5",
 ]
