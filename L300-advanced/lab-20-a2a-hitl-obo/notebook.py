@@ -32,7 +32,13 @@
 
 # COMMAND ----------
 
-# MAGIC %uv pip install "dao-ai>=0.1.80" "nest-asyncio>=1.5"
+# MAGIC %pip install "dao-ai>=0.1.80" "nest-asyncio>=1.5"
+# MAGIC # NOTE: stay on %pip, NOT %uv pip install. The %uv magic works
+# MAGIC # interactively in the notebook UI but fails in the serverless v5
+# MAGIC # jobs runtime (PackageNotFoundError after install completes
+# MAGIC # successfully). For jobs-runtime use, the canonical alternative
+# MAGIC # would be declaring deps in environments.spec.dependencies on
+# MAGIC # the run/job spec.
 # MAGIC %restart_python
 
 # COMMAND ----------
