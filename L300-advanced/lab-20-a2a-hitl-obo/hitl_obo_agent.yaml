@@ -1,0 +1,98 @@
+# yaml-language-server: $schema=../../schemas/model_config_schema.json
+#
+# Lab 20 -- A2A protocol with HITL + OBO.
+#
+# Adds the two capabilities Lab 19 didn't exercise:
+#   1. Human-in-the-loop -- each tool is tagged `human_in_the_loop:`, so
+#      the LangGraph executor interrupts the run when the model decides
+#      to call the tool. Over A2A, that interrupt surfaces as
+#      `state: input-required` plus a DataPart on the task status
+#      message carrying the action_requests + review_configs payload.
+#   2. On-behalf-of-user -- `default_llm` is OBO-tagged. dao-ai auto-
+#      derives `a2a.on_behalf_of_user = True` from this (any resource
+#      with `on_behalf_of_user: true` flips the advisory flag) and the
+#      Agent Card emits BOTH an `oauth2` scheme (authorizationCode flow
+#      with `user_impersonation` scope, URLs from $DATABRICKS_HOST) AND
+#      a `bearer` scheme (the wire shape the Apps proxy actually
+#      consumes). Pin `a2a.on_behalf_of_user: true/false` to override.
+#
+# In-memory checkpointer + task store keep the lab deployable without
+# any Lakebase setup. For production HITL, attach a DatabaseModel to
+# `memory.checkpointer.database` AND `a2a.task_store.database` so state
+# survives worker restarts.
+
+resources:
+  models:
+    default_llm: &default_llm
+      name: ${var.llm_endpoint:-databricks-gpt-5-4-mini}
+      # OBO: route every model invocation through the calling user's
+      # forwarded bearer (Apps proxy injects `x-forwarded-access-token`).
+      on_behalf_of_user: true
+
+tools:
+  current_time: &current_time
+    name: current_time
+    function:
+      type: python
+      name: dao_ai.tools.current_time_tool
+      human_in_the_loop:
+        review_prompt: |
+          Lab 20 -- the agent wants to call current_time. Approve to let
+          it return the current timestamp, edit to override the args,
+          or reject to skip.
+        allowed_decisions:
+          - approve
+          - edit
+          - reject
+
+  say_hello: &say_hello
+    name: say_hello
+    function:
+      type: python
+      name: dao_ai.tools.say_hello_tool
+      human_in_the_loop:
+        review_prompt: |
+          Lab 20 -- the agent wants to call say_hello. Approve / edit /
+          reject as you would for any sensitive tool.
+        allowed_decisions:
+          - approve
+          - edit
+          - reject
+
+agents:
+  hitl_obo_agent: &hitl_obo_agent
+    name: hitl_obo_agent
+    description: Demo agent showing live HITL + OBO over the A2A protocol.
+    model: *default_llm
+    tools:
+      - *current_time
+      - *say_hello
+    prompt: |
+      You are a demo agent. You have two tools (current_time and
+      say_hello) -- both are tagged for human-in-the-loop review. When
+      the user asks for the time or asks you to say hello, ALWAYS call
+      the matching tool (do not answer from memory). The system pauses
+      and asks the caller to approve before the tool runs. Keep
+      responses short.
+
+memory: &memory
+  # No database -- in-memory checkpointer. State is process-local.
+  checkpointer:
+    name: lab20_checkpointer
+
+app:
+  name: a2a-hitl-${var.username}
+  description: A2A + HITL + OBO demo (Lab 20).
+  log_level: INFO
+  deployment_target: apps
+  agents:
+    - *hitl_obo_agent
+  orchestration:
+    memory: *memory  # CRITICAL for HITL -- needs a checkpointer to resume
+  a2a:
+    enabled: true
+    # `on_behalf_of_user:` deliberately omitted. dao-ai auto-derives
+    # True from default_llm.on_behalf_of_user=true above, so the Agent
+    # Card emits both oauth2 + bearer schemes. Add `on_behalf_of_user:
+    # false` to suppress, or `true` to pin.
+    # No task_store -- defaults to in-memory.

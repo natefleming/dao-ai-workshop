@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=../../schemas/model_config_schema.json
+#
+# Lab 19 — A2A Protocol (Minimal).
+#
+# A single-agent dao-ai config deployed to Databricks Apps. The A2A
+# endpoints (`/.well-known/agent-card.json` + JSON-RPC `/a2a`) are
+# auto-mounted alongside the existing OpenAI Responses contract
+# (`/invocations` + `/v1/responses*`) -- no `a2a:` block needed.
+#
+# `a2a` is enabled by default in dao-ai 0.1.80; the block below is
+# illustrative-only (every field has a sensible default). Set
+# `a2a.enabled: false` to opt out entirely.
+
+resources:
+  models:
+    default_llm: &default_llm
+      name: ${var.llm_endpoint:-databricks-gpt-5-4-mini}
+
+agents:
+  greeter: &greeter
+    name: greeter
+    description: A friendly assistant that answers general questions in one or two sentences.
+    model: *default_llm
+    prompt: |
+      You are a friendly, concise assistant. Answer the user's question in
+      one or two sentences. Be helpful and direct.
+
+app:
+  name: a2a-min-${var.username}
+  description: Minimal A2A demo (Lab 19) — auto-mounted A2A endpoints on Apps.
+  log_level: INFO
+  deployment_target: apps
+  agents:
+    - *greeter
+  a2a:
+    enabled: true
+    # No on_behalf_of_user — no resource has OBO, so the auto-derived
+    # Agent Card emits a single PAT/M2M bearer scheme.
+    # No task_store — defaults to in-memory (process-local; tasks lost on
+    # restart). Lab 21 / dao-ai's a2a_long_running.yaml example shows the
+    # Lakebase-persistent variant.

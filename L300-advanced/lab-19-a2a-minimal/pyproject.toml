@@ -1,0 +1,9 @@
+[project]
+name = "lab-19-a2a-minimal"
+version = "0.0.1"
+description = "Lab 19 — A2A Protocol (Minimal) — deploy + probe via a2a-sdk client"
+requires-python = ">=3.11"
+dependencies = [
+    "dao-ai>=0.1.80",
+    "a2a-sdk>=0.3.0,<1.0.0",
+]

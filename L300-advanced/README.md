@@ -10,6 +10,8 @@ The third level of the DAO-AI workshop. L300 covers production-grade patterns th
 - **Lab 16 -- Declarative Genie Space Provisioning.** Provision a Genie space from pure YAML -- no agents, no app block. Exercises every `GenieRoomModel` field: table sources with column configs, metric view sources, UC function sources, text instructions, example SQLs with parameters, join specs, SQL snippets, sample questions, benchmarks, and entitlements.
 - **Lab 17 -- Deep Agent Orchestration.** dao-ai 0.1.73+'s third orchestration option alongside supervisor / swarm. A single planning agent built on `deepagents.create_deep_agent` with built-in `todo` / `filesystem` / `shell` tools, first-class **Skills** (directory-of-Markdown methodology), `AGENTS.md`-style **instruction files**, and sub-agents callable via the `task` tool. Self-provisioning — no external resources required.
 - **Lab 18 -- Skills-only Deep Agent.** The minimum viable deep_agent: zero top-level agents and zero sub-agents — only a Skill + system prompt. Exercises dao-ai's `app.agents: []` carve-out under the deep_agent pattern (`AppModel.validate_agents_not_empty` at `config.py:6531-6540`). Use this when you need a single specialist (code reviewer / bug triager / release-notes author) and the planner can do all the work itself.
+- **Lab 19 -- A2A Protocol (Minimal).** Every dao-ai 0.1.80+ Apps deployment auto-mounts Google's A2A v0.3 endpoints (`GET /.well-known/agent-card.json` + JSON-RPC `POST /a2a`) alongside the existing OpenAI Responses contract. Use the native `a2a-sdk` Python client (`A2ACardResolver`, `A2AClient`) to discover the Agent Card + send a single `message/send` round-trip. Demonstrates how dao-ai auto-derives skills from `app.agents:` and emits a single PAT/M2M bearer scheme when no resource has OBO.
+- **Lab 20 -- A2A Protocol: HITL + OBO.** Builds on Lab 19. Tag tools with `human_in_the_loop:` and the model's `default_llm` with `on_behalf_of_user: true`. Demonstrates how dao-ai's auto-OBO-derivation flips the Agent Card to BOTH `oauth2` (declarative authorization-code flow with `user_impersonation` scope and real workspace URLs) AND `bearer` (the wire shape the Apps proxy forwards). Shows the HITL contract over A2A: `state: input-required` with a DataPart payload, resumed by another `message/send` carrying `{"decisions": [{"type": "approve"}]}`. Closes with the SSE streaming variant via `A2AClient.send_message_streaming`.
 
 Lab 11 and Lab 12 reuse the products catalog from Lab 2 (extended with metadata for Lab 11) and a Genie Space pointed at it (for Lab 12). Lab 13 is concept-only -- no extra resources required. Lab 14 reuses Lab 2's products table plus a tier-aware UC function. Lab 15 reuses Lab 7's Lakebase wiring.
 
@@ -25,6 +27,8 @@ Lab 11 and Lab 12 reuse the products catalog from Lab 2 (extended with metadata 
 | 6 | [lab-16-genie-provisioning/](lab-16-genie-provisioning/) | Lab | Declarative Genie space provisioning from YAML. |
 | 7 | [lab-17-deep-agents/](lab-17-deep-agents/) | Lab | Deep Agent orchestration (planning + skills + sub-agents). |
 | 8 | [lab-18-skills-only-deep-agent/](lab-18-skills-only-deep-agent/) | Lab | Skills-only Deep Agent (zero top-level agents, zero sub-agents). |
+| 9 | [lab-19-a2a-minimal/](lab-19-a2a-minimal/) | Lab | A2A protocol — Agent Card discovery + `message/send` via the native `a2a-sdk` client. |
+| 10 | [lab-20-a2a-hitl-obo/](lab-20-a2a-hitl-obo/) | Lab | A2A protocol — HITL `input-required`/resume + auto-derived `oauth2`+`bearer` schemes from resource OBO. |
 
 ## Prerequisites
 
