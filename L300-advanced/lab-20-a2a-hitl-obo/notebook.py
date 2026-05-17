@@ -161,6 +161,7 @@ import asyncio
 import httpx
 import nest_asyncio
 from a2a.client import A2ACardResolver
+from a2a.types import AgentCard, OAuth2SecurityScheme
 
 # Databricks notebooks run inside an active asyncio loop. nest_asyncio
 # patches the loop so asyncio.run() can be called from cells without
@@ -168,13 +169,13 @@ from a2a.client import A2ACardResolver
 nest_asyncio.apply()
 
 
-async def fetch_card() -> Any:
+async def fetch_card() -> AgentCard:
     async with httpx.AsyncClient(headers={"Authorization": f"Bearer {app_token}"}, timeout=30) as http:
         return await A2ACardResolver(httpx_client=http, base_url=app.url).get_agent_card()
 
 # Cold-start retry: the Apps proxy may briefly 502 on the first request
 # while the inner uvicorn process finishes booting.
-card = None
+card: AgentCard | None = None
 last_err: Exception | None = None
 for attempt in range(8):  # ~8 x 15s = 2 min cap
     try:
@@ -200,7 +201,11 @@ assert "oauth2" in scheme_names, (
     "Check that default_llm.on_behalf_of_user=true in the YAML."
 )
 oauth2_root = card.security_schemes["oauth2"].root
+assert isinstance(oauth2_root, OAuth2SecurityScheme), (
+    f"expected OAuth2SecurityScheme, got {type(oauth2_root).__name__}"
+)
 flow = oauth2_root.flows.authorization_code
+assert flow is not None, "expected an authorizationCode flow on the OAuth2 scheme"
 print()
 print(f"oauth2.authorization_url : {flow.authorization_url}")
 print(f"oauth2.token_url         : {flow.token_url}")
@@ -225,11 +230,13 @@ from a2a.types import (
     Message,
     MessageSendParams,
     SendMessageRequest,
+    SendMessageResponse,
+    Task,
     TextPart,
 )
 
 
-async def send_initial() -> Any:
+async def send_initial() -> SendMessageResponse:
     async with httpx.AsyncClient(headers={"Authorization": f"Bearer {app_token}"}, timeout=60) as http:
         client = A2AClient(httpx_client=http, agent_card=card)
         request = SendMessageRequest(
@@ -245,21 +252,25 @@ async def send_initial() -> Any:
         return await client.send_message(request)
 
 
-resp1 = asyncio.run(send_initial())
-task = resp1.root.result
+resp1: SendMessageResponse = asyncio.run(send_initial())
+assert isinstance(resp1.root.result, Task), f"expected Task, got {type(resp1.root.result).__name__}"
+task: Task = resp1.root.result
 print(f"task_id     : {task.id}")
 print(f"context_id  : {task.context_id}")
 print(f"state       : {task.status.state}")
 
 # Inspect the HITL DataPart on the status message.
-status_msg = task.status.message
-data_parts = [p.root for p in (status_msg.parts or []) if isinstance(p.root, DataPart)]
-if data_parts:
-    interrupts = data_parts[0].data.get("interrupts", [])
-    if interrupts:
-        ar = interrupts[0]["value"]["action_requests"][0]
-        print(f"\nHITL interrupt: tool={ar['name']!r}, args={ar.get('args', {})}")
-        print(f"  review_prompt (first 80 chars): {ar.get('description', '')[:80]!r}")
+status_msg: Message | None = task.status.message
+if status_msg is not None:
+    data_parts: list[DataPart] = [
+        p.root for p in (status_msg.parts or []) if isinstance(p.root, DataPart)
+    ]
+    if data_parts:
+        interrupts = data_parts[0].data.get("interrupts", [])
+        if interrupts:
+            ar: dict = interrupts[0]["value"]["action_requests"][0]
+            print(f"\nHITL interrupt: tool={ar['name']!r}, args={ar.get('args', {})}")
+            print(f"  review_prompt (first 80 chars): {ar.get('description', '')[:80]!r}")
 
 # COMMAND ----------
 
@@ -270,11 +281,11 @@ if data_parts:
 
 # COMMAND ----------
 
-task_id = task.id
-context_id = task.context_id
+task_id: str = task.id
+context_id: str = task.context_id
 
 
-async def resume_with_approve() -> Any:
+async def resume_with_approve() -> SendMessageResponse:
     async with httpx.AsyncClient(headers={"Authorization": f"Bearer {app_token}"}, timeout=60) as http:
         client = A2AClient(httpx_client=http, agent_card=card)
         request = SendMessageRequest(
@@ -292,13 +303,15 @@ async def resume_with_approve() -> Any:
         return await client.send_message(request)
 
 
-resp2 = asyncio.run(resume_with_approve())
-result2 = resp2.root.result
+resp2: SendMessageResponse = asyncio.run(resume_with_approve())
+assert isinstance(resp2.root.result, Task), f"expected Task, got {type(resp2.root.result).__name__}"
+result2: Task = resp2.root.result
 print(f"state    : {result2.status.state}")
-artifact_text = ""
+artifact_text: str = ""
 if result2.artifacts:
     first_part = result2.artifacts[0].parts[0].root
-    artifact_text = getattr(first_part, "text", "")
+    if isinstance(first_part, TextPart):
+        artifact_text = first_part.text
 print(f"artifact : {artifact_text!r}")
 assert result2.status.state == "completed", f"expected completed, got {result2.status.state}"
 print("\n✓ HITL resume completed end-to-end over A2A.")
@@ -312,7 +325,11 @@ print("\n✓ HITL resume completed end-to-end over A2A.")
 
 # COMMAND ----------
 
-from a2a.types import SendStreamingMessageRequest
+from a2a.types import (
+    SendStreamingMessageRequest,
+    TaskArtifactUpdateEvent,
+    TaskStatusUpdateEvent,
+)
 
 
 async def stream_initial() -> list[str]:
@@ -331,14 +348,24 @@ async def stream_initial() -> list[str]:
         )
         async for event in client.send_message_streaming(request):
             root = event.root.result
-            label = f"{type(root).__name__}"
-            state = getattr(getattr(root, "status", None), "state", None) or getattr(root, "kind", None) or "?"
-            final = getattr(root, "final", False)
-            events.append(f"{label}:{state}(final={final})")
+            label = type(root).__name__
+            # The streaming union is Task | Message | TaskStatusUpdateEvent |
+            # TaskArtifactUpdateEvent. Each has its own shape; dispatch on
+            # the concrete type so each branch reads typed attributes.
+            if isinstance(root, TaskStatusUpdateEvent):
+                events.append(f"{label}:{root.status.state}(final={root.final})")
+            elif isinstance(root, TaskArtifactUpdateEvent):
+                events.append(f"{label}:artifact(last_chunk={root.last_chunk})")
+            elif isinstance(root, Task):
+                events.append(f"{label}:{root.status.state}")
+            elif isinstance(root, Message):
+                events.append(f"{label}:message(role={root.role})")
+            else:
+                events.append(f"{label}:unknown")
     return events
 
 
-stream_events = asyncio.run(stream_initial())
+stream_events: list[str] = asyncio.run(stream_initial())
 for e in stream_events:
     print(f"  {e}")
 

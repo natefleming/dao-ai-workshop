@@ -166,6 +166,7 @@ import asyncio
 import httpx
 import nest_asyncio
 from a2a.client import A2ACardResolver
+from a2a.types import AgentCard
 
 # Databricks notebooks run inside an active asyncio loop. nest_asyncio
 # patches the loop so asyncio.run() can be called from cells without
@@ -173,17 +174,16 @@ from a2a.client import A2ACardResolver
 nest_asyncio.apply()
 
 
-async def fetch_agent_card() -> dict:
+async def fetch_agent_card() -> AgentCard:
     async with httpx.AsyncClient(headers={"Authorization": f"Bearer {app_token}"}, timeout=30) as http:
         resolver = A2ACardResolver(httpx_client=http, base_url=app.url)
-        card = await resolver.get_agent_card()
-    return card
+        return await resolver.get_agent_card()
 
 # Cold-start retry: even when `compute_status==ACTIVE` and
 # `app_status==RUNNING`, the Apps proxy may briefly 502 on the first
 # request while the inner uvicorn process finishes booting. Retry the
 # first agent-card fetch; subsequent calls are fast.
-card = None
+card: AgentCard | None = None
 last_err: Exception | None = None
 for attempt in range(8):  # ~8 x 15s = 2 min cap
     try:
@@ -226,11 +226,13 @@ from a2a.types import (
     Message,
     MessageSendParams,
     SendMessageRequest,
+    SendMessageResponse,
+    Task,
     TextPart,
 )
 
 
-async def send_one_message(text: str) -> Any:
+async def send_one_message(text: str) -> SendMessageResponse:
     async with httpx.AsyncClient(headers={"Authorization": f"Bearer {app_token}"}, timeout=60) as http:
         client = A2AClient(httpx_client=http, agent_card=card)
         request = SendMessageRequest(
@@ -243,21 +245,22 @@ async def send_one_message(text: str) -> Any:
                 )
             ),
         )
-        response = await client.send_message(request)
-    return response
+        return await client.send_message(request)
 
 
-resp = asyncio.run(send_one_message("Say hi in 3 words."))
-# A2AClient.send_message returns a SendMessageResponse whose `.root` is
-# either a SendMessageSuccessResponse (carrying a Task) or a JSONRPCErrorResponse.
-result = resp.root.result
+resp: SendMessageResponse = asyncio.run(send_one_message("Say hi in 3 words."))
+# `.root` is a SendMessageSuccessResponse (carrying a Task or Message) or
+# a JSONRPCErrorResponse. Happy-path of a single-shot greeter agent: Task.
+assert isinstance(resp.root.result, Task), f"expected Task, got {type(resp.root.result).__name__}"
+result: Task = resp.root.result
 print(f"task_id   : {result.id}")
 print(f"contextId : {result.context_id}")
 print(f"state     : {result.status.state}")
-artifact_text = ""
+artifact_text: str = ""
 if result.artifacts:
     first_part = result.artifacts[0].parts[0].root
-    artifact_text = getattr(first_part, "text", "")
+    if isinstance(first_part, TextPart):
+        artifact_text = first_part.text
 print(f"reply     : {artifact_text!r}")
 
 # COMMAND ----------
