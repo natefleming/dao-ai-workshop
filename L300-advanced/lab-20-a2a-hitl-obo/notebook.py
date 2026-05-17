@@ -32,7 +32,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "dao-ai>=0.1.80" "nest-asyncio>=1.5"
+# MAGIC %uv pip install "dao-ai>=0.1.80" "nest-asyncio>=1.5"
 # MAGIC %restart_python
 
 # COMMAND ----------
