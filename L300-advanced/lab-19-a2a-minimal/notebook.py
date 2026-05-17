@@ -173,7 +173,25 @@ async def fetch_agent_card() -> dict:
         card = await resolver.get_agent_card()
     return card
 
-card = asyncio.run(fetch_agent_card())
+# Cold-start retry: even when `compute_status==ACTIVE` and
+# `app_status==RUNNING`, the Apps proxy may briefly 502 on the first
+# request while the inner uvicorn process finishes booting. Retry the
+# first agent-card fetch; subsequent calls are fast.
+card = None
+last_err: Exception | None = None
+for attempt in range(8):  # ~8 x 15s = 2 min cap
+    try:
+        card = asyncio.run(fetch_agent_card())
+        break
+    except Exception as e:
+        last_err = e
+        if any(s in str(e) for s in ("502", "Bad Gateway", "503", "504")):
+            print(f"  [agent-card attempt {attempt+1}] cold start; retry in 15s")
+            time.sleep(15)
+        else:
+            raise
+if card is None:
+    raise RuntimeError(f"agent card never returned 200 after retries: {last_err}")
 print(f"name        : {card.name}")
 print(f"description : {card.description}")
 print(f"url         : {card.url}")

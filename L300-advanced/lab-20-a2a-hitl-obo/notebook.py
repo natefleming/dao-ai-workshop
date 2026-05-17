@@ -166,7 +166,23 @@ async def fetch_card() -> Any:
     async with httpx.AsyncClient(headers={"Authorization": f"Bearer {app_token}"}, timeout=30) as http:
         return await A2ACardResolver(httpx_client=http, base_url=app.url).get_agent_card()
 
-card = asyncio.run(fetch_card())
+# Cold-start retry: the Apps proxy may briefly 502 on the first request
+# while the inner uvicorn process finishes booting.
+card = None
+last_err: Exception | None = None
+for attempt in range(8):  # ~8 x 15s = 2 min cap
+    try:
+        card = asyncio.run(fetch_card())
+        break
+    except Exception as e:
+        last_err = e
+        if any(s in str(e) for s in ("502", "Bad Gateway", "503", "504")):
+            print(f"  [agent-card attempt {attempt+1}] cold start; retry in 15s")
+            time.sleep(15)
+        else:
+            raise
+if card is None:
+    raise RuntimeError(f"agent card never returned 200 after retries: {last_err}")
 print(f"skills          : {[s.id for s in card.skills]}")
 scheme_names = list((card.security_schemes or {}).keys())
 print(f"securitySchemes : {scheme_names}")
