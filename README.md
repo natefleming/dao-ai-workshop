@@ -19,7 +19,7 @@ The workshop is organized as **L100 → L200 → L300**, mirroring the level sys
 |---|---|---|---|
 | **L100 Foundations** | [`L100-foundations/`](L100-foundations/) | hardware_store (consumer retail) | 4 labs |
 | **L200 Building Real Agents** | [`L200-real-agents/`](L200-real-agents/) | saas_helpdesk (support ops) | 6 labs |
-| **L300 Advanced** | [`L300-advanced/`](L300-advanced/) | hardware_store++ (extended) | 6 labs |
+| **L300 Advanced** | [`L300-advanced/`](L300-advanced/) | hardware_store++ + standalone patterns | 10 labs |
 
 ## Lab index
 
@@ -68,12 +68,17 @@ L100 builds a hardware-store retail assistant. L200 switches to a SaaS support c
 
 Every lab's `app.name` is parameterized with `${var.username}`. The notebook auto-derives a sanitized short-name from your Databricks identity and injects it into `params={...}`, so multiple students can deploy to the same workspace without app-name collisions.
 
-**Apps are reused per use case.** Each Databricks Apps deploy redeploys the use case's existing app rather than creating a new one — only the description and underlying agent change between labs. This keeps the workspace's app count manageable across the 15 labs:
+**Apps are reused per use case where possible.** The L100/L200 labs and the early L300 labs (11–15) redeploy a single use-case app rather than creating a new one — only the description and underlying agent change between labs. The standalone-pattern labs (17, 18, 19, 20) each deploy their own demo app because the patterns differ enough to warrant a separate target.
 
 | Use case | Labs | Deployed app name |
 |---|---|---|
-| Hardware store (L100 + L300) | Lab 1 · 2 · 3 · 4 · 11 · 12 · 13 · 14 · 15 | `hardware-store-jane-doe` |
+| Hardware store (L100 + L300 core) | Lab 1 · 2 · 3 · 4 · 11 · 12 · 13 · 14 · 15 | `hardware-store-jane-doe` |
 | SaaS helpdesk (L200) | Lab 5 · 6 · 7 · 8 · 9 · 10 | `saas-helpdesk-jane-doe` |
+| Lab 16 — Genie provisioning | Lab 16 | _no app_ (provisions a Genie Space only) |
+| Lab 17 — Deep Agent | Lab 17 | `deep-research-jane-doe` |
+| Lab 18 — Skills-only Deep Agent | Lab 18 | `code-reviewer-jane-doe` |
+| Lab 19 — A2A Minimal | Lab 19 | `a2a-min-jane-doe` |
+| Lab 20 — A2A HITL + OBO | Lab 20 | `a2a-hitl-jane-doe` |
 
 Each lab's `app.description` updates to reflect what that lab's redeploy adds, so you can see in the Databricks Apps UI which lab last deployed.
 
@@ -99,11 +104,12 @@ print(f"Deployed app: {config.app.name}")
 | DAO-AI | `pip install "dao-ai>=0.1.80"` (the labs install this in the notebook) |
 | Databricks CLI | v0.230+ with a configured profile |
 | Compute | Databricks Serverless v5 |
-| Foundation models | `databricks-claude-sonnet-4-5` (always); `databricks-gte-large-en` (Lab 6 + Lab 11 + Lab 12); `databricks-claude-haiku-4-5` and `databricks-meta-llama-3-1-8b-instruct` (Lab 9 + Lab 11); `databricks-gpt-5-nano` (Lab 7 summarization); `databricks-gpt-oss-120b` (Lab 7 memory queries) |
-| Genie Space | One pointed at `products` (Lab 3 + Lab 12) |
+| Foundation models | `databricks-claude-sonnet-4-5` (most labs); `databricks-gpt-5-4-mini` (Lab 19 + Lab 20); `databricks-gte-large-en` (Lab 6 + Lab 11 + Lab 12); `databricks-claude-haiku-4-5` and `databricks-meta-llama-3-1-8b-instruct` (Lab 9 + Lab 11); `databricks-gpt-5-nano` (Lab 7 summarization); `databricks-gpt-oss-120b` (Lab 7 memory queries) |
+| Genie Space | One pointed at `products` (Lab 3 + Lab 12); a separate provisioned one for Lab 16 |
 | Vector Search endpoint | Used by Lab 6 + Lab 11 |
 | SQL warehouse | Used by Lab 12 (Genie cache replay) |
-| Lakebase access | Used by Lab 7 (in-memory fallback exists) |
+| Lakebase access | Used by Lab 7 + Lab 15 (in-memory fallback exists for non-Lakebase labs) |
+| A2A native client | `a2a-sdk>=0.3.0` is a transitive dao-ai dep; Lab 19 + Lab 20 additionally install `nest-asyncio` for serverless notebook async |
 
 ## Per-student catalog isolation
 
@@ -146,9 +152,16 @@ dao-ai-workshop/
 │   └── debrief.md            (debrief)
 ├── L300-advanced/            L300 -- advanced patterns
 │   ├── README.md
-│   ├── lab-11-instructed-retrieval/ (Lab 11)
-│   ├── lab-12-genie-caching/        (Lab 12)
-│   └── lab-13-programmatic/         (Lab 13 -- build the same agent in pure Python)
+│   ├── lab-11-instructed-retrieval/    (Lab 11 -- query decomp + LLM-judged rerank)
+│   ├── lab-12-genie-caching/           (Lab 12 -- L1 LRU + L2 similarity cache)
+│   ├── lab-13-programmatic/            (Lab 13 -- build AppConfig in pure Python)
+│   ├── lab-14-custom-input-validation/ (Lab 14 -- middleware-based input contract)
+│   ├── lab-15-long-running/            (Lab 15 -- Responses-API kickoff/poll/cancel)
+│   ├── lab-16-genie-provisioning/      (Lab 16 -- declarative Genie Space from YAML)
+│   ├── lab-17-deep-agents/             (Lab 17 -- planning + Skills + sub-agents)
+│   ├── lab-18-skills-only-deep-agent/  (Lab 18 -- minimum-viable deep_agent)
+│   ├── lab-19-a2a-minimal/             (Lab 19 -- A2A protocol with a2a-sdk client)
+│   └── lab-20-a2a-hitl-obo/            (Lab 20 -- A2A HITL + auto-derived oauth2)
 └── setup/                    (workshop setup scripts)
 ```
 
