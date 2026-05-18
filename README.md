@@ -57,6 +57,10 @@ L200 starts with the [Building Real Agents](L200-real-agents/building-real-agent
 | **Lab 14** | Custom-Input Validation | Middleware-based validation of `custom_inputs.configurable` (`store_num`, `customer_tier`, `region`) | [`L300-advanced/lab-14-custom-input-validation/`](L300-advanced/lab-14-custom-input-validation/) |
 | **Lab 15** | Long-Running / Background Agents | `app.long_running:` + Lakebase-backed responses store + Responses-API kickoff/poll/cancel | [`L300-advanced/lab-15-long-running/`](L300-advanced/lab-15-long-running/) |
 | **Lab 16** | Declarative Genie Space Provisioning | Provision a fully-configured Genie space from pure YAML via `GenieRoomModel.create()` | [`L300-advanced/lab-16-genie-provisioning/`](L300-advanced/lab-16-genie-provisioning/) |
+| **Lab 17** | Deep Agent Orchestration | Third orchestration pattern alongside supervisor/swarm: a planning agent built on `deepagents.create_deep_agent` with `todo`/`filesystem`/`shell` tools, Skills (directory-of-Markdown), `AGENTS.md` instruction files, and sub-agents called via the `task` tool | [`L300-advanced/lab-17-deep-agents/`](L300-advanced/lab-17-deep-agents/) |
+| **Lab 18** | Skills-only Deep Agent | The minimum-viable deep_agent — zero top-level agents and zero sub-agents, only a Skill + system prompt | [`L300-advanced/lab-18-skills-only-deep-agent/`](L300-advanced/lab-18-skills-only-deep-agent/) |
+| **Lab 19** | A2A Protocol (Minimal) | Native Google A2A v0.3 endpoints (`/.well-known/agent-card.json` + `POST /a2a`) auto-mounted on every Apps deployment. Probe via the native `a2a-sdk` Python client (`A2ACardResolver`, `A2AClient.send_message`) | [`L300-advanced/lab-19-a2a-minimal/`](L300-advanced/lab-19-a2a-minimal/) |
+| **Lab 20** | A2A: HITL + OBO | HITL `input-required` + DataPart resume over A2A. Auto-derived `oauth2`+`bearer` security schemes (from any resource carrying `on_behalf_of_user: true`) with the workspace's real OIDC URLs. SSE streaming via `A2AClient.send_message_streaming` | [`L300-advanced/lab-20-a2a-hitl-obo/`](L300-advanced/lab-20-a2a-hitl-obo/) |
 
 See the [L300 README](L300-advanced/README.md) for production-deployment guidance.
 
