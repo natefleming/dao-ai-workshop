@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
+#
+# Lab 21 - User Feedback on Agent Responses (saas_helpdesk)
+# ---------------------------------------------------------
+# A scaled-down version of the Lab 9 supervisor (tier-1 + tier-2 only)
+# whose responses we capture user feedback on. The agent topology is
+# intentionally minimal so the lab focuses on the feedback contract,
+# not orchestration.
+#
+# What this lab demonstrates:
+#   - Every response from a dao-ai agent carries the outer MLflow
+#     trace_id on ``custom_outputs["trace_id"]``.
+#   - In multi-agent flows that trace_id is the OUTER root trace whose
+#     children include every sub-agent hop -- attaching feedback to it
+#     attaches at the right level.
+#   - ``dao_ai.evaluation.log_user_feedback(...)`` wraps the MLflow 3
+#     ``log_feedback`` API + waits for cross-process trace queryability.
+
+parameters:
+  username:
+    description: Per-student username for unique deployment names. Auto-set by the notebook.
+    # No default => required.
+  llm_endpoint:
+    description: Primary LLM endpoint (supervisor + escalation tier).
+    default: databricks-claude-sonnet-4-5
+  fast_llm_endpoint:
+    description: Faster/smaller LLM endpoint for the front-line tier.
+    default: databricks-claude-haiku-4-5
+
+resources:
+  models:
+    default_llm: &default_llm
+      name: ${var.llm_endpoint}
+      temperature: 0.2
+      max_tokens: 4096
+
+    fast_llm: &fast_llm
+      name: ${var.fast_llm_endpoint}
+      temperature: 0.2
+      max_tokens: 2048
+
+agents:
+  tier1_support: &tier1_support
+    name: tier1_support
+    description: Front-line agent for how-to and policy questions.
+    model: *fast_llm
+    prompt: |
+      You are tier-1 support for a SaaS product. Answer how-to and
+      policy questions concisely. If the customer reports a bug or
+      integration error, the supervisor will route them to tier-2.
+    handoff_prompt: |
+      How-to questions, account questions, simple policy lookups.
+
+  tier2_engineer: &tier2_engineer
+    name: tier2_engineer
+    description: Technical specialist for bugs and integration issues.
+    model: *default_llm
+    prompt: |
+      You are tier-2 technical support. Handle reported bugs, error
+      messages, integration failures. Provide concrete diagnostic
+      steps and code snippets when relevant.
+    handoff_prompt: |
+      Technical issues: bugs, errors, integration failures.
+
+app:
+  name: feedback-demo-${var.username}
+  description: "Workshop lab 21: user feedback on multi-agent responses"
+  log_level: INFO
+  deployment_target: apps
+  agents:
+  - *tier1_support
+  - *tier2_engineer
+  orchestration:
+    supervisor:
+      model: *default_llm
+      prompt: |
+        Route the customer to the right specialist:
+          - tier1_support  : how-to, policy lookups, account questions
+          - tier2_engineer : bugs, errors, broken integrations
