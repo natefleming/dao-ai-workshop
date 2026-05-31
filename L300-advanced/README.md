@@ -29,6 +29,7 @@ Lab 11 and Lab 12 reuse the products catalog from Lab 2 (extended with metadata 
 | 8 | [lab-18-skills-only-deep-agent/](lab-18-skills-only-deep-agent/) | Lab | Skills-only Deep Agent (zero top-level agents, zero sub-agents). |
 | 9 | [lab-19-a2a-minimal/](lab-19-a2a-minimal/) | Lab | A2A protocol — Agent Card discovery + `message/send` via the native `a2a-sdk` client. |
 | 10 | [lab-20-a2a-hitl-obo/](lab-20-a2a-hitl-obo/) | Lab | A2A protocol — HITL `input-required`/resume + auto-derived `oauth2`+`bearer` schemes from resource OBO. |
+| 11 | [lab-21-feedback/](lab-21-feedback/) | Lab | User feedback on multi-agent responses. Read `custom_outputs["trace_id"]` and call `dao_ai.evaluation.log_user_feedback`. Verify the assessment lands on the OUTER root trace. |
 
 ## Prerequisites
 
@@ -43,6 +44,7 @@ Lab-specific requirements:
 - **Lab 12**: a Genie Space over the products table (Lab 3's space works), a SQL warehouse you can re-execute cached SQL on.
 - **Lab 14**: a Unity Catalog catalog you can write to (the `catalog` widget). The notebook self-provisions schema, products table, UC function.
 - **Lab 15**: same Lakebase / SP setup as Lab 7 (`setup/create_service_principal.py` + `setup/grant_lakebase_superuser.py` + the `retail-consumer-goods` Lakebase autoscaling project).
+- **Lab 21**: no external resources -- self-contained two-agent supervisor.
 
 ## What you'll have at the end
 
