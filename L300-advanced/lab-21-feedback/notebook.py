@@ -105,27 +105,7 @@ print(f"Agents: {[a.name for a in config.app.agents]}")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 4 -- Resolve the experiment for this agent
-
-# COMMAND ----------
-
-EXPERIMENT_PATH: str = (
-    config.app.registered_model.experiment_name
-    if hasattr(config.app.registered_model, "experiment_name")
-    and config.app.registered_model.experiment_name
-    else f"/Shared/{config.app.name}"
-)
-experiment = mlflow.get_experiment_by_name(EXPERIMENT_PATH) or mlflow.set_experiment(
-    EXPERIMENT_PATH
-)
-EXPERIMENT_ID: str = experiment.experiment_id
-mlflow.set_experiment(experiment_id=EXPERIMENT_ID)
-print(f"Experiment: {EXPERIMENT_PATH} → id={EXPERIMENT_ID}")
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Step 5 -- Invoke + log thumbs-up
+# MAGIC ## Step 4 -- Invoke + log thumbs-up
 # MAGIC
 # MAGIC 1. Build a `ResponsesAgentRequest`.
 # MAGIC 2. `await agent.apredict(request)` -- the `@mlflow.trace` decorator opens the outer trace.
@@ -161,7 +141,7 @@ log_user_feedback(
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 6 -- Invoke + log thumbs-down
+# MAGIC ## Step 5 -- Invoke + log thumbs-down
 # MAGIC
 # MAGIC Same contract; this turn routes through `tier2_engineer`, so the
 # MAGIC outer trace has different sub-agent children, but the
@@ -197,7 +177,7 @@ log_user_feedback(
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 7 -- Verify the trace is the OUTER multi-agent root
+# MAGIC ## Step 6 -- Verify the trace is the OUTER multi-agent root
 
 # COMMAND ----------
 
@@ -217,11 +197,11 @@ for label, tid in [("positive", trace_id_positive), ("negative", trace_id_negati
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 8 -- Query traces with feedback via SQL
+# MAGIC ## Step 7 -- Query traces with feedback via SQL
 
 # COMMAND ----------
 
-traces = mlflow.search_traces(locations=[EXPERIMENT_ID], max_results=50)
+traces = mlflow.search_traces(max_results=50)
 print(f"total traces: {len(traces)}")
 spark.createDataFrame(traces).createOrReplaceTempView("feedback_lab_traces")
 
