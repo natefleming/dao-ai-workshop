@@ -99,10 +99,14 @@ import mlflow
 
 from dao_ai.config import AppConfig
 
-# Autolog opens the langchain root trace. Combined with dao-ai's
-# @mlflow.trace decorator on apredict, the trace_id is the OUTER
-# multi-agent root.
-mlflow.langchain.autolog()
+# Autolog opens the langchain root trace. ``run_tracer_inline=True`` makes
+# the autologged trace synchronous with ``mlflow.genai.evaluate``'s harness
+# so the harness reuses the autologged trace instead of creating a 0s
+# placeholder trace alongside it (dao-ai's notebooks/08_run_evaluation.py
+# uses the same pattern). The disable-then-re-enable clears any workspace
+# global autolog that might otherwise stack on top.
+mlflow.autolog(disable=True)
+mlflow.langchain.autolog(run_tracer_inline=True)
 
 # Use a named workspace experiment so every scenario's runs land in a
 # stable, discoverable location. mlflow.set_experiment creates the
@@ -125,22 +129,35 @@ print(f"Agents: {[a.name for a in config.app.agents]}")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 4 -- Build a `predict_fn` and a record helper
+# MAGIC ## Step 4 -- Define `predict_fn` for `mlflow.genai.evaluate`
 # MAGIC
-# MAGIC `mlflow.genai.evaluate` can be called two ways: (a) with `predict_fn`
-# MAGIC and rows of `inputs` -- MLflow then runs the function for you and
-# MAGIC associates a per-row trace; (b) with rows that already contain an
-# MAGIC `outputs` column -- MLflow skips prediction and scores the outputs
-# MAGIC directly. (b) is the simpler path for a workshop demo: we run the
-# MAGIC agent once per row up front, then hand pre-scored records to the
-# MAGIC harness. The function below is the same shape MLflow would have
-# MAGIC called; we just drive it ourselves to keep the eval flow obvious.
+# MAGIC Passing `predict_fn=` to `mlflow.genai.evaluate` makes the harness run
+# MAGIC the agent itself, producing exactly **one trace per evaluation row**
+# MAGIC with the assessment values attached. The signature has to accept
+# MAGIC every key that the dataset's `inputs` dict carries -- dao-ai's
+# MAGIC `ChatPayload` dumps three keys (`input`, `messages`, `custom_inputs`),
+# MAGIC so the function declares all three even though only `messages` is
+# MAGIC used.
+# MAGIC
+# MAGIC A `threading.Lock` serialises the agent call since the harness
+# MAGIC parallelises rows across worker threads.
+# MAGIC
+# MAGIC > Heads-up on runtime quirks: in the Step 3 cell we call
+# MAGIC > `mlflow.langchain.autolog(run_tracer_inline=True)`. That mode makes
+# MAGIC > the autologged trace synchronous with the harness's row execution
+# MAGIC > so each row gets exactly one trace -- without it the harness can
+# MAGIC > race the trace exporter and emit duplicate (or null-assessment)
+# MAGIC > traces. dao-ai's own `notebooks/08_run_evaluation.py` uses the
+# MAGIC > same pattern.
 
 # COMMAND ----------
 
+import threading
 from typing import Any
 
 from mlflow.types.responses import ResponsesAgentRequest, ResponsesAgentResponse
+
+_predict_lock = threading.Lock()
 
 
 def _extract_output_text(response: ResponsesAgentResponse) -> str:
@@ -160,36 +177,27 @@ def _extract_output_text(response: ResponsesAgentResponse) -> str:
     return "".join(texts) if texts else str(response.output)
 
 
-def predict_fn(messages: list[dict[str, Any]]) -> str:
-    """Run one agent turn for an evaluation row."""
-    request = ResponsesAgentRequest(
-        input=[{"role": m["role"], "content": m["content"]} for m in messages],
-        custom_inputs={
-            "configurable": {"user_id": USER},
-            "session": {},
-        },
-    )
-    response: ResponsesAgentResponse = asyncio.run(agent.apredict(request))
-    return _extract_output_text(response)
+def predict_fn(
+    messages: list[dict[str, Any]] | None = None,
+    input: list[dict[str, Any]] | None = None,
+    custom_inputs: dict[str, Any] | None = None,
+) -> str:
+    """Run one agent turn for an evaluation row.
 
-
-def attach_outputs(
-    records: list[dict[str, Any]],
-    label: str = "rows",
-) -> list[dict[str, Any]]:
-    """Run predict_fn for every record and return new records with an `outputs` key.
-
-    Each record's `inputs` must carry `messages` (a list of role/content dicts).
-    The original record fields (`inputs`, `expected_facts`, `expectations`, etc.)
-    are preserved.
+    Accepts all three keys ChatPayload.model_dump emits so MLflow's
+    signature validator doesn't reject the call.
     """
-    out: list[dict[str, Any]] = []
-    for i, r in enumerate(records, start=1):
-        msgs = r["inputs"]["messages"]
-        text = predict_fn(messages=msgs)
-        out.append({**r, "outputs": text})
-        print(f"  [{i}/{len(records)}] {label}: {len(text)} chars")
-    return out
+    msgs = messages or input or []
+    with _predict_lock:
+        request = ResponsesAgentRequest(
+            input=[{"role": m["role"], "content": m["content"]} for m in msgs],
+            custom_inputs={
+                "configurable": {"user_id": USER},
+                "session": {},
+            },
+        )
+        response: ResponsesAgentResponse = asyncio.run(agent.apredict(request))
+        return _extract_output_text(response)
 
 
 # Smoke-test predict_fn end-to-end before evaluation runs.
@@ -237,9 +245,9 @@ print(f"Dataset name: {seed_ds.name}")
 print(f"Dataset id:   {seed_ds.dataset_id}")
 print(f"Record count: {len(seed_ds.to_df())}")
 
-# (2) Materialise the inline entries from YAML into eval records and run
-#     predict_fn for each one. The inline YAML is the source of truth; the
-#     managed dataset is the durable artifact.
+# (2) Materialise the inline entries from YAML into eval records. predict_fn
+#     will be invoked by the harness for each row -- one trace per row, with
+#     assessment values attached.
 seed_records: list[dict[str, Any]] = []
 for entry in config.optimizations.training_datasets["lab22_qa_seed"].data:
     seed_records.append({
@@ -247,8 +255,7 @@ for entry in config.optimizations.training_datasets["lab22_qa_seed"].data:
         # Correctness reads expectations.expected_facts; nesting matters.
         "expectations": {"expected_facts": entry.expectations.expected_facts},
     })
-print(f"\nRunning {len(seed_records)} agent turns for Scenario A...")
-seed_records = attach_outputs(seed_records, label="scenarioA")
+print(f"\nPrepared {len(seed_records)} eval records for Scenario A")
 
 # (3) Build the scorers. build_scorers() returns Safety + Completeness +
 #     RelevanceToQuery + ToolCallEfficiency + the two Guidelines scorers
@@ -256,12 +263,13 @@ seed_records = attach_outputs(seed_records, label="scenarioA")
 #     expected_facts get scored too.
 base_scorers = build_scorers(config.evaluation)
 scorers_a = [*base_scorers, Correctness()]
-print(f"\nScorers: {[getattr(s, 'name', type(s).__name__) for s in scorers_a]}")
+print(f"Scorers: {[getattr(s, 'name', type(s).__name__) for s in scorers_a]}")
 
 run_name_a: str = f"lab22_scenario_a_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
 with mlflow.start_run(run_name=run_name_a) as run_a:
     eval_results_a: EvaluationResult = mlflow.genai.evaluate(
         data=seed_records,
+        predict_fn=predict_fn,
         scorers=scorers_a,
     )
 
@@ -356,14 +364,11 @@ print(f"Records after merge: {len(external_ds.to_df())}")
 
 # COMMAND ----------
 
-# Run predict_fn over the external records and evaluate the pre-scored rows.
-print(f"Running {len(external_records)} agent turns for Scenario B...")
-external_records_with_outputs = attach_outputs(external_records, label="scenarioB")
-
 run_name_b: str = f"lab22_scenario_b_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
 with mlflow.start_run(run_name=run_name_b) as run_b:
     eval_results_b: EvaluationResult = mlflow.genai.evaluate(
-        data=external_records_with_outputs,
+        data=external_records,
+        predict_fn=predict_fn,
         scorers=[*base_scorers, Correctness()],
     )
 
@@ -403,11 +408,12 @@ def includes_concrete_step(outputs: str) -> Feedback:
     return Feedback(value=False, rationale="no concrete action verb in the response")
 
 
-# Reuses Scenario A's pre-scored seed_records -- no need to re-run the agent.
+# Reuses Scenario A's seed_records (same agent will run again per row).
 run_name_c: str = f"lab22_scenario_c_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
 with mlflow.start_run(run_name=run_name_c) as run_c:
     eval_results_c: EvaluationResult = mlflow.genai.evaluate(
         data=seed_records,
+        predict_fn=predict_fn,
         scorers=[*base_scorers, Correctness(), includes_concrete_step],
     )
 
@@ -461,13 +467,11 @@ per_row: list[dict[str, Any]] = [
     },
 ]
 
-print(f"Running {len(per_row)} agent turns for Scenario D...")
-per_row_with_outputs = attach_outputs(per_row, label="scenarioD")
-
 run_name_d: str = f"lab22_scenario_d_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
 with mlflow.start_run(run_name=run_name_d) as run_d:
     eval_results_d: EvaluationResult = mlflow.genai.evaluate(
-        data=per_row_with_outputs,
+        data=per_row,
+        predict_fn=predict_fn,
         scorers=[ExpectationsGuidelines(), *base_scorers],
     )
 
