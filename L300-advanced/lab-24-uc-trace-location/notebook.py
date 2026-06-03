@@ -290,7 +290,72 @@ if trace_ids:
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 9 -- What you just did
+# MAGIC ### One row per trace (the canonical "select traces" query)
+# MAGIC
+# MAGIC The spans table is one row per span. To get the shape a dashboard
+# MAGIC wants -- one row per trace, with duration / root span / error
+# MAGIC counts rolled up -- group by `trace_id`. This is the query you'd
+# MAGIC point Lakehouse Monitoring at to chart trace volume, p95 latency,
+# MAGIC or error rate over time.
+
+# COMMAND ----------
+
+spark.sql(f"""
+    SELECT
+      trace_id,
+      MIN_BY(name, start_time_unix_nano)                                AS root_span_name,
+      MIN_BY(kind, start_time_unix_nano)                                AS root_span_kind,
+      COUNT(*)                                                           AS span_count,
+      (MAX(end_time_unix_nano) - MIN(start_time_unix_nano)) / 1e6        AS duration_ms,
+      SUM(CASE WHEN status.code = 'STATUS_CODE_ERROR' THEN 1 ELSE 0 END) AS error_spans,
+      MIN(start_time_unix_nano)                                          AS start_ns
+    FROM {schema_prefix}.mlflow_experiment_trace_otel_spans
+    WHERE trace_id IS NOT NULL
+    GROUP BY trace_id
+    ORDER BY start_ns DESC
+    LIMIT 20
+""").display()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Step 9 -- The companion tables: `otel_logs` and `otel_metrics`
+# MAGIC
+# MAGIC `otel_spans` is the table you'll touch most often. `otel_logs` and
+# MAGIC `otel_metrics` are the OpenTelemetry siblings:
+# MAGIC
+# MAGIC | Table | Holds | Populated when |
+# MAGIC |---|---|---|
+# MAGIC | `..._otel_spans` | One row per span -- agent steps, tool calls, sub-agent handoffs | Always, for every traced call |
+# MAGIC | `..._otel_logs` | Structured log records emitted via the OTEL logs API or `@mlflow.trace` events | When the agent or its tools emit log events |
+# MAGIC | `..._otel_metrics` | OTEL metric samples (counters / histograms) | Only if your code emits OTEL metrics; dao-ai's default agent runtime does not, so this is usually empty |
+# MAGIC
+# MAGIC Out-of-the-box dao-ai produces lots of spans and a handful of logs;
+# MAGIC `otel_metrics` stays empty in this lab. That's expected.
+
+# COMMAND ----------
+
+# OTEL logs sibling -- a few rows per traced turn.
+print(f"Row counts across all three OTEL tables in {schema_prefix}:")
+for suffix in TraceLocationModel.OTEL_TABLE_SUFFIXES:
+    fqn = f"{schema_prefix}.{suffix}"
+    row_count = spark.sql(f"SELECT COUNT(*) FROM {fqn}").first()[0]
+    print(f"  {suffix:42s} {row_count} rows")
+
+# COMMAND ----------
+
+# Sample the logs table (only meaningful if rows > 0).
+spark.sql(f"""
+    SELECT trace_id, severity_text, body, observed_time_unix_nano
+    FROM {schema_prefix}.mlflow_experiment_trace_otel_logs
+    ORDER BY observed_time_unix_nano DESC
+    LIMIT 10
+""").display()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Step 10 -- What you just did
 # MAGIC
 # MAGIC | Step | Action |
 # MAGIC |---|---|
@@ -298,12 +363,14 @@ if trace_ids:
 # MAGIC | 5 | Verified MLflow auto-created the three OTEL Delta tables |
 # MAGIC | 6 | Pointed this notebook's tracer at the UC destination via `set_destination` |
 # MAGIC | 7 | Drove six requests at the agent; traces flushed to the UC spans table |
-# MAGIC | 8 | Queried the spans table directly -- one trace per user turn, many spans per trace |
+# MAGIC | 8 | Queried the spans table directly -- counts, span-per-trace breakdown, per-trace inspection, and the canonical "one row per trace" rollup |
+# MAGIC | 9 | Surveyed the companion tables (`otel_logs`, `otel_metrics`) |
 # MAGIC
 # MAGIC The spans table is what unlocks the productionised story: build a
-# MAGIC Lakehouse Monitoring dashboard on it for trace-volume / latency /
-# MAGIC error-rate over time, JOIN it to `mlflow.search_traces` assessments
-# MAGIC (Lab 21 + Lab 23) to slice quality by user or cohort, or retain
-# MAGIC traces past MLflow's default lifecycle simply by reading the Delta
-# MAGIC table directly. For a deployed app, dao-ai does all of Steps 4 + 6
-# MAGIC automatically -- you just write the YAML.
+# MAGIC Lakehouse Monitoring dashboard on the one-row-per-trace query for
+# MAGIC trace-volume / latency / error-rate over time, JOIN it to
+# MAGIC `mlflow.search_traces` assessments (Lab 21 + Lab 23) to slice
+# MAGIC quality by user or cohort, or retain traces past MLflow's default
+# MAGIC lifecycle simply by reading the Delta table directly. For a
+# MAGIC deployed app, dao-ai does all of Steps 4 + 6 automatically -- you
+# MAGIC just write the YAML.
