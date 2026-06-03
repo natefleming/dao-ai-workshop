@@ -1,0 +1,106 @@
+# yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
+#
+# Lab 23 - Production Monitoring with Registered Scorers (saas_helpdesk)
+# ----------------------------------------------------------------------
+# Same two-tier supervisor as Lab 21/22. The new surface is the
+# ``app.monitoring`` block, which declares which built-in scorers run
+# continuously, with what sample rate, and which custom Guidelines judges
+# join them. ``dao_ai.evaluation.register_monitoring_scorers`` reads this
+# block and starts the MLflow 3 scorer lifecycle.
+
+parameters:
+  username:
+    description: Per-student username for unique deployment names. Auto-set by the notebook.
+  catalog:
+    description: Unity Catalog catalog for any tables the lab provisions.
+    default: main
+  schema:
+    description: Unity Catalog schema for any tables the lab provisions.
+    default: dao_ai_workshop
+  llm_endpoint:
+    description: Primary LLM endpoint (supervisor + escalation tier).
+    default: databricks-claude-sonnet-4-5
+  fast_llm_endpoint:
+    description: Faster/smaller LLM endpoint for the front-line tier.
+    default: databricks-claude-haiku-4-5
+
+resources:
+  models:
+    default_llm: &default_llm
+      name: ${var.llm_endpoint}
+      temperature: 0.2
+      max_tokens: 4096
+
+    fast_llm: &fast_llm
+      name: ${var.fast_llm_endpoint}
+      temperature: 0.2
+      max_tokens: 2048
+
+schemas:
+  workshop_schema: &workshop_schema
+    catalog_name: ${var.catalog}
+    schema_name: ${var.schema}
+
+agents:
+  tier1_support: &tier1_support
+    name: tier1_support
+    description: Front-line agent for how-to and policy questions.
+    model: *fast_llm
+    prompt: |
+      You are tier-1 support for a SaaS product. Answer how-to and
+      policy questions concisely. If the customer reports a bug or
+      integration error, the supervisor will route them to tier-2.
+    handoff_prompt: |
+      How-to questions, account questions, simple policy lookups.
+
+  tier2_engineer: &tier2_engineer
+    name: tier2_engineer
+    description: Technical specialist for bugs and integration issues.
+    model: *default_llm
+    prompt: |
+      You are tier-2 technical support. Handle reported bugs, error
+      messages, integration failures. Provide concrete diagnostic
+      steps and code snippets when relevant. Always reference logs or
+      error-correlation IDs when guiding a debug workflow.
+    handoff_prompt: |
+      Technical issues: bugs, errors, integration failures.
+
+app:
+  name: monitoring-demo-${var.username}
+  description: "Workshop lab 23: production monitoring with registered scorers"
+  log_level: INFO
+  deployment_target: apps
+  agents:
+  - *tier1_support
+  - *tier2_engineer
+  orchestration:
+    supervisor:
+      model: *default_llm
+      prompt: |
+        Route the customer to the right specialist:
+          - tier1_support  : how-to, policy lookups, account questions
+          - tier2_engineer : bugs, errors, broken integrations
+
+  # -------------------------------------------------------------------------
+  # Production monitoring.
+  #
+  # Built-in scorers (safety, relevance_to_query, tool_call_efficiency) run on
+  # every trace (sample_rate=1.0). Guidelines scorers invoke an LLM judge per
+  # trace and are more expensive, so they sample at 0.5.
+  # -------------------------------------------------------------------------
+  monitoring:
+    sample_rate: 1.0
+    scorers:
+    - safety
+    - relevance_to_query
+    - tool_call_efficiency
+    guidelines_sample_rate: 0.5
+    guidelines:
+    - name: routing_quality
+      guidelines:
+      - How-to and policy questions should be answered by tier1_support
+      - Bug reports and HTTP error messages should route to tier2_engineer
+    - name: hallucination_guard
+      guidelines:
+      - Responses must not invent API endpoints, settings names, or error codes
+      - Tier-2 debugging guidance must reference logs OR error-correlation IDs

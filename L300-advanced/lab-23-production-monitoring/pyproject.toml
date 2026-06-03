@@ -1,0 +1,8 @@
+[project]
+name = "dao-ai-workshop-lab-23-production-monitoring"
+version = "0.1.0"
+description = "Lab 23 of the dao-ai workshop -- production monitoring with registered scorers."
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "dao-ai>=0.1.90",
+]
