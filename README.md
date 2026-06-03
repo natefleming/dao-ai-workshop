@@ -19,7 +19,7 @@ The workshop is organized as **L100 → L200 → L300**, mirroring the level sys
 |---|---|---|---|
 | **L100 Foundations** | [`L100-foundations/`](L100-foundations/) | hardware_store (consumer retail) | 4 labs |
 | **L200 Building Real Agents** | [`L200-real-agents/`](L200-real-agents/) | saas_helpdesk (support ops) | 6 labs |
-| **L300 Advanced** | [`L300-advanced/`](L300-advanced/) | hardware_store++ + standalone patterns | 13 labs |
+| **L300 Advanced** | [`L300-advanced/`](L300-advanced/) | hardware_store++ + standalone patterns | 14 labs |
 
 ## Lab index
 
@@ -64,6 +64,7 @@ L200 starts with the [Building Real Agents](L200-real-agents/building-real-agent
 | **Lab 21** | User Feedback | Read the outer multi-agent `trace_id` from `custom_outputs` and attach thumbs-up/thumbs-down via `dao_ai.evaluation.log_user_feedback`. Verify the assessment lands on the OUTER root trace. | [`L300-advanced/lab-21-feedback/`](L300-advanced/lab-21-feedback/) |
 | **Lab 22** | Offline Evaluation with Judges and Datasets | `mlflow.genai.evaluate()` across four scenarios: dao-ai config-defined inline dataset + `build_scorers`, UC Delta -> managed MLflow dataset, custom `@scorer`, per-row guidelines via `ExpectationsGuidelines`. | [`L300-advanced/lab-22-offline-evaluation/`](L300-advanced/lab-22-offline-evaluation/) |
 | **Lab 23** | Production Monitoring with Registered Scorers | `app.monitoring` block + `dao_ai.evaluation.register_monitoring_scorers` -- continuous judges on live traffic with controllable sample rates, SQL verification of trace assessments. | [`L300-advanced/lab-23-production-monitoring/`](L300-advanced/lab-23-production-monitoring/) |
+| **Lab 24** | UC OTEL Trace Tables | `app.trace_location` -- link an MLflow experiment to a UC schema so traces land in three Delta tables (`..._otel_spans` / `..._otel_logs` / `..._otel_metrics`). Query spans directly via Spark SQL for Lakehouse Monitoring dashboards. | [`L300-advanced/lab-24-uc-trace-location/`](L300-advanced/lab-24-uc-trace-location/) |
 
 See the [L300 README](L300-advanced/README.md) for production-deployment guidance.
 

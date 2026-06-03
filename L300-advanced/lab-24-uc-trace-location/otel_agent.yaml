@@ -1,0 +1,122 @@
+# yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
+#
+# Lab 24 - UC OTEL Trace Tables (saas_helpdesk)
+# ---------------------------------------------
+# Same two-tier supervisor as Lab 21/22/23. The new surface is
+# ``app.trace_location``: tell dao-ai which UC schema + SQL warehouse to
+# write traces to, and MLflow's ``set_experiment_trace_location`` creates
+# three OTEL Delta tables in that schema and routes new traces to them.
+#
+# What this lab demonstrates:
+#   - ``set_experiment_trace_location`` + ``UCSchemaLocation`` link an
+#     MLflow experiment to a UC schema; the three OTEL tables
+#     (``..._otel_spans``, ``..._otel_logs``, ``..._otel_metrics``) are
+#     created on first link.
+#   - In-process notebook agents must call ``set_destination`` themselves
+#     to route traces to UC (dao-ai's runtime does this automatically for
+#     Model Serving + Databricks Apps deployments, but the notebook is
+#     neither, so the lab calls it explicitly).
+#   - The ``..._otel_spans`` Delta table is the durable, queryable surface
+#     for everything you saw in Lab 23 -- once traces land in UC you can
+#     join them to feedback assessments, build Lakehouse Monitoring
+#     dashboards, and use Spark to slice by app version, user, or session.
+
+parameters:
+  username:
+    description: Per-student username for unique deployment names. Auto-set by the notebook.
+  catalog:
+    description: Unity Catalog catalog for the OTEL trace tables.
+    default: main
+  schema:
+    description: Unity Catalog schema for the OTEL trace tables.
+    default: dao_ai_workshop
+  warehouse_id:
+    description: SQL warehouse ID. Required by ``app.trace_location`` -- the OTEL writer queries it during table provisioning.
+    # No default; the notebook widget supplies this.
+  llm_endpoint:
+    description: Primary LLM endpoint (supervisor + escalation tier).
+    default: databricks-claude-sonnet-4-5
+  fast_llm_endpoint:
+    description: Faster/smaller LLM endpoint for the front-line tier.
+    default: databricks-claude-haiku-4-5
+
+resources:
+  models:
+    default_llm: &default_llm
+      name: ${var.llm_endpoint}
+      temperature: 0.2
+      max_tokens: 4096
+
+    fast_llm: &fast_llm
+      name: ${var.fast_llm_endpoint}
+      temperature: 0.2
+      max_tokens: 2048
+
+schemas:
+  workshop_schema: &workshop_schema
+    catalog_name: ${var.catalog}
+    schema_name: ${var.schema}
+
+agents:
+  tier1_support: &tier1_support
+    name: tier1_support
+    description: Front-line agent for how-to and policy questions.
+    model: *fast_llm
+    prompt: |
+      You are tier-1 support for a SaaS product. Answer how-to and
+      policy questions concisely.
+    handoff_prompt: |
+      How-to questions, account questions, simple policy lookups.
+
+  tier2_engineer: &tier2_engineer
+    name: tier2_engineer
+    description: Technical specialist for bugs and integration issues.
+    model: *default_llm
+    prompt: |
+      You are tier-2 technical support. Handle reported bugs, error
+      messages, integration failures. Provide concrete diagnostic
+      steps and reference logs or error-correlation IDs.
+    handoff_prompt: |
+      Technical issues: bugs, errors, integration failures.
+
+app:
+  name: trace-loc-demo-${var.username}
+  description: "Workshop lab 24: UC OTEL trace tables via app.trace_location"
+  log_level: INFO
+  deployment_target: apps
+  agents:
+  - *tier1_support
+  - *tier2_engineer
+  orchestration:
+    supervisor:
+      model: *default_llm
+      prompt: |
+        Route the customer to the right specialist:
+          - tier1_support  : how-to, policy lookups, account questions
+          - tier2_engineer : bugs, errors, broken integrations
+
+  # -------------------------------------------------------------------------
+  # UC trace location.
+  #
+  # dao-ai's TraceLocationModel takes a schema reference + a warehouse_id.
+  # On Model Serving / Apps deploys, dao-ai calls
+  # ``set_experiment_trace_location`` automatically at startup; for in-process
+  # notebook usage, the notebook does the same call explicitly.
+  # -------------------------------------------------------------------------
+  trace_location:
+    schema: *workshop_schema
+    warehouse: ${var.warehouse_id}
+
+  # Layer monitoring on top -- assessments now land alongside trace spans in UC.
+  monitoring:
+    sample_rate: 1.0
+    scorers:
+    - safety
+    - relevance_to_query
+    - tool_call_efficiency
+    guidelines_sample_rate: 0.5
+    guidelines:
+    - name: routing_quality
+      guidelines:
+      - How-to and policy questions should be answered by tier1_support
+      - Bug reports and HTTP error messages should route to tier2_engineer

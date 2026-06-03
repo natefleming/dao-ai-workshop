@@ -15,8 +15,9 @@ The third level of the DAO-AI workshop. L300 covers production-grade patterns th
 - **Lab 21 -- User Feedback.** Read the outer multi-agent `trace_id` from `response.custom_outputs["trace_id"]` and attach thumbs-up / thumbs-down via `dao_ai.evaluation.log_user_feedback`. Verifies the assessment lands on the OUTER root trace (not a sub-agent leg) and queries assessments via `mlflow.search_traces` + Spark SQL.
 - **Lab 22 -- Offline Evaluation with Judges and Datasets.** Run `mlflow.genai.evaluate()` against the Lab 21 supervisor with four progressively richer dataset/scorer combinations: (A) a dao-ai config-defined inline `EvaluationDatasetModel` plus `build_scorers(config.evaluation)`, (B) a UC Delta table wrapped as a managed MLflow dataset, (C) a custom `@scorer` returning `Feedback`, and (D) per-row guidelines via `ExpectationsGuidelines`.
 - **Lab 23 -- Production Monitoring with Registered Scorers.** Declare an `app.monitoring` block (built-in scorers + named `Guidelines` judges + sample rates) and register the lifecycle via `dao_ai.evaluation.register_monitoring_scorers`. Drive traffic, then verify assessments land on the traces via `mlflow.search_traces` + `LATERAL VIEW EXPLODE(assessments)` SQL. Closes with `stop_monitoring_scorers()` cleanup.
+- **Lab 24 -- UC OTEL Trace Tables.** Set `app.trace_location` on the same supervisor and route traces into three Delta tables (`..._otel_spans`, `..._otel_logs`, `..._otel_metrics`) auto-created in the configured UC schema. Call `set_experiment_trace_location` + `set_destination` from the notebook, drive traffic, then query the spans table directly via Spark SQL -- the durable foundation for Lakehouse Monitoring dashboards.
 
-Lab 11 and Lab 12 reuse the products catalog from Lab 2 (extended with metadata for Lab 11) and a Genie Space pointed at it (for Lab 12). Lab 13 is concept-only -- no extra resources required. Lab 14 reuses Lab 2's products table plus a tier-aware UC function. Lab 15 reuses Lab 7's Lakebase wiring. Lab 22 and Lab 23 reuse Lab 21's two-tier supervisor and add evaluation/monitoring config on top.
+Lab 11 and Lab 12 reuse the products catalog from Lab 2 (extended with metadata for Lab 11) and a Genie Space pointed at it (for Lab 12). Lab 13 is concept-only -- no extra resources required. Lab 14 reuses Lab 2's products table plus a tier-aware UC function. Lab 15 reuses Lab 7's Lakebase wiring. Lab 22 / 23 / 24 reuse Lab 21's two-tier supervisor and progressively layer evaluation, production monitoring, and durable UC-resident traces on top.
 
 ## Walk this level in order
 
@@ -35,6 +36,7 @@ Lab 11 and Lab 12 reuse the products catalog from Lab 2 (extended with metadata 
 | 11 | [lab-21-feedback/](lab-21-feedback/) | Lab | User feedback on multi-agent responses. Read `custom_outputs["trace_id"]` and call `dao_ai.evaluation.log_user_feedback`. Verify the assessment lands on the OUTER root trace. |
 | 12 | [lab-22-offline-evaluation/](lab-22-offline-evaluation/) | Lab | Offline evaluation with judges and datasets. Inline `EvaluationDatasetModel`, UC table -> managed MLflow dataset, custom `@scorer`, per-row guidelines via `ExpectationsGuidelines`. |
 | 13 | [lab-23-production-monitoring/](lab-23-production-monitoring/) | Lab | Production monitoring with registered scorers. `app.monitoring` block + `register_monitoring_scorers` + SQL verification of trace assessments. |
+| 14 | [lab-24-uc-trace-location/](lab-24-uc-trace-location/) | Lab | UC OTEL trace tables. `app.trace_location` block + `set_experiment_trace_location` + `set_destination` + Spark SQL query of the three Delta tables (`..._otel_spans` / `..._otel_logs` / `..._otel_metrics`). |
 
 ## Prerequisites
 
@@ -52,6 +54,7 @@ Lab-specific requirements:
 - **Lab 21**: no external resources -- self-contained two-agent supervisor.
 - **Lab 22**: a UC catalog/schema you can write to (defaults to `main.dao_ai_workshop` -- override via widget). A judge LLM endpoint (defaults to `databricks-claude-sonnet-4-5`).
 - **Lab 23**: same UC catalog/schema as Lab 22. Optional SQL warehouse ID widget for UC OTEL trace tables (lab works without it against experiment-resident traces).
+- **Lab 24**: same UC catalog/schema as Lab 22 / 23. SQL warehouse ID is **required** -- `app.trace_location.warehouse` is what the OTEL writer uses to provision and write the Delta tables.
 
 ## What you'll have at the end
 
