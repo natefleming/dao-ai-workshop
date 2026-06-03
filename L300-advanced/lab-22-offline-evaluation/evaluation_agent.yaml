@@ -1,0 +1,200 @@
+# yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
+#
+# Lab 22 - Offline Evaluation with Judges and Datasets (saas_helpdesk)
+# --------------------------------------------------------------------
+# Same two-tier supervisor as Lab 21 (tier1_support + tier2_engineer).
+# The new surface here is the top-level ``evaluation:`` block, an inline
+# ``EvaluationDatasetModel`` declared under ``optimizations.training_datasets``
+# (dao-ai's validated registry for inline datasets), and a judge LLM.
+#
+# What this lab demonstrates:
+#   - ``dao_ai.evaluation.build_scorers`` assembles built-in scorers
+#     (Safety, Completeness, RelevanceToQuery, ToolCallEfficiency) plus
+#     ``Guidelines`` scorers from this config in one call.
+#   - ``EvaluationDatasetModel.as_dataset()`` returns an
+#     ``mlflow.genai.datasets.EvaluationDataset`` ready for
+#     ``mlflow.genai.evaluate(data=...)``.
+#   - The same agent code is evaluated against (A) an inline config-defined
+#     dataset and (B) a UC Delta table the notebook provisions and registers
+#     as a managed MLflow dataset.
+
+parameters:
+  username:
+    description: Per-student username for unique deployment names. Auto-set by the notebook.
+  catalog:
+    description: Unity Catalog catalog for the eval payloads and external dataset table.
+    default: main
+  schema:
+    description: Unity Catalog schema for the eval payloads and external dataset table.
+    default: dao_ai_workshop
+  llm_endpoint:
+    description: Primary LLM endpoint (supervisor + escalation tier).
+    default: databricks-claude-sonnet-4-5
+  fast_llm_endpoint:
+    description: Faster/smaller LLM endpoint for the front-line tier.
+    default: databricks-claude-haiku-4-5
+  judge_llm_endpoint:
+    description: LLM endpoint used as the judge for Guidelines and other LLM-as-judge scorers.
+    default: databricks-claude-sonnet-4-5
+
+resources:
+  models:
+    default_llm: &default_llm
+      name: ${var.llm_endpoint}
+      temperature: 0.2
+      max_tokens: 4096
+
+    fast_llm: &fast_llm
+      name: ${var.fast_llm_endpoint}
+      temperature: 0.2
+      max_tokens: 2048
+
+    judge_llm: &judge_llm
+      name: ${var.judge_llm_endpoint}
+      temperature: 0.0
+      max_tokens: 1024
+
+schemas:
+  workshop_schema: &workshop_schema
+    catalog_name: ${var.catalog}
+    schema_name: ${var.schema}
+
+agents:
+  tier1_support: &tier1_support
+    name: tier1_support
+    description: Front-line agent for how-to and policy questions.
+    model: *fast_llm
+    prompt: |
+      You are tier-1 support for a SaaS product. Answer how-to and
+      policy questions concisely. If the customer reports a bug or
+      integration error, the supervisor will route them to tier-2.
+    handoff_prompt: |
+      How-to questions, account questions, simple policy lookups.
+
+  tier2_engineer: &tier2_engineer
+    name: tier2_engineer
+    description: Technical specialist for bugs and integration issues.
+    model: *default_llm
+    prompt: |
+      You are tier-2 technical support. Handle reported bugs, error
+      messages, integration failures. Provide concrete diagnostic
+      steps and code snippets when relevant. Always reference logs or
+      error-correlation IDs when guiding a debug workflow.
+    handoff_prompt: |
+      Technical issues: bugs, errors, integration failures.
+
+app:
+  name: evaluation-demo-${var.username}
+  description: "Workshop lab 22: offline evaluation with judges and datasets"
+  log_level: INFO
+  deployment_target: apps
+  agents:
+  - *tier1_support
+  - *tier2_engineer
+  orchestration:
+    supervisor:
+      model: *default_llm
+      prompt: |
+        Route the customer to the right specialist:
+          - tier1_support  : how-to, policy lookups, account questions
+          - tier2_engineer : bugs, errors, broken integrations
+
+# ---------------------------------------------------------------------------
+# Offline evaluation configuration.
+#
+# ``table`` is where dao-ai persists generated evaluation payloads for
+# helpers like ``prepare_eval_dataframe``. This lab drives evaluate() from
+# explicit datasets, but the table is still required by EvaluationModel.
+# ---------------------------------------------------------------------------
+evaluation:
+  model: *judge_llm
+  table:
+    schema: *workshop_schema
+    name: lab22_eval_payloads
+  num_evals: 8
+  replace: false
+  agent_description: >
+    Two-tier SaaS support supervisor: tier1_support handles how-to and
+    policy questions, tier2_engineer handles bugs and integration errors.
+  question_guidelines: |
+    # User personas
+    - End user asking how-to / account questions
+    - Developer reporting an integration error
+
+    # Example questions
+    - How do I export my account data?
+    - Why is my webhook returning HTTP 500?
+  guidelines:
+  - name: routing_quality
+    guidelines:
+    - How-to and policy questions should be answered by tier1_support
+    - Bug reports and HTTP error messages should route to tier2_engineer
+  - name: response_quality
+    guidelines:
+    - Responses must include a concrete next action the user can take
+    - Responses must not invent API endpoints, settings names, or error codes
+
+# ---------------------------------------------------------------------------
+# Inline evaluation dataset.
+#
+# ``optimizations.training_datasets`` is dao-ai's validated registry for
+# inline ``EvaluationDatasetModel`` instances. The name is historical
+# (originally for GEPA prompt optimization) but the model is the same one
+# used for offline evaluation -- ``as_dataset()`` returns an
+# ``mlflow.genai.datasets.EvaluationDataset``.
+# ---------------------------------------------------------------------------
+optimizations:
+  training_datasets:
+    lab22_qa_seed:
+      schema: *workshop_schema
+      name: lab22_qa_seed
+      overwrite: true
+      data:
+      - inputs:
+          messages:
+          - role: user
+            content: How do I export my account data?
+        expectations:
+          expected_facts:
+          - Account settings or export section is mentioned
+          - A concrete next action is provided to the user
+      - inputs:
+          messages:
+          - role: user
+            content: Where can I see my invoices?
+        expectations:
+          expected_facts:
+          - Billing or invoices section is referenced
+          - A concrete next action is provided to the user
+      - inputs:
+          messages:
+          - role: user
+            content: What is your data retention policy for deleted projects?
+        expectations:
+          expected_facts:
+          - Retention duration is referenced
+          - The response stays on policy and does not invent SLAs
+      - inputs:
+          messages:
+          - role: user
+            content: Webhook deliveries are failing with HTTP 500. Where do I start?
+        expectations:
+          expected_facts:
+          - Logs or delivery history is referenced as a debugging step
+          - A concrete diagnostic step is recommended
+      - inputs:
+          messages:
+          - role: user
+            content: My SAML integration redirects in a loop after the IdP returns the assertion.
+        expectations:
+          expected_facts:
+          - SAML response validation, ACS URL, or clock skew is mentioned
+          - A concrete diagnostic step is recommended
+      - inputs:
+          messages:
+          - role: user
+            content: The CLI fails with "connection reset by peer" only on long-running uploads.
+        expectations:
+          expected_facts:
+          - Timeout, keep-alive, or chunked upload is referenced
+          - A concrete diagnostic step is recommended

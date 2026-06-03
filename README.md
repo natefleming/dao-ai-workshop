@@ -6,7 +6,7 @@ Self-paced, hands-on workshop for building declarative AI agents on Databricks w
 
 | Repo | What it is | When to reach for it |
 |---|---|---|
-| **[`dao-ai`](https://github.com/natefleming/dao-ai)** | The DAO-AI framework itself: schema, runtime, deploy primitives. Every lab in this workshop installs it via `pip install "dao-ai>=0.1.87"`. | Read the framework source, file issues, contribute features, or check the canonical examples under [`config/examples/`](https://github.com/natefleming/dao-ai/tree/main/config/examples). |
+| **[`dao-ai`](https://github.com/natefleming/dao-ai)** | The DAO-AI framework itself: schema, runtime, deploy primitives. Every lab in this workshop installs it via `pip install "dao-ai>=0.1.88"`. | Read the framework source, file issues, contribute features, or check the canonical examples under [`config/examples/`](https://github.com/natefleming/dao-ai/tree/main/config/examples). |
 | **[`dao-ai-builder`](https://github.com/natefleming/dao-ai-builder)** | Visual builder for DAO-AI configs -- forms and dropdowns instead of hand-written YAML. Exports a ready-to-deploy `dao_ai.yaml`. | Once you've finished L100 and want a faster authoring loop for new agents, or to hand the config surface to non-developer collaborators. |
 
 If you're wondering "where do these agents actually live in code?" the answer is `dao-ai`. If you're wondering "is there a UI for this?" the answer is `dao-ai-builder`.
@@ -19,7 +19,7 @@ The workshop is organized as **L100 → L200 → L300**, mirroring the level sys
 |---|---|---|---|
 | **L100 Foundations** | [`L100-foundations/`](L100-foundations/) | hardware_store (consumer retail) | 4 labs |
 | **L200 Building Real Agents** | [`L200-real-agents/`](L200-real-agents/) | saas_helpdesk (support ops) | 6 labs |
-| **L300 Advanced** | [`L300-advanced/`](L300-advanced/) | hardware_store++ + standalone patterns | 10 labs |
+| **L300 Advanced** | [`L300-advanced/`](L300-advanced/) | hardware_store++ + standalone patterns | 14 labs |
 
 ## Lab index
 
@@ -61,6 +61,10 @@ L200 starts with the [Building Real Agents](L200-real-agents/building-real-agent
 | **Lab 18** | Skills-only Deep Agent | The minimum-viable deep_agent — zero top-level agents and zero sub-agents, only a Skill + system prompt | [`L300-advanced/lab-18-skills-only-deep-agent/`](L300-advanced/lab-18-skills-only-deep-agent/) |
 | **Lab 19** | A2A Protocol (Minimal) | Native Google A2A v0.3 endpoints (`/.well-known/agent-card.json` + `POST /a2a`) auto-mounted on every Apps deployment. Probe via the native `a2a-sdk` Python client (`A2ACardResolver`, `A2AClient.send_message`) | [`L300-advanced/lab-19-a2a-minimal/`](L300-advanced/lab-19-a2a-minimal/) |
 | **Lab 20** | A2A: HITL + OBO | HITL `input-required` + DataPart resume over A2A. Auto-derived `oauth2`+`bearer` security schemes (from any resource carrying `on_behalf_of_user: true`) with the workspace's real OIDC URLs. SSE streaming via `A2AClient.send_message_streaming` | [`L300-advanced/lab-20-a2a-hitl-obo/`](L300-advanced/lab-20-a2a-hitl-obo/) |
+| **Lab 21** | User Feedback | Read the outer multi-agent `trace_id` from `custom_outputs` and attach thumbs-up/thumbs-down via `dao_ai.evaluation.log_user_feedback`. Verify the assessment lands on the OUTER root trace. | [`L300-advanced/lab-21-feedback/`](L300-advanced/lab-21-feedback/) |
+| **Lab 22** | Offline Evaluation with Judges and Datasets | `mlflow.genai.evaluate()` across four scenarios: dao-ai config-defined inline dataset + `build_scorers`, UC Delta -> managed MLflow dataset, custom `@scorer`, per-row guidelines via `ExpectationsGuidelines`. | [`L300-advanced/lab-22-offline-evaluation/`](L300-advanced/lab-22-offline-evaluation/) |
+| **Lab 23** | Production Monitoring with Registered Scorers | `app.monitoring` block + `dao_ai.evaluation.register_monitoring_scorers` -- continuous judges on live traffic with controllable sample rates, SQL verification of trace assessments. | [`L300-advanced/lab-23-production-monitoring/`](L300-advanced/lab-23-production-monitoring/) |
+| **Lab 24** | UC OTEL Trace Tables | `app.trace_location` -- link an MLflow experiment to a UC schema so traces land in three Delta tables (`..._otel_spans` / `..._otel_logs` / `..._otel_metrics`). Query spans directly via Spark SQL for Lakehouse Monitoring dashboards. | [`L300-advanced/lab-24-uc-trace-location/`](L300-advanced/lab-24-uc-trace-location/) |
 
 See the [L300 README](L300-advanced/README.md) for production-deployment guidance.
 
@@ -105,7 +109,7 @@ print(f"Deployed app: {config.app.name}")
 | Requirement | Detail |
 |---|---|
 | Python | 3.11+ |
-| DAO-AI | `pip install "dao-ai>=0.1.87"` (the labs install this in the notebook) |
+| DAO-AI | `pip install "dao-ai>=0.1.88"` (the labs install this in the notebook) |
 | Databricks CLI | v0.230+ with a configured profile |
 | Compute | Databricks Serverless v5 |
 | Foundation models | `databricks-claude-sonnet-4-5` (most labs); `databricks-gpt-5-4-mini` (Lab 19 + Lab 20); `databricks-gte-large-en` (Lab 6 + Lab 11 + Lab 12); `databricks-claude-haiku-4-5` and `databricks-meta-llama-3-1-8b-instruct` (Lab 9 + Lab 11); `databricks-gpt-5-nano` (Lab 7 summarization); `databricks-gpt-oss-120b` (Lab 7 memory queries) |
