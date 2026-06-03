@@ -29,7 +29,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "dao-ai>=0.1.90"
+# MAGIC %pip install "dao-ai>=0.1.88"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -125,21 +125,22 @@ print(f"Agents: {[a.name for a in config.app.agents]}")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 4 -- Define `predict_fn` for `mlflow.genai.evaluate`
+# MAGIC ## Step 4 -- Build a `predict_fn` and a record helper
 # MAGIC
-# MAGIC `mlflow.genai.evaluate` parallelises rows across workers. We serialise
-# MAGIC the agent call with a `threading.Lock` to keep the in-process agent
-# MAGIC happy under concurrency, and we extract just the assistant text from
-# MAGIC the structured `ResponsesAgentResponse`.
+# MAGIC `mlflow.genai.evaluate` can be called two ways: (a) with `predict_fn`
+# MAGIC and rows of `inputs` -- MLflow then runs the function for you and
+# MAGIC associates a per-row trace; (b) with rows that already contain an
+# MAGIC `outputs` column -- MLflow skips prediction and scores the outputs
+# MAGIC directly. (b) is the simpler path for a workshop demo: we run the
+# MAGIC agent once per row up front, then hand pre-scored records to the
+# MAGIC harness. The function below is the same shape MLflow would have
+# MAGIC called; we just drive it ourselves to keep the eval flow obvious.
 
 # COMMAND ----------
 
-import threading
 from typing import Any
 
 from mlflow.types.responses import ResponsesAgentRequest, ResponsesAgentResponse
-
-_predict_lock = threading.Lock()
 
 
 def _extract_output_text(response: ResponsesAgentResponse) -> str:
@@ -160,20 +161,41 @@ def _extract_output_text(response: ResponsesAgentResponse) -> str:
 
 
 def predict_fn(messages: list[dict[str, Any]]) -> str:
-    with _predict_lock:
-        request = ResponsesAgentRequest(
-            input=[{"role": m["role"], "content": m["content"]} for m in messages],
-            custom_inputs={
-                "configurable": {"user_id": USER},
-                "session": {},
-            },
-        )
-        response: ResponsesAgentResponse = asyncio.run(agent.apredict(request))
-        return _extract_output_text(response)
+    """Run one agent turn for an evaluation row."""
+    request = ResponsesAgentRequest(
+        input=[{"role": m["role"], "content": m["content"]} for m in messages],
+        custom_inputs={
+            "configurable": {"user_id": USER},
+            "session": {},
+        },
+    )
+    response: ResponsesAgentResponse = asyncio.run(agent.apredict(request))
+    return _extract_output_text(response)
+
+
+def attach_outputs(
+    records: list[dict[str, Any]],
+    label: str = "rows",
+) -> list[dict[str, Any]]:
+    """Run predict_fn for every record and return new records with an `outputs` key.
+
+    Each record's `inputs` must carry `messages` (a list of role/content dicts).
+    The original record fields (`inputs`, `expected_facts`, `expectations`, etc.)
+    are preserved.
+    """
+    out: list[dict[str, Any]] = []
+    for i, r in enumerate(records, start=1):
+        msgs = r["inputs"]["messages"]
+        text = predict_fn(messages=msgs)
+        out.append({**r, "outputs": text})
+        print(f"  [{i}/{len(records)}] {label}: {len(text)} chars")
+    return out
 
 
 # Smoke-test predict_fn end-to-end before evaluation runs.
-sample_out: str = predict_fn([{"role": "user", "content": "How do I reset my password?"}])
+sample_out: str = predict_fn(
+    messages=[{"role": "user", "content": "How do I reset my password?"}]
+)
 print(f"sample response ({len(sample_out)} chars): {sample_out[:200]}...")
 
 # COMMAND ----------
@@ -209,24 +231,41 @@ from mlflow.models.evaluation import EvaluationResult
 
 from dao_ai.evaluation import build_scorers, prepare_eval_results_for_display
 
+# (1) Register the inline dataset as a managed MLflow dataset in UC.
 seed_ds = config.optimizations.training_datasets["lab22_qa_seed"].as_dataset()
 print(f"Dataset name: {seed_ds.name}")
 print(f"Dataset id:   {seed_ds.dataset_id}")
 print(f"Record count: {len(seed_ds.to_df())}")
 
+# (2) Materialise the inline entries from YAML into eval records and run
+#     predict_fn for each one. The inline YAML is the source of truth; the
+#     managed dataset is the durable artifact.
+seed_records: list[dict[str, Any]] = []
+for entry in config.optimizations.training_datasets["lab22_qa_seed"].data:
+    seed_records.append({
+        "inputs": {"messages": [m.model_dump() for m in entry.inputs.messages]},
+        # Correctness reads expectations.expected_facts; nesting matters.
+        "expectations": {"expected_facts": entry.expectations.expected_facts},
+    })
+print(f"\nRunning {len(seed_records)} agent turns for Scenario A...")
+seed_records = attach_outputs(seed_records, label="scenarioA")
+
+# (3) Build the scorers. build_scorers() returns Safety + Completeness +
+#     RelevanceToQuery + ToolCallEfficiency + the two Guidelines scorers
+#     declared in config.evaluation.guidelines. We add Correctness so the
+#     expected_facts get scored too.
 base_scorers = build_scorers(config.evaluation)
 scorers_a = [*base_scorers, Correctness()]
-print(f"Scorers: {[getattr(s, 'name', type(s).__name__) for s in scorers_a]}")
+print(f"\nScorers: {[getattr(s, 'name', type(s).__name__) for s in scorers_a]}")
 
 run_name_a: str = f"lab22_scenario_a_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
 with mlflow.start_run(run_name=run_name_a) as run_a:
     eval_results_a: EvaluationResult = mlflow.genai.evaluate(
-        data=seed_ds,
-        predict_fn=predict_fn,
+        data=seed_records,
         scorers=scorers_a,
     )
 
-print(f"Run id: {run_a.info.run_id}")
+print(f"\nRun id: {run_a.info.run_id}")
 print("Metrics:")
 for k, v in (eval_results_a.metrics or {}).items():
     print(f"  {k}: {v}")
@@ -259,43 +298,48 @@ external_ds_name: str = f"{catalog}.{schema_name}.lab22_eval_external_ds"
 external_records: list[dict[str, Any]] = [
     {
         "inputs": {"messages": [{"role": "user", "content": "How do I rotate an API key?"}]},
-        "expected_facts": [
+        "expectations": {"expected_facts": [
             "Account or API settings section is referenced",
             "A concrete next action is provided to the user",
-        ],
+        ]},
     },
     {
         "inputs": {"messages": [{"role": "user", "content": "What is the timezone of the audit log timestamps?"}]},
-        "expected_facts": [
+        "expectations": {"expected_facts": [
             "UTC or ISO-8601 is mentioned",
             "The response stays on policy and does not invent a different timezone",
-        ],
+        ]},
     },
     {
         "inputs": {"messages": [{"role": "user", "content": "The webhook delivery dashboard shows status=pending for 10 minutes."}]},
-        "expected_facts": [
+        "expectations": {"expected_facts": [
             "Retry policy or backoff is referenced",
             "A concrete diagnostic step is recommended",
-        ],
+        ]},
     },
     {
         "inputs": {"messages": [{"role": "user", "content": "Our SSO group sync is missing three users that exist in our IdP."}]},
-        "expected_facts": [
+        "expectations": {"expected_facts": [
             "Group filter, SCIM, or attribute mapping is referenced",
             "A concrete diagnostic step is recommended",
-        ],
+        ]},
     },
     {
         "inputs": {"messages": [{"role": "user", "content": "The CLI hangs forever on `init` without writing any output."}]},
-        "expected_facts": [
+        "expectations": {"expected_facts": [
             "Verbose flag, logs, or network reachability is mentioned",
             "A concrete diagnostic step is recommended",
-        ],
+        ]},
     },
 ]
 
 external_df: pd.DataFrame = pd.DataFrame(external_records)
-spark.createDataFrame(external_df).write.mode("overwrite").saveAsTable(external_table)
+(
+    spark.createDataFrame(external_df)
+    .write.mode("overwrite")
+    .option("overwriteSchema", "true")
+    .saveAsTable(external_table)
+)
 print(f"Wrote {len(external_df)} rows to {external_table}")
 
 # COMMAND ----------
@@ -312,11 +356,14 @@ print(f"Records after merge: {len(external_ds.to_df())}")
 
 # COMMAND ----------
 
+# Run predict_fn over the external records and evaluate the pre-scored rows.
+print(f"Running {len(external_records)} agent turns for Scenario B...")
+external_records_with_outputs = attach_outputs(external_records, label="scenarioB")
+
 run_name_b: str = f"lab22_scenario_b_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
 with mlflow.start_run(run_name=run_name_b) as run_b:
     eval_results_b: EvaluationResult = mlflow.genai.evaluate(
-        data=external_ds,
-        predict_fn=predict_fn,
+        data=external_records_with_outputs,
         scorers=[*base_scorers, Correctness()],
     )
 
@@ -356,11 +403,11 @@ def includes_concrete_step(outputs: str) -> Feedback:
     return Feedback(value=False, rationale="no concrete action verb in the response")
 
 
+# Reuses Scenario A's pre-scored seed_records -- no need to re-run the agent.
 run_name_c: str = f"lab22_scenario_c_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
 with mlflow.start_run(run_name=run_name_c) as run_c:
     eval_results_c: EvaluationResult = mlflow.genai.evaluate(
-        data=seed_ds,
-        predict_fn=predict_fn,
+        data=seed_records,
         scorers=[*base_scorers, Correctness(), includes_concrete_step],
     )
 
@@ -414,11 +461,13 @@ per_row: list[dict[str, Any]] = [
     },
 ]
 
+print(f"Running {len(per_row)} agent turns for Scenario D...")
+per_row_with_outputs = attach_outputs(per_row, label="scenarioD")
+
 run_name_d: str = f"lab22_scenario_d_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
 with mlflow.start_run(run_name=run_name_d) as run_d:
     eval_results_d: EvaluationResult = mlflow.genai.evaluate(
-        data=per_row,
-        predict_fn=predict_fn,
+        data=per_row_with_outputs,
         scorers=[ExpectationsGuidelines(), *base_scorers],
     )
 

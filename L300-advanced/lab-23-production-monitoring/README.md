@@ -68,6 +68,16 @@ you point at.
 - A SQL warehouse ID (optional but recommended) for the `warehouse_id`
   widget if you eventually route traces to UC OTEL tables. Without it the
   lab still works against experiment-resident traces.
+- **The "Managed Evaluations" feature must be enabled on your workspace**
+  for the backend `Trace Metrics Computation Job` to actually run the
+  registered scorers against incoming traces. `register_monitoring_scorers`
+  succeeds either way (registration is purely metadata), and you can verify
+  the scorers in `mlflow.genai.scorers.list_scorers()` -- but no
+  `assessments` will appear on traces until that job runs successfully.
+  Most current Field Engineering workspaces have Managed Evals enabled;
+  a workspace without it surfaces a `403 PERMISSION_DENIED: This feature
+  has not been enabled for this workspace.` in that job's logs and the
+  lab's Step 8 SQL cell will return zero rows.
 
 ## Run it
 
