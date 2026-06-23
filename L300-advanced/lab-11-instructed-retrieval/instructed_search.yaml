@@ -169,15 +169,13 @@ tools:
   instructed_product_search: &instructed_product_search
     name: instructed_product_search
     function:
-      type: factory
-      name: dao_ai.tools.create_vector_search_tool
-      args:
-        retriever: *instructed_retriever
-        name: instructed_product_search
-        description: >
-          Semantic search with query decomposition and instruction-aware
-          reranking. Use for product questions that combine natural-
-          language intent with constraints (brand, category, price tier).
+      type: vector_search
+      retriever: *instructed_retriever
+      name: instructed_product_search
+      description: >
+        Semantic search with query decomposition and instruction-aware
+        reranking. Use for product questions that combine natural-
+        language intent with constraints (brand, category, price tier).
 
 agents:
   catalog_advisor: &catalog_advisor

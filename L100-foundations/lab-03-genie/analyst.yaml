@@ -60,14 +60,12 @@ tools:
   genie_tool: &genie_tool
     name: ask_genie
     function:
-      type: factory
-      name: dao_ai.tools.create_genie_tool
-      args:
-        name: ask_genie
-        description: >
-          Ask a Genie Space a natural-language question about products,
-          inventory, or sales.
-        genie_room: *workshop_genie
+      type: genie
+      name: ask_genie
+      description: >
+        Ask a Genie Space a natural-language question about products,
+        inventory, or sales.
+      genie_room: *workshop_genie
 
 agents:
   analyst: &analyst
