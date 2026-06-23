@@ -23,6 +23,9 @@ parameters:
   fast_llm_endpoint:
     description: Faster/smaller LLM endpoint for the front-line tier.
     default: databricks-claude-haiku-4-5
+  warehouse_id:
+    description: SQL warehouse ID. Required by ``app.trace_location`` -- the OTEL writer queries it during table provisioning. The notebook widget supplies this.
+    # No default; the notebook widget supplies this.
 
 resources:
   models:
@@ -80,6 +83,21 @@ app:
         Route the customer to the right specialist:
           - tier1_support  : how-to, policy lookups, account questions
           - tier2_engineer : bugs, errors, broken integrations
+
+  # -------------------------------------------------------------------------
+  # UC trace location.
+  #
+  # Required because this lab deploys to Databricks Apps and MLflow's default
+  # control-plane trace export can't reach the artifact-storage host from
+  # inside an App container -- spans get silently dropped. Routing traces
+  # through a SQL warehouse to UC OTEL Delta tables (reachable from Apps)
+  # gives monitoring something durable to attach assessments to. Lab 24
+  # is the deeper walkthrough of this pattern.
+  # -------------------------------------------------------------------------
+  trace_location:
+    schema: *workshop_schema
+    warehouse: ${var.warehouse_id}
+    # table_prefix: optional; defaults to experiment_id when omitted.
 
   # -------------------------------------------------------------------------
   # Production monitoring.

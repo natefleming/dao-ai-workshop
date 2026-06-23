@@ -11,18 +11,21 @@ created, drive traffic, and query the spans table with Spark SQL.
 ## What you'll do
 
 1. Declare `app.trace_location` in YAML with a schema reference + warehouse.
-2. From the notebook, call `set_experiment_trace_location` to link the
-   experiment to the UC schema. (dao-ai's Model Serving and Apps deploy
-   paths call this automatically; in-process notebooks call it directly.)
-3. Verify MLflow auto-created the three OTEL tables:
-   - `<catalog>.<schema>.mlflow_experiment_trace_otel_spans`
-   - `<catalog>.<schema>.mlflow_experiment_trace_otel_logs`
-   - `<catalog>.<schema>.mlflow_experiment_trace_otel_metrics`
-4. Call `mlflow.tracing.set_destination` so this notebook's tracer routes
-   new spans to UC. (Apps and Model Serving call this in
-   `dao_ai/apps/handlers.py:67-93`.)
-5. Drive six tier-1 / tier-2 prompts at the agent.
-6. Query `..._otel_spans` directly with Spark SQL -- one row per span,
+2. From the notebook, call `mlflow.set_experiment(experiment_id=..., trace_location=UnityCatalog(...))`
+   to link the experiment to the UC schema. (dao-ai's Model Serving and
+   Apps deploy paths do this automatically inside
+   `_link_experiment_trace_location`; in-process notebooks call it
+   directly.) This is the post-MLflow-3.11 blessed API — it replaces the
+   older `set_experiment_trace_location` + `set_destination` +
+   `UCSchemaLocation` trio, both of which emit deprecation warnings.
+3. Verify MLflow auto-created the three OTEL tables (named with
+   `<prefix>_otel_{spans,logs,metrics}`, where `<prefix>` is
+   `app.trace_location.table_prefix` if set, otherwise the experiment_id):
+   - `<catalog>.<schema>.<prefix>_otel_spans`
+   - `<catalog>.<schema>.<prefix>_otel_logs`
+   - `<catalog>.<schema>.<prefix>_otel_metrics`
+4. Drive six tier-1 / tier-2 prompts at the agent.
+5. Query `..._otel_spans` directly with Spark SQL -- one row per span,
    `trace_id` joins them back to a single user turn.
 
 ## Why the dao-ai pattern matters
@@ -31,14 +34,35 @@ created, drive traffic, and query the spans table with Spark SQL.
 |---|---|
 | `app.trace_location.schema` | The UC schema where OTEL tables are created |
 | `app.trace_location.warehouse` | SQL warehouse the OTEL writer uses to provision + write |
-| `TraceLocationModel.OTEL_TABLE_SUFFIXES` | The three table names MLflow creates |
-| `TraceLocationModel.as_resources()` | `DatabricksTable` resource entries so Model Serving auto-grants SELECT on the OTEL tables |
+| `app.trace_location.table_prefix` (optional) | Stable name prefix when multiple agents share a schema; defaults to the experiment_id |
+| `TraceLocationModel.as_resources()` | dao-ai intentionally does NOT declare the OTEL tables here — they don't exist at deploy time, so concrete table names in the auth_policy would cause `agents.deploy` to abort with `TABLE_DOES_NOT_EXIST`. Schema-level grants below cover the runtime SP instead. |
 
-For deployments, dao-ai calls `set_experiment_trace_location` + grants
-`MODIFY` + `SELECT` on the OTEL tables to the agent's SP automatically
-(`dao_ai/providers/databricks.py:889-958`). For in-process notebook work
-you make the same two MLflow calls yourself once -- the rest of the lab
-(driving traffic, querying spans) is unchanged.
+For deployments, dao-ai calls
+`mlflow.set_experiment(trace_location=UnityCatalog(...))` automatically
+(see `dao_ai/providers/databricks.py::_link_experiment_trace_location`).
+The runtime identity (Model Serving SP or Apps SP) needs schema-level
+grants so MLflow can create + write the OTEL tables at first export.
+
+## Post-deploy grants
+
+The runtime App SP is **not** in any group by default, so it inherits
+nothing. After the first deploy, grant the SP these privileges on the
+trace schema (one-time):
+
+```sql
+GRANT USE_CATALOG ON CATALOG <catalog> TO `<app-sp-client-id>`;
+GRANT USE_SCHEMA, CREATE_TABLE, MODIFY, SELECT
+  ON SCHEMA <catalog>.<schema>
+  TO `<app-sp-client-id>`;
+```
+
+Find the App SP client id in the app's resource list (or via
+`databricks apps get <app-name>`). For Model Serving, grant the same on
+the Mosaic AI runtime SP for that endpoint.
+
+For in-process notebook work you make the modern `mlflow.set_experiment`
+call yourself once -- the rest of the lab (driving traffic, querying
+spans) is unchanged.
 
 ## Files
 
@@ -46,7 +70,7 @@ you make the same two MLflow calls yourself once -- the rest of the lab
 |---|---|
 | `notebook.py` | The lab notebook. |
 | `otel_agent.yaml` | Same two-tier supervisor as Lab 21/22/23 plus an `app.trace_location` block and an `app.monitoring` block. |
-| `pyproject.toml` | dao-ai version pin (`>=0.1.88`). |
+| `pyproject.toml` | dao-ai version pin (`>=0.1.92`). |
 
 ## Prerequisites
 

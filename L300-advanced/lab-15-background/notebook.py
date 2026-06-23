@@ -6,7 +6,7 @@
 # MAGIC
 # MAGIC ## Goals
 # MAGIC
-# MAGIC - Configure `app.long_running:` so dao-ai wraps the agent with `LongRunningResponsesAgent`, persisting kickoff state in Lakebase.
+# MAGIC - Configure `app.background:` so dao-ai wraps the agent with `BackgroundResponsesAgent`, persisting kickoff state in Lakebase.
 # MAGIC - Deploy as a Databricks App and exercise the **Responses-API contract end-to-end**: kickoff (`background=True`), retrieve, cancel.
 # MAGIC - Show the canonical pattern for invoking an Apps-deployed agent from a notebook: OIDC token-exchange to mint an app-scoped OAuth bearer, then the OpenAI Python SDK against the App URL.
 # MAGIC - Understand why long-running agents need a checkpointer (state has to survive the kickoff / poll / cancel turns) and where dao-ai persists kickoff state.
@@ -19,7 +19,7 @@
 # MAGIC
 # MAGIC **Use case:** `hardware_store++` -- inventory analyst agent that produces deep-research style reports.
 # MAGIC
-# MAGIC **DAO-AI concept:** `app.long_running:` block + `LongRunningResponsesAgent` wrapper + Lakebase-backed responses store + Responses-API HTTP surface (`/invocations` with `background: true`, `/v1/responses/{id}` for retrieve / cancel).
+# MAGIC **DAO-AI concept:** `app.background:` block + `BackgroundResponsesAgent` wrapper + Lakebase-backed responses store + Responses-API HTTP surface (`/invocations` with `background: true`, `/v1/responses/{id}` for retrieve / cancel).
 # MAGIC
 # MAGIC ## Pre-reqs
 # MAGIC
@@ -35,7 +35,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "dao-ai>=0.1.87" "openai>=1.40"
+# MAGIC %pip install "dao-ai>=0.1.92" "openai>=1.40"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -100,23 +100,23 @@ for db_key, database in config.resources.databases.items():
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 4 -- The `app.long_running:` block
+# MAGIC ## Step 4 -- The `app.background:` block
 # MAGIC
 # MAGIC ```yaml
 # MAGIC app:
-# MAGIC   long_running:
+# MAGIC   background:
 # MAGIC     database: *workshop_db                       # same Lakebase the checkpointer uses
-# MAGIC     default_background: false                    # caller opts in per-call
+# MAGIC     default_enabled: false                       # caller opts in per-call
 # MAGIC     max_duration_seconds: ${var.max_duration_seconds}
 # MAGIC     poll_interval_seconds: ${var.poll_interval_seconds}
 # MAGIC ```
 # MAGIC
-# MAGIC With this block present, dao-ai wraps the responses agent with `LongRunningResponsesAgent`. Two things happen on first request:
+# MAGIC With this block present, dao-ai wraps the responses agent with `BackgroundResponsesAgent`. Two things happen on first request:
 # MAGIC
 # MAGIC 1. The wrapper auto-creates `dao_ai_responses` and `dao_ai_response_messages` tables in the Lakebase project (idempotent).
 # MAGIC 2. Background runs go to a process-singleton daemon thread so they survive Model Serving's per-request `asyncio.run()` teardown.
 # MAGIC
-# MAGIC Three runtime operations are exposed (we exercise each below against the **deployed** endpoint -- the long-running pattern is a deployed-endpoint contract, not an in-notebook one):
+# MAGIC Three runtime operations are exposed (we exercise each below against the **deployed** endpoint -- the background pattern is a deployed-endpoint contract, not an in-notebook one):
 # MAGIC
 # MAGIC | client sends                                                                | server returns                                |
 # MAGIC |---|---|
@@ -129,9 +129,9 @@ for db_key, database in config.resources.databases.items():
 # MAGIC %md
 # MAGIC ## Step 5 -- Compile + enable MLflow autolog
 # MAGIC
-# MAGIC `mlflow.langchain.autolog()` registers tracers so we can see what the wrapped agent does. `config.as_responses_agent()` returns a `LongRunningResponsesAgent` because the YAML has the `app.long_running:` block.
+# MAGIC `mlflow.langchain.autolog()` registers tracers so we can see what the wrapped agent does. `config.as_responses_agent()` returns a `BackgroundResponsesAgent` because the YAML has the `app.background:` block.
 # MAGIC
-# MAGIC We compile the agent here (and confirm the wrapped class) but **do not exercise the long-running contract in-process** -- that contract is a deployed-endpoint contract. The Lakebase responses tables are created and owned by the deployed app's service principal; an in-notebook call would connect with the user's PAT and hit `InsufficientPrivilege` on those tables. We exercise kickoff / retrieve / cancel against the deployed app in Step 7.
+# MAGIC We compile the agent here (and confirm the wrapped class) but **do not exercise the background contract in-process** -- that contract is a deployed-endpoint contract. The Lakebase responses tables are created and owned by the deployed app's service principal; an in-notebook call would connect with the user's PAT and hit `InsufficientPrivilege` on those tables. We exercise kickoff / retrieve / cancel against the deployed app in Step 7.
 
 # COMMAND ----------
 
@@ -314,7 +314,7 @@ print(f"[7c] cancelled.status: {cancelled.status}")
 # MAGIC %md
 # MAGIC ### Streaming variant (no code, FYI)
 # MAGIC
-# MAGIC The deployed app also supports streaming both for synchronous calls and for retrieve. Add `"stream": true` to the `/invocations` body to get Server-Sent Events instead of a JSON envelope. We don't exercise streaming in this lab to keep the cell budget reasonable -- see `dao-ai/notebooks/14_long_running_agents_demo.py` for the full streaming demo.
+# MAGIC The deployed app also supports streaming both for synchronous calls and for retrieve. Add `"stream": true` to the `/invocations` body to get Server-Sent Events instead of a JSON envelope. We don't exercise streaming in this lab to keep the cell budget reasonable -- see `dao-ai/notebooks/14_background_agents_demo.py` for the full streaming demo.
 
 # COMMAND ----------
 

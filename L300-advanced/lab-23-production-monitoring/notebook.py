@@ -33,7 +33,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "dao-ai>=0.1.88"
+# MAGIC %pip install "dao-ai>=0.1.92"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -79,16 +79,24 @@ dbutils.widgets.text("llm_endpoint", "databricks-claude-sonnet-4-5", "Default LL
 dbutils.widgets.text("fast_llm_endpoint", "databricks-claude-haiku-4-5", "Fast LLM (tier-1)")
 
 warehouse_id: str = dbutils.widgets.get("warehouse_id").strip()
+if not warehouse_id:
+    raise ValueError(
+        "warehouse_id widget is required. The lab deploys to Databricks Apps, "
+        "and Apps containers cannot reach the default MLflow trace export host "
+        "-- traces would be silently dropped. The YAML's app.trace_location "
+        "block routes traces through this SQL warehouse to UC OTEL Delta "
+        "tables instead. See Lab 24 for the deeper walkthrough."
+    )
 
 params: dict[str, str] = {
     "username": username,
     "catalog": dbutils.widgets.get("catalog").strip(),
     "schema": dbutils.widgets.get("schema").strip(),
+    "warehouse_id": warehouse_id,
     "llm_endpoint": dbutils.widgets.get("llm_endpoint").strip(),
     "fast_llm_endpoint": dbutils.widgets.get("fast_llm_endpoint").strip(),
 }
 print(params)
-print(f"warehouse_id: {warehouse_id or '(not set; experiment-based traces only)'}")
 
 # COMMAND ----------
 

@@ -47,7 +47,7 @@ isn't worth modeling in YAML. This lab shows both sides side-by-side.
 |---|---|
 | `notebook.py` | The lab notebook -- four scenarios end-to-end. |
 | `evaluation_agent.yaml` | Same two-tier supervisor as Lab 21 plus the `evaluation:` block, judge LLM, and inline `optimizations.training_datasets.lab22_qa_seed`. |
-| `pyproject.toml` | dao-ai version pin (`>=0.1.90`). |
+| `pyproject.toml` | dao-ai version pin (`>=0.1.92`). |
 
 ## Prerequisites
 

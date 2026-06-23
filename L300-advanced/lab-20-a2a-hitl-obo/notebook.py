@@ -32,7 +32,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "dao-ai>=0.1.87" "nest-asyncio>=1.5"
+# MAGIC %pip install "dao-ai>=0.1.92" "nest-asyncio>=1.5"
 # MAGIC # NOTE: stay on %pip, NOT %uv pip install. The %uv magic works
 # MAGIC # interactively in the notebook UI but fails in the serverless v5
 # MAGIC # jobs runtime (PackageNotFoundError after install completes
@@ -382,6 +382,6 @@ for e in stream_events:
 # MAGIC | HITL `input-required` + DataPart resume | Lab 20 (this) |
 # MAGIC | Auto-derived `oauth2 + bearer` from resource OBO | Lab 20 (this) |
 # MAGIC | SSE streaming via `send_message_streaming` | Lab 20 (this) |
-# MAGIC | Lakebase-persistent task store + `tasks/get` round-trip | `dao-ai/config/examples/20_a2a_protocol/a2a_long_running.yaml` |
+# MAGIC | Lakebase-persistent task store + `tasks/get` round-trip | `dao-ai/config/examples/20_a2a_protocol/a2a_background.yaml` |
 # MAGIC
 # MAGIC The L300 README's "what's next" section covers production hardening (security scheme overrides via `dao_ai.apps.a2a.security`, custom skills, Lakebase task persistence).

@@ -28,7 +28,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "dao-ai>=0.1.87"
+# MAGIC %pip install "dao-ai>=0.1.92"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -239,4 +239,4 @@ print(f"Deployed app: {config.app.name}")
 # MAGIC %md
 # MAGIC ## Next
 # MAGIC
-# MAGIC [Lab 15 -- Long-Running / Background Agents](../lab-15-long-running/) -- Responses-API kickoff/poll/cancel for slow tasks, with state persisted in Lakebase.
+# MAGIC [Lab 15 -- Background Agents](../lab-15-background/) -- Responses-API kickoff/poll/cancel for slow tasks, with state persisted in Lakebase.

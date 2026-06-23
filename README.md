@@ -6,7 +6,7 @@ Self-paced, hands-on workshop for building declarative AI agents on Databricks w
 
 | Repo | What it is | When to reach for it |
 |---|---|---|
-| **[`dao-ai`](https://github.com/natefleming/dao-ai)** | The DAO-AI framework itself: schema, runtime, deploy primitives. Every lab in this workshop installs it via `pip install "dao-ai>=0.1.88"`. | Read the framework source, file issues, contribute features, or check the canonical examples under [`config/examples/`](https://github.com/natefleming/dao-ai/tree/main/config/examples). |
+| **[`dao-ai`](https://github.com/natefleming/dao-ai)** | The DAO-AI framework itself: schema, runtime, deploy primitives. Every lab in this workshop installs it via `pip install "dao-ai>=0.1.92"`. | Read the framework source, file issues, contribute features, or check the canonical examples under [`config/examples/`](https://github.com/natefleming/dao-ai/tree/main/config/examples). |
 | **[`dao-ai-builder`](https://github.com/natefleming/dao-ai-builder)** | Visual builder for DAO-AI configs -- forms and dropdowns instead of hand-written YAML. Exports a ready-to-deploy `dao_ai.yaml`. | Once you've finished L100 and want a faster authoring loop for new agents, or to hand the config surface to non-developer collaborators. |
 
 If you're wondering "where do these agents actually live in code?" the answer is `dao-ai`. If you're wondering "is there a UI for this?" the answer is `dao-ai-builder`.
@@ -55,7 +55,7 @@ L200 starts with the [Building Real Agents](L200-real-agents/building-real-agent
 | **Lab 12** | Genie Context-Aware Caching | L1 LRU exact-match + L2 similarity cache over a Genie tool | [`L300-advanced/lab-12-genie-caching/`](L300-advanced/lab-12-genie-caching/) |
 | **Lab 13** | Programmatic Construction | Build the same `AppConfig` in pure Python instead of YAML | [`L300-advanced/lab-13-programmatic/`](L300-advanced/lab-13-programmatic/) |
 | **Lab 14** | Custom-Input Validation | Middleware-based validation of `custom_inputs.configurable` (`store_num`, `customer_tier`, `region`) | [`L300-advanced/lab-14-custom-input-validation/`](L300-advanced/lab-14-custom-input-validation/) |
-| **Lab 15** | Long-Running / Background Agents | `app.long_running:` + Lakebase-backed responses store + Responses-API kickoff/poll/cancel | [`L300-advanced/lab-15-long-running/`](L300-advanced/lab-15-long-running/) |
+| **Lab 15** | Background Agents | `app.background:` + Lakebase-backed responses store + Responses-API kickoff/poll/cancel | [`L300-advanced/lab-15-background/`](L300-advanced/lab-15-background/) |
 | **Lab 16** | Declarative Genie Space Provisioning | Provision a fully-configured Genie space from pure YAML via `GenieRoomModel.create()` | [`L300-advanced/lab-16-genie-provisioning/`](L300-advanced/lab-16-genie-provisioning/) |
 | **Lab 17** | Deep Agent Orchestration | Third orchestration pattern alongside supervisor/swarm: a planning agent built on `deepagents.create_deep_agent` with `todo`/`filesystem`/`shell` tools, Skills (directory-of-Markdown), `AGENTS.md` instruction files, and sub-agents called via the `task` tool | [`L300-advanced/lab-17-deep-agents/`](L300-advanced/lab-17-deep-agents/) |
 | **Lab 18** | Skills-only Deep Agent | The minimum-viable deep_agent — zero top-level agents and zero sub-agents, only a Skill + system prompt | [`L300-advanced/lab-18-skills-only-deep-agent/`](L300-advanced/lab-18-skills-only-deep-agent/) |
@@ -71,6 +71,30 @@ See the [L300 README](L300-advanced/README.md) for production-deployment guidanc
 ## Why two use cases?
 
 L100 builds a hardware-store retail assistant. L200 switches to a SaaS support coordinator. **Same DAO-AI concepts; different domain framing.** The switch keeps each lab's config tightly scoped to its new feature instead of accumulating every prior chapter's setup. See the level READMEs for more.
+
+## Trace persistence on Databricks Apps
+
+MLflow's default control-plane trace export can't reach the artifact-storage
+host from inside a Databricks Apps container, so spans are silently dropped.
+To capture traces from an Apps deployment, configure `app.trace_location:`
+in your YAML with a UC schema + SQL warehouse — traces then export through
+the warehouse into three OTEL Delta tables (`<prefix>_otel_spans`,
+`<prefix>_otel_logs`, `<prefix>_otel_metrics`) reachable from Apps. See
+**Lab 24** for the full walkthrough; **Lab 23** demonstrates the same
+pattern in a production-monitoring context. The remaining workshop labs
+omit `trace_location:` for brevity, but you can copy the Lab 24 block into
+any lab's YAML.
+
+After the first deploy of an app that declares `trace_location:`, grant the
+App SP these schema-level privileges (one-time) so MLflow can create + write
+the OTEL tables:
+
+```sql
+GRANT USE_CATALOG ON CATALOG <catalog> TO `<app-sp-client-id>`;
+GRANT USE_SCHEMA, CREATE_TABLE, MODIFY, SELECT
+  ON SCHEMA <catalog>.<schema>
+  TO `<app-sp-client-id>`;
+```
 
 ## Per-student deployment
 
@@ -109,7 +133,7 @@ print(f"Deployed app: {config.app.name}")
 | Requirement | Detail |
 |---|---|
 | Python | 3.11+ |
-| DAO-AI | `pip install "dao-ai>=0.1.88"` (the labs install this in the notebook) |
+| DAO-AI | `pip install "dao-ai>=0.1.92"` (the labs install this in the notebook) |
 | Databricks CLI | v0.230+ with a configured profile |
 | Compute | Databricks Serverless v5 |
 | Foundation models | `databricks-claude-sonnet-4-5` (most labs); `databricks-gpt-5-4-mini` (Lab 19 + Lab 20); `databricks-gte-large-en` (Lab 6 + Lab 11 + Lab 12); `databricks-claude-haiku-4-5` and `databricks-meta-llama-3-1-8b-instruct` (Lab 9 + Lab 11); `databricks-gpt-5-nano` (Lab 7 summarization); `databricks-gpt-oss-120b` (Lab 7 memory queries) |
@@ -164,7 +188,7 @@ dao-ai-workshop/
 │   ├── lab-12-genie-caching/           (Lab 12 -- L1 LRU + L2 similarity cache)
 │   ├── lab-13-programmatic/            (Lab 13 -- build AppConfig in pure Python)
 │   ├── lab-14-custom-input-validation/ (Lab 14 -- middleware-based input contract)
-│   ├── lab-15-long-running/            (Lab 15 -- Responses-API kickoff/poll/cancel)
+│   ├── lab-15-background/              (Lab 15 -- Responses-API kickoff/poll/cancel)
 │   ├── lab-16-genie-provisioning/      (Lab 16 -- declarative Genie Space from YAML)
 │   ├── lab-17-deep-agents/             (Lab 17 -- planning + Skills + sub-agents)
 │   ├── lab-18-skills-only-deep-agent/  (Lab 18 -- minimum-viable deep_agent)
