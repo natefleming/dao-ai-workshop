@@ -104,39 +104,37 @@ tools:
   cached_genie: &cached_genie
     name: ask_products_genie
     function:
-      type: factory
-      name: dao_ai.tools.create_genie_toolkit
-      args:
-        name: ask_products_genie
-        description: >
-          Ask analytical questions about the product catalog. Identical
-          and near-duplicate questions are served from cache.
-        genie_room: *products_genie
+      type: genie
+      name: ask_products_genie
+      description: >
+        Ask analytical questions about the product catalog. Identical
+        and near-duplicate questions are served from cache.
+      genie_room: *products_genie
 
-        # ---- L1: LRU exact-match cache ----------------------------
-        # O(1) lookup. Only matches when the input string is byte-for-byte
-        # identical (after dao-ai's normalization). Fastest possible hit.
-        lru_cache_parameters:
-          warehouse: *cache_warehouse
-          capacity: ${var.l1_capacity}
-          time_to_live_seconds: ${var.l1_ttl_seconds}
+      # ---- L1: LRU exact-match cache ----------------------------
+      # O(1) lookup. Only matches when the input string is byte-for-byte
+      # identical (after dao-ai's normalization). Fastest possible hit.
+      lru_cache:
+        warehouse: *cache_warehouse
+        capacity: ${var.l1_capacity}
+        time_to_live_seconds: ${var.l1_ttl_seconds}
 
-        # ---- L2: in-memory context-aware similarity cache ---------
-        # Embeds the question and the recent N turns of conversation,
-        # compares to cached entries by cosine similarity. Hits when:
-        #   - question similarity >= l2_similarity_threshold AND
-        #   - context similarity  >= l2_context_similarity_threshold
-        # On hit, the cached SQL is re-executed for fresh data.
-        in_memory_context_aware_cache_parameters:
-          warehouse: *cache_warehouse
-          embedding_model: *embedding_model
-          similarity_threshold: ${var.l2_similarity_threshold}
-          context_similarity_threshold: ${var.l2_context_similarity_threshold}
-          context_window_size: ${var.l2_context_window_size}
-          capacity: 10000
-          time_to_live_seconds: 604800   # 1 week
+      # ---- L2: in-memory context-aware similarity cache ---------
+      # Embeds the question and the recent N turns of conversation,
+      # compares to cached entries by cosine similarity. Hits when:
+      #   - question similarity >= l2_similarity_threshold AND
+      #   - context similarity  >= l2_context_similarity_threshold
+      # On hit, the cached SQL is re-executed for fresh data.
+      in_memory_context_aware_cache:
+        warehouse: *cache_warehouse
+        embedding_model: *embedding_model
+        similarity_threshold: ${var.l2_similarity_threshold}
+        context_similarity_threshold: ${var.l2_context_similarity_threshold}
+        context_window_size: ${var.l2_context_window_size}
+        capacity: 10000
+        time_to_live_seconds: 604800   # 1 week
 
-        persist_conversation: true
+      persist_conversation: true
 
 agents:
   cached_analyst: &cached_analyst

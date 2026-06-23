@@ -92,15 +92,13 @@ tools:
   kb_search: &kb_search
     name: kb_search
     function:
-      type: factory
-      name: dao_ai.tools.create_vector_search_tool
-      args:
-        retriever: *kb_retriever
-        name: kb_search
-        description: >
-          Semantic search with cross-encoder reranking over the
-          support knowledge base. Returns the top 5 most relevant
-          articles for a natural-language query.
+      type: vector_search
+      retriever: *kb_retriever
+      name: kb_search
+      description: >
+        Semantic search with cross-encoder reranking over the
+        support knowledge base. Returns the top 5 most relevant
+        articles for a natural-language query.
 
 agents:
   kb_assistant: &kb_assistant

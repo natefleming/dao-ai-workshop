@@ -38,7 +38,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "dao-ai>=0.1.92"
+# MAGIC %pip install "dao-ai>=0.1.94"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -247,8 +247,9 @@ time.sleep(15)
 
 # COMMAND ----------
 
-spans_table: str = f"{schema_prefix}.mlflow_experiment_trace_otel_spans"
+spans_table: str = f"{schema_fqn}.{table_prefix}_otel_spans"
 print(f"Querying {spans_table}...")
+
 spark.sql(f"SELECT COUNT(*) AS span_count FROM {spans_table}").display()
 
 # COMMAND ----------
@@ -260,7 +261,7 @@ spark.sql(f"SELECT COUNT(*) AS span_count FROM {spans_table}").display()
 
 spark.sql(f"""
     SELECT trace_id, COUNT(*) AS spans, MIN(start_time_unix_nano) AS first_span_ns
-    FROM {schema_prefix}.mlflow_experiment_trace_otel_spans
+    FROM {schema_fqn}.{table_prefix}_otel_spans
     WHERE trace_id IS NOT NULL
     GROUP BY trace_id
     ORDER BY first_span_ns DESC
@@ -280,7 +281,7 @@ if trace_ids:
     print(f"Inspecting spans for trace_id={sample_trace}")
     spark.sql(f"""
         SELECT name, kind, status
-        FROM {schema_prefix}.mlflow_experiment_trace_otel_spans
+        FROM {schema_fqn}.{table_prefix}_otel_spans
         WHERE trace_id = '{sample_trace}'
         ORDER BY start_time_unix_nano ASC
     """).display()
@@ -307,7 +308,7 @@ spark.sql(f"""
       (MAX(end_time_unix_nano) - MIN(start_time_unix_nano)) / 1e6        AS duration_ms,
       SUM(CASE WHEN status.code = 'STATUS_CODE_ERROR' THEN 1 ELSE 0 END) AS error_spans,
       MIN(start_time_unix_nano)                                          AS start_ns
-    FROM {schema_prefix}.mlflow_experiment_trace_otel_spans
+    FROM {schema_fqn}.{table_prefix}_otel_spans
     WHERE trace_id IS NOT NULL
     GROUP BY trace_id
     ORDER BY start_ns DESC
@@ -334,18 +335,18 @@ spark.sql(f"""
 # COMMAND ----------
 
 # OTEL logs sibling -- a few rows per traced turn.
-print(f"Row counts across all three OTEL tables in {schema_prefix}:")
-for suffix in TraceLocationModel.OTEL_TABLE_SUFFIXES:
-    fqn = f"{schema_prefix}.{suffix}"
+print(f"Row counts across all three OTEL tables in {schema_fqn} (prefix={table_prefix}):")
+for suffix in ("otel_spans", "otel_logs", "otel_metrics"):
+    fqn = f"{schema_fqn}.{table_prefix}_{suffix}"
     row_count = spark.sql(f"SELECT COUNT(*) FROM {fqn}").first()[0]
-    print(f"  {suffix:42s} {row_count} rows")
+    print(f"  {table_prefix}_{suffix:14s} {row_count} rows")
 
 # COMMAND ----------
 
 # Sample the logs table (only meaningful if rows > 0).
 spark.sql(f"""
     SELECT trace_id, severity_text, body, observed_time_unix_nano
-    FROM {schema_prefix}.mlflow_experiment_trace_otel_logs
+    FROM {schema_fqn}.{table_prefix}_otel_logs
     ORDER BY observed_time_unix_nano DESC
     LIMIT 10
 """).display()

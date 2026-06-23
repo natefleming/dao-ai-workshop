@@ -89,14 +89,12 @@ tools:
   kb_search: &kb_search
     name: kb_search
     function:
-      type: factory
-      name: dao_ai.tools.create_vector_search_tool
-      args:
-        retriever: *kb_retriever
-        name: kb_search
-        description: >
-          Semantic search over the support knowledge base. Use for
-          how-to questions, error diagnostics, and policy lookups.
+      type: vector_search
+      retriever: *kb_retriever
+      name: kb_search
+      description: >
+        Semantic search over the support knowledge base. Use for
+        how-to questions, error diagnostics, and policy lookups.
 
 agents:
   kb_assistant: &kb_assistant
