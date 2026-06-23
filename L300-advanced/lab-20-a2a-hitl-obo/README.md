@@ -20,7 +20,7 @@
 
 ## Steps
 
-1. **Step 1** — install `dao-ai>=0.1.87` (which transitively brings `a2a-sdk`) + `nest-asyncio` (for notebook async).
+1. **Step 1** — install `dao-ai>=0.1.92` (which transitively brings `a2a-sdk`) + `nest-asyncio` (for notebook async).
 2. **Step 2** — configure widgets.
 3. **Step 3** — load `hitl_obo_agent.yaml`, compile, deploy to Apps.
 4. **Step 4** — wait for the Apps proxy to come up.
@@ -47,5 +47,5 @@ A2A's `security:` array lists both as acceptable. OAuth2-aware clients use the d
 
 ## Next
 
-* Persistent A2A task lifecycle — see `dao-ai/config/examples/20_a2a_protocol/a2a_long_running.yaml` for the Lakebase-backed variant (one `DatabaseModel` shared by `app.long_running.database`, `memory.checkpointer.database`, AND `a2a.task_store.database` — `AsyncPostgresPoolManager` dedupes by connection string so the three share a single pool).
+* Persistent A2A task lifecycle — see `dao-ai/config/examples/20_a2a_protocol/a2a_background.yaml` for the Lakebase-backed variant (one `DatabaseModel` shared by `app.background.database`, `memory.checkpointer.database`, AND `a2a.task_store.database` — `AsyncPostgresPoolManager` dedupes by connection string so the three share a single pool).
 * Custom `security_schemes` — `dao_ai.apps.a2a.security` ships ready-made constants (`BEARER_DATABRICKS_PAT`, `BEARER_DATABRICKS_M2M`, `BEARER_DATABRICKS_OBO`) and factories (`api_key_header`, `oauth2_databricks_authorization_code`, `oauth2_databricks_obo`, `openid_connect_databricks`). YAML users compose the same recipes via `${workspace.host}` substitution.

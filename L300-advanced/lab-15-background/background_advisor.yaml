@@ -1,11 +1,11 @@
 # yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
 #
-# Lab 15 -- Long-Running / Background Agents (L300, hardware_store++)
-# -------------------------------------------------------------------
+# Lab 15 -- Background Agents (L300, hardware_store++)
+# -----------------------------------------------------
 # A hardware-store inventory analyst that takes its time to produce a
 # thorough analysis (multi-paragraph report on a category's trends,
-# supplier reliability, etc.). dao-ai's `app.long_running:` block wraps
-# the responses agent with `LongRunningResponsesAgent`, persisting
+# supplier reliability, etc.). dao-ai's `app.background:` block wraps
+# the responses agent with `BackgroundResponsesAgent`, persisting
 # kickoff state in Lakebase so clients can poll/stream/cancel via the
 # OpenAI Responses-API surface.
 #
@@ -20,16 +20,16 @@
 # What's new vs prior labs:
 #   - top-level memory.checkpointer:  required so the agent's state
 #     survives across the kickoff / poll / cancel turns.
-#   - app.long_running:               new app-level block. Tells dao-ai
-#     to wrap the responses agent with LongRunningResponsesAgent and
+#   - app.background:                 new app-level block. Tells dao-ai
+#     to wrap the responses agent with BackgroundResponsesAgent and
 #     persist response state in Lakebase. Three sub-fields:
 #       * database:               *workshop_db (reuses the same Lakebase
 #                                  the checkpointer uses).
-#       * default_background:     false -- caller opts in per-call via
+#       * default_enabled:        false -- caller opts in per-call via
 #                                  `custom_inputs.background: true`.
 #       * max_duration_seconds:   how long a single response may run
 #                                  before dao-ai forces it to fail.
-#       * poll_interval_seconds:  how often the long-running wrapper
+#       * poll_interval_seconds:  how often the background wrapper
 #                                  polls its own task on retrieve.
 #
 # Runtime contract (exercised in the notebook):
@@ -52,7 +52,7 @@ parameters:
     description: SQL-safe variant of username (hyphens replaced with underscores). Auto-set by the notebook.
     # No default => required.
   lakebase_project:
-    description: Lakebase autoscaling project name (also hosts checkpointer + long-running tables).
+    description: Lakebase autoscaling project name (also hosts checkpointer + background tables).
     default: retail-consumer-goods
   lakebase_branch:
     description: Lakebase branch within the project. Empty = auto-resolve the project's default branch.
@@ -61,10 +61,10 @@ parameters:
     description: Databricks LLM serving endpoint name.
     default: databricks-claude-sonnet-4-5
   max_duration_seconds:
-    description: Hard cap on a single long-running response (seconds).
+    description: Hard cap on a single background response (seconds).
     default: "1800"
   poll_interval_seconds:
-    description: Internal poll cadence for the long-running wrapper (seconds; floats accepted).
+    description: Internal poll cadence for the background wrapper (seconds; floats accepted).
     default: "1.0"
   # Service-principal credentials for the Lakebase project. Same wiring
   # as Lab 7 -- secret scope wins, env vars are the notebook fallback.
@@ -105,14 +105,14 @@ resources:
     workshop_db: &workshop_db
       project: ${var.lakebase_project}
       branch: ${var.lakebase_branch}
-      description: "Lakebase backing the checkpointer + long-running responses store."
+      description: "Lakebase backing the checkpointer + background responses store."
       client_id: *client_id
       client_secret: *client_secret
       on_behalf_of_user: false
 
 memory:
   checkpointer:
-    name: long_running_checkpointer
+    name: background_checkpointer
     database: *workshop_db
 
 agents:
@@ -137,13 +137,13 @@ agents:
 
 app:
   name: hardware-store-${var.username}
-  description: "Lab 15 (hardware_store++): long-running / background inventory analyst"
+  description: "Lab 15 (hardware_store++): background inventory analyst"
   log_level: INFO
 
   deployment_target: apps
 
   # Headless API endpoint -- skip the chat UI build. The lab exercises
-  # the long-running contract via /invocations + /v1/responses/{id};
+  # the background contract via /invocations + /v1/responses/{id};
   # no browser-facing chat needed.
   enable_chat_proxy: false
 
@@ -151,7 +151,7 @@ app:
   - *inventory_analyst
 
   # Triggers dao-ai to wrap the responses agent with
-  # LongRunningResponsesAgent. State is persisted in `database`'s
+  # BackgroundResponsesAgent. State is persisted in `database`'s
   # Lakebase project (the wrapper auto-creates the two tables named
   # below on first request).
   #
@@ -164,9 +164,9 @@ app:
   # un-droppable from outside the control plane (orphan SP roles
   # have no members and `databricks_superuser` is not a true postgres
   # SUPERUSER), so once those tables exist they stay forever.
-  long_running:
+  background:
     database: *workshop_db
-    default_background: false
+    default_enabled: false
     max_duration_seconds: ${var.max_duration_seconds}
     poll_interval_seconds: ${var.poll_interval_seconds}
     # Hyphens aren't valid SQL identifiers, so replace with underscores

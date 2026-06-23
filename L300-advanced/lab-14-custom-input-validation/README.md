@@ -52,4 +52,4 @@ Deployed app name: `hardware-store-<your-username>`. (Same slot as Labs 1, 2, 3,
 
 ## Next
 
-[Lab 15 -- Long-Running / Background Agents](../lab-15-long-running/) -- Responses-API kickoff/poll/cancel for slow tasks, with state persisted in Lakebase.
+[Lab 15 -- Background Agents](../lab-15-background/) -- Responses-API kickoff/poll/cancel for slow tasks, with state persisted in Lakebase.

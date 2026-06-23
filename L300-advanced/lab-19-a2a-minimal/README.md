@@ -29,7 +29,7 @@ All four routes share the same compiled LangGraph and the same checkpointer.
 
 ## Steps
 
-1. **Step 1** — install `dao-ai>=0.1.87` (which transitively brings `a2a-sdk`) + `nest-asyncio` (for notebook async).
+1. **Step 1** — install `dao-ai>=0.1.92` (which transitively brings `a2a-sdk`) + `nest-asyncio` (for notebook async).
 2. **Step 2** — configure widgets (username, llm_endpoint).
 3. **Step 3** — load `greeter.yaml`, compile, deploy to Apps.
 4. **Step 4** — wait for `compute_status == ACTIVE` and `app_status == RUNNING`.
@@ -41,7 +41,7 @@ All four routes share the same compiled LangGraph and the same checkpointer.
 ## What this lab does NOT cover
 
 * HITL over A2A → **Lab 20** (`current_time` + `say_hello` tools with `human_in_the_loop:` tagging, resume via DataPart decisions).
-* Lakebase-persistent task store → see `dao-ai/config/examples/20_a2a_protocol/a2a_long_running.yaml`.
+* Lakebase-persistent task store → see `dao-ai/config/examples/20_a2a_protocol/a2a_background.yaml`.
 * Server-sent-event streaming via `A2AClient.send_message_streaming` → Lab 20 covers it briefly.
 
 ## Why this matters

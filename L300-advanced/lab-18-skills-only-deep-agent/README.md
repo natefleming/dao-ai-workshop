@@ -47,7 +47,7 @@ dao-ai's `AppModel.validate_agents_not_empty` model_validator (`config.py:6531-6
 
 Open `notebook.py` on Serverless compute. Run cell by cell. Watch:
 
-1. **Step 1** — installs `dao-ai>=0.1.87`.
+1. **Step 1** — installs `dao-ai>=0.1.92`.
 2. **Step 3 (inspect config)** — dumps the empty `app.agents` list and the deep_agent block with `skills:` but no `subagents:`.
 3. **Step 4 (compile)** — `AppConfig.from_file()` triggers `validate_agents_not_empty`. The carve-out lets it pass.
 4. **Step 5 (inference)** — submits a 10-line Python snippet for review. The planner uses the bundled `code_review` skill to produce a structured review.

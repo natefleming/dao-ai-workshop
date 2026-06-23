@@ -8,13 +8,16 @@
 # MAGIC
 # MAGIC - Declare `app.trace_location` on a dao-ai agent so MLflow writes
 # MAGIC   traces to Unity Catalog OTEL Delta tables.
-# MAGIC - Call `set_experiment_trace_location` + `set_destination` from the
-# MAGIC   notebook (dao-ai's runtime does this for Model Serving / Apps, but
-# MAGIC   in-process notebooks have to do it themselves).
+# MAGIC - Call `mlflow.set_experiment(experiment_id=..., trace_location=UnityCatalog(...))`
+# MAGIC   from the notebook (dao-ai's runtime does this automatically for
+# MAGIC   Model Serving / Apps, but in-process notebooks have to do it
+# MAGIC   themselves).
 # MAGIC - Verify the three OTEL tables (`..._otel_spans`, `..._otel_logs`,
 # MAGIC   `..._otel_metrics`) are created in the configured UC schema.
 # MAGIC - Drive traffic and watch trace spans land in
-# MAGIC   `${catalog}.${schema}.mlflow_experiment_trace_otel_spans`.
+# MAGIC   `${catalog}.${schema}.<prefix>_otel_spans` (where `<prefix>` is
+# MAGIC   `app.trace_location.table_prefix` if set, otherwise the
+# MAGIC   experiment_id).
 # MAGIC - Use Spark SQL to slice the spans table by user / sub-agent /
 # MAGIC   trace_id -- the same query path you'd use for a Lakehouse
 # MAGIC   Monitoring dashboard.
@@ -35,7 +38,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "dao-ai>=0.1.88"
+# MAGIC %pip install "dao-ai>=0.1.92"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -130,28 +133,32 @@ print(f"Agents: {[a.name for a in config.app.agents]}")
 # MAGIC ## Step 4 -- Link the experiment to the UC trace location
 # MAGIC
 # MAGIC dao-ai's Model Serving and Databricks Apps deploy paths call
-# MAGIC `set_experiment_trace_location` automatically at startup
-# MAGIC (`dao_ai/providers/databricks.py:833-865` and `apps/handlers.py:67-93`).
-# MAGIC In-process notebooks don't go through either path, so we make the
-# MAGIC call ourselves -- once. The link is idempotent: re-running this cell
-# MAGIC is a no-op once the experiment is already linked.
+# MAGIC `mlflow.set_experiment(experiment_id=..., trace_location=UnityCatalog(...))`
+# MAGIC automatically at startup
+# MAGIC (see `dao_ai/providers/databricks.py::_link_experiment_trace_location`
+# MAGIC and `dao_ai/apps/handlers.py`). In-process notebooks don't go through
+# MAGIC either path, so we make the call ourselves -- once. This is the
+# MAGIC post-MLflow-3.11 blessed API; the older
+# MAGIC `set_experiment_trace_location` + `set_destination` + `UCSchemaLocation`
+# MAGIC trio emits deprecation warnings on every call. The link is
+# MAGIC idempotent: re-running this cell is a no-op once the experiment is
+# MAGIC already linked.
 
 # COMMAND ----------
 
-from mlflow.entities import UCSchemaLocation
-from mlflow.tracing.enablement import set_experiment_trace_location
+from mlflow.entities import UnityCatalog
 
 loc = config.app.trace_location
 print(f"trace_location: {loc.catalog_name}.{loc.schema_name} via warehouse {loc.warehouse_id}")
 
+trace_kwargs: dict = {"catalog_name": loc.catalog_name, "schema_name": loc.schema_name}
+if loc.resolved_table_prefix:
+    trace_kwargs["table_prefix"] = loc.resolved_table_prefix
+
 try:
-    set_experiment_trace_location(
-        location=UCSchemaLocation(
-            catalog_name=loc.catalog_name,
-            schema_name=loc.schema_name,
-        ),
+    mlflow.set_experiment(
         experiment_id=experiment_id,
-        sql_warehouse_id=loc.warehouse_id,
+        trace_location=UnityCatalog(**trace_kwargs),
     )
     print("Linked experiment to UC trace location")
 except Exception as e:
@@ -166,42 +173,33 @@ except Exception as e:
 # MAGIC %md
 # MAGIC ## Step 5 -- Verify the three OTEL Delta tables exist
 # MAGIC
-# MAGIC `TraceLocationModel.OTEL_TABLE_SUFFIXES` enumerates the three tables
-# MAGIC MLflow creates: `mlflow_experiment_trace_otel_spans`,
-# MAGIC `mlflow_experiment_trace_otel_logs`,
-# MAGIC `mlflow_experiment_trace_otel_metrics`.
+# MAGIC MLflow creates three OTEL Delta tables in the configured UC schema,
+# MAGIC named `<prefix>_otel_spans`, `<prefix>_otel_logs`, and
+# MAGIC `<prefix>_otel_metrics`. The prefix is `app.trace_location.table_prefix`
+# MAGIC when set, otherwise the experiment_id. Tables are created lazily on
+# MAGIC first trace export, so we'll re-check this cell after Step 7 drives
+# MAGIC traffic.
 
 # COMMAND ----------
 
-from dao_ai.config import TraceLocationModel
-
-schema_prefix: str = f"{loc.catalog_name}.{loc.schema_name}"
-print(f"Checking {schema_prefix} for OTEL tables...")
-for suffix in TraceLocationModel.OTEL_TABLE_SUFFIXES:
-    fqn = f"{schema_prefix}.{suffix}"
+table_prefix = loc.resolved_table_prefix or experiment_id
+schema_fqn: str = f"{loc.catalog_name}.{loc.schema_name}"
+print(f"Checking {schema_fqn} for OTEL tables (prefix={table_prefix})...")
+for suffix in ("otel_spans", "otel_logs", "otel_metrics"):
+    fqn = f"{schema_fqn}.{table_prefix}_{suffix}"
     exists = spark.catalog.tableExists(fqn)
-    print(f"  {fqn}: {'OK' if exists else 'MISSING'}")
+    print(f"  {fqn}: {'OK' if exists else 'MISSING (created on first trace export)'}")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 6 -- Route the in-process tracer to UC
+# MAGIC ## Step 6 -- (Not needed) -- modern API combines link + destination
 # MAGIC
-# MAGIC `set_experiment_trace_location` (Step 4) registers the link, but the
-# MAGIC current Python process's MLflow tracer also needs to be told to write
-# MAGIC spans to UC instead of the default experiment store. `set_destination`
-# MAGIC handles that. Apps and Model Serving call this inside
-# MAGIC `dao_ai/apps/handlers.py:67-93`; the notebook does it directly.
-
-# COMMAND ----------
-
-mlflow.tracing.set_destination(
-    destination=UCSchemaLocation(
-        catalog_name=loc.catalog_name,
-        schema_name=loc.schema_name,
-    )
-)
-print("In-process tracer now routes to UC OTEL tables")
+# MAGIC The older `set_experiment_trace_location` + `mlflow.tracing.set_destination`
+# MAGIC two-step dance has been replaced by a single
+# MAGIC `mlflow.set_experiment(experiment_id=..., trace_location=UnityCatalog(...))`
+# MAGIC call. The link in Step 4 also activates the in-process tracer for the
+# MAGIC linked experiment. No additional `set_destination` is required.
 
 # COMMAND ----------
 
@@ -359,9 +357,9 @@ spark.sql(f"""
 # MAGIC
 # MAGIC | Step | Action |
 # MAGIC |---|---|
-# MAGIC | 4 | Linked the experiment to a UC schema via `set_experiment_trace_location` |
+# MAGIC | 4 | Linked the experiment to a UC schema via `mlflow.set_experiment(trace_location=UnityCatalog(...))` |
 # MAGIC | 5 | Verified MLflow auto-created the three OTEL Delta tables |
-# MAGIC | 6 | Pointed this notebook's tracer at the UC destination via `set_destination` |
+# MAGIC | 6 | (Skipped — the modern API combines link + destination into one call.) |
 # MAGIC | 7 | Drove six requests at the agent; traces flushed to the UC spans table |
 # MAGIC | 8 | Queried the spans table directly -- counts, span-per-trace breakdown, per-trace inspection, and the canonical "one row per trace" rollup |
 # MAGIC | 9 | Surveyed the companion tables (`otel_logs`, `otel_metrics`) |
@@ -372,5 +370,5 @@ spark.sql(f"""
 # MAGIC `mlflow.search_traces` assessments (Lab 21 + Lab 23) to slice
 # MAGIC quality by user or cohort, or retain traces past MLflow's default
 # MAGIC lifecycle simply by reading the Delta table directly. For a
-# MAGIC deployed app, dao-ai does all of Steps 4 + 6 automatically -- you
-# MAGIC just write the YAML.
+# MAGIC deployed app, dao-ai calls Step 4 automatically inside
+# MAGIC `_link_experiment_trace_location` -- you just write the YAML.

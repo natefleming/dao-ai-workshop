@@ -37,5 +37,5 @@ app:
     # No on_behalf_of_user — no resource has OBO, so the auto-derived
     # Agent Card emits a single PAT/M2M bearer scheme.
     # No task_store — defaults to in-memory (process-local; tasks lost on
-    # restart). Lab 21 / dao-ai's a2a_long_running.yaml example shows the
+    # restart). Lab 21 / dao-ai's a2a_background.yaml example shows the
     # Lakebase-persistent variant.

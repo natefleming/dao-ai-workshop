@@ -58,16 +58,26 @@ you point at.
 | File | Purpose |
 |---|---|
 | `notebook.py` | The lab notebook -- inspect, register, drive traffic, verify, cleanup. |
-| `monitoring_agent.yaml` | Same two-tier supervisor as Lab 21/22 + the `app.monitoring` block. |
-| `pyproject.toml` | dao-ai version pin (`>=0.1.90`). |
+| `monitoring_agent.yaml` | Same two-tier supervisor as Lab 21/22 + the `app.monitoring` block + an `app.trace_location` block (required since this lab deploys to Apps — see "Prerequisites" below). |
+| `pyproject.toml` | dao-ai version pin (`>=0.1.92`). |
 
 ## Prerequisites
 
 - Lab 22 completed (you've already seen `Guidelines` scorers and
   `mlflow.genai.evaluate` against offline datasets).
-- A SQL warehouse ID (optional but recommended) for the `warehouse_id`
-  widget if you eventually route traces to UC OTEL tables. Without it the
-  lab still works against experiment-resident traces.
+- **A SQL warehouse ID is required** for the `warehouse_id` widget — this
+  lab deploys to Databricks Apps, and Apps containers can't reach the
+  default MLflow trace export host, so traces would be silently dropped
+  without `app.trace_location` routing them through a warehouse to UC OTEL
+  Delta tables. Lab 24 walks through this pattern in depth.
+- After the first deploy, grant the App SP schema-level privileges on the
+  trace schema so MLflow can create + write the OTEL tables (one-time):
+  ```sql
+  GRANT USE_CATALOG ON CATALOG <catalog> TO `<app-sp-client-id>`;
+  GRANT USE_SCHEMA, CREATE_TABLE, MODIFY, SELECT
+    ON SCHEMA <catalog>.<schema>
+    TO `<app-sp-client-id>`;
+  ```
 - **The "Managed Evaluations" feature must be enabled on your workspace**
   for the backend `Trace Metrics Computation Job` to actually run the
   registered scorers against incoming traces. `register_monitoring_scorers`
@@ -88,7 +98,10 @@ load you may need to lengthen this delay or re-run the SQL cell after a moment.
 
 ## Next
 
-`app.trace_location` routes traces to a Unity Catalog Delta table (OTEL
-spans), at which point a Lakehouse Monitoring dashboard on that table closes
-the loop: scorers run continuously, assessments land in UC, and dashboards
-alert on regressions. That's the natural Lab 24.
+This lab already routes traces to UC via `app.trace_location`. Lab 24 zooms
+in on that block: schema choices, the optional `table_prefix`, querying
+`..._otel_spans` directly with Spark SQL, and the in-process notebook flow
+that mirrors what dao-ai does automatically inside Model Serving / Apps
+deploys. The natural production follow-on is a Lakehouse Monitoring
+dashboard on `..._otel_spans` — scorers run continuously, assessments land
+in UC, and dashboards alert on regressions.

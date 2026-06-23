@@ -4,18 +4,21 @@
 # ---------------------------------------------
 # Same two-tier supervisor as Lab 21/22/23. The new surface is
 # ``app.trace_location``: tell dao-ai which UC schema + SQL warehouse to
-# write traces to, and MLflow's ``set_experiment_trace_location`` creates
-# three OTEL Delta tables in that schema and routes new traces to them.
+# write traces to, and a single ``mlflow.set_experiment(experiment_id=...,
+# trace_location=UnityCatalog(...))`` call creates three OTEL Delta tables
+# in that schema and routes new traces to them.
 #
 # What this lab demonstrates:
-#   - ``set_experiment_trace_location`` + ``UCSchemaLocation`` link an
+#   - ``mlflow.set_experiment(trace_location=UnityCatalog(...))`` links an
 #     MLflow experiment to a UC schema; the three OTEL tables
 #     (``..._otel_spans``, ``..._otel_logs``, ``..._otel_metrics``) are
-#     created on first link.
-#   - In-process notebook agents must call ``set_destination`` themselves
-#     to route traces to UC (dao-ai's runtime does this automatically for
-#     Model Serving + Databricks Apps deployments, but the notebook is
-#     neither, so the lab calls it explicitly).
+#     created on first trace export. This is the post-MLflow-3.11 blessed
+#     API and replaces the older ``set_experiment_trace_location`` +
+#     ``set_destination`` + ``UCSchemaLocation`` trio.
+#   - The notebook makes the link call itself (dao-ai's runtime does this
+#     automatically for Model Serving + Databricks Apps deployments inside
+#     ``_link_experiment_trace_location``, but the notebook is neither, so
+#     the lab calls it explicitly).
 #   - The ``..._otel_spans`` Delta table is the durable, queryable surface
 #     for everything you saw in Lab 23 -- once traces land in UC you can
 #     join them to feedback assessments, build Lakehouse Monitoring
@@ -98,10 +101,12 @@ app:
   # -------------------------------------------------------------------------
   # UC trace location.
   #
-  # dao-ai's TraceLocationModel takes a schema reference + a warehouse_id.
-  # On Model Serving / Apps deploys, dao-ai calls
-  # ``set_experiment_trace_location`` automatically at startup; for in-process
-  # notebook usage, the notebook does the same call explicitly.
+  # dao-ai's TraceLocationModel takes a schema reference + a warehouse_id
+  # (and an optional ``table_prefix`` to namespace tables when multiple
+  # agents share a schema). On Model Serving / Apps deploys, dao-ai calls
+  # ``mlflow.set_experiment(trace_location=UnityCatalog(...))`` automatically
+  # at startup; for in-process notebook usage, the notebook does the same
+  # call explicitly.
   # -------------------------------------------------------------------------
   trace_location:
     schema: *workshop_schema
