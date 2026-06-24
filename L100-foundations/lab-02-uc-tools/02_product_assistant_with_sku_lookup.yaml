@@ -64,11 +64,17 @@ resources:
 
 # NEW in step 2: tools block.
 # A `tool` wraps a resource into something the LLM can call. dao-ai
-# supports several tool types:
-#   type: unity_catalog -- wraps a UC function (this lab)
-#   type: factory       -- runs a Python factory (vector search, REST, etc.)
-#   type: mcp           -- a Managed MCP server (Lab 4)
-#   type: genie         -- a Genie space (Lab 3)
+# supports several first-class tool types:
+#   type: unity_catalog    -- wraps a UC function (this lab)
+#   type: genie            -- a Genie space (Lab 3)
+#   type: mcp              -- a Managed MCP server (Lab 4)
+#   type: vector_search    -- vector retriever (Lab 6)
+#   type: app              -- delegate to a deployed Databricks App (Lab 25)
+#   type: serving_endpoint -- call a Model Serving endpoint (Lab 25)
+#   type: a2a              -- call an A2A-compliant agent (any URL)
+#   type: python           -- a Python callable in this repo
+#   type: factory          -- escape hatch for anything dao-ai doesn't model
+#                              first-class (e.g. REST in Lab 5)
 # The `name:` is what the LLM sees and what gets logged into traces.
 tools:
   sku_lookup_tool: &sku_lookup_tool

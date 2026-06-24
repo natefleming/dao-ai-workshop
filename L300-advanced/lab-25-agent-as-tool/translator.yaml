@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=../../schemas/model_config_schema.json
+#
+# Lab 25 -- Agent A: the Translator.
+# ----------------------------------
+# A minimal single-agent dao-ai app deployed to Databricks Apps. It does
+# one thing: given "<lang>: <text>", return ONLY the translated text.
+#
+# The Greeter (greeter.yaml) calls this app as a tool via the first-class
+# `type: app` tool kind, with auto-discovery of the Responses API wire
+# shape on the first invocation (no `api:` set on the caller side).
+
+parameters:
+  username:
+    description: Per-student username for unique deployment names. Auto-set by the notebook.
+    # No default => required.
+  llm_endpoint:
+    description: Databricks LLM serving endpoint name.
+    default: databricks-claude-sonnet-4-5
+
+resources:
+  models:
+    default_llm: &default_llm
+      name: ${var.llm_endpoint}
+      temperature: 0.1
+      max_tokens: 1024
+      # OBO so the deployed translator inherits the calling user's
+      # identity when it goes back to FMAPI. The Greeter forwards
+      # the user token to us via the type: app tool's auto-OBO wiring.
+      on_behalf_of_user: true
+
+agents:
+  translator: &translator
+    name: translator
+    description: A precise translator. Returns ONLY the translated text.
+    model: *default_llm
+    prompt: |
+      You are a professional translator. The user's input is of the form
+      "<language>: <text>", e.g. "Spanish: Hello, welcome to our store!".
+      Translate the text into the requested language. Return ONLY the
+      translated text -- no preamble, no quotation marks, no explanation.
+
+app:
+  name: translator-${var.username}
+  description: Lab 25 -- minimal translator app, called as a tool by the Greeter.
+  log_level: INFO
+  deployment_target: apps
+  agents:
+    - *translator
+
+  input_example:
+    messages:
+      - role: user
+        content: "Spanish: Hello, welcome to our store!"

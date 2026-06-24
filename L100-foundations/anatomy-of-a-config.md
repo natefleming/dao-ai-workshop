@@ -88,16 +88,18 @@ variables:
       - "https://my-workspace.cloud.databricks.com"
 ```
 
-Use them anywhere a typed `AnyVariable` field is accepted -- REST tool headers, service-principal `client_id` / `client_secret`, OBO workspace hosts, etc.:
+Use them anywhere a typed `AnyVariable` field is accepted -- factory-tool `args:`, service-principal `client_id` / `client_secret`, OBO workspace hosts, etc.:
 
 ```yaml
 tools:
   github_status:
     function:
-      type: rest
-      base_url: https://api.github.com
-      headers:
-        Authorization: *api_token   # pulled from secret scope at runtime
+      type: factory
+      name: dao_ai.tools.create_rest_api_tool
+      args:
+        base_url: https://api.github.com
+        headers:
+          Authorization: *api_token   # pulled from secret scope at runtime
 ```
 
 **`parameters:` vs `variables:` rule of thumb:**
@@ -160,7 +162,7 @@ The `&default_llm` and `&kb_vs` are YAML **anchors**: name a block once with `&n
 
 ## 5. `tools:` -- what an agent can call
 
-Tools wrap the resources. There are four shapes you'll see, all interchangeable from the agent's point of view:
+Tools wrap the resources. dao-ai has a set of first-class tool kinds and a `type: factory` escape hatch. All shapes are interchangeable from the agent's point of view:
 
 ```yaml
 tools:
@@ -179,34 +181,55 @@ tools:
       type: mcp
       functions: *workshop_schema       # exposes every UC function in the schema
 
-  # 5c. Factory tool: a Python callable that builds the tool object.
+  # 5c. First-class vector_search tool (Lab 6).
   kb_search: &kb_search
     name: kb_search
     function:
-      type: factory
-      name: dao_ai.tools.create_vector_search_tool
-      args:
-        retriever: *kb_retriever
-        name: kb_search
-        description: Semantic search over the support KB.
+      type: vector_search
+      retriever: *kb_retriever
+      description: Semantic search over the support KB.
 
-  # 5d. REST tool: declarative HTTP integration.
+  # 5d. First-class genie tool (Lab 3).
+  ask_genie: &ask_genie
+    name: ask_genie
+    function:
+      type: genie
+      genie_room: *workshop_genie
+      description: Ask Genie a natural-language question.
+
+  # 5e. First-class app tool (Lab 25) -- delegate to another deployed agent.
+  translate: &translate
+    name: translate
+    function:
+      type: app
+      app: *translator_app              # references resources.apps.<name>
+      description: Translate text to a requested language.
+
+  # 5f. First-class serving_endpoint tool (Lab 25).
+  ask_sonnet: &ask_sonnet
+    name: ask_sonnet
+    function:
+      type: serving_endpoint
+      endpoint: databricks-claude-sonnet-4-5
+      description: Direct call to a Model Serving endpoint.
+
+  # 5g. Factory escape hatch -- REST APIs (Lab 5) or anything not first-class.
   github_status: &github_status
     name: github_status
     function:
-      type: rest
-      base_url: https://www.githubstatus.com
-      endpoints:
-        - name: get_summary
-          path: /api/v2/summary.json
-          method: GET
+      type: factory
+      name: dao_ai.tools.create_rest_api_tool
+      args:
+        base_url: https://www.githubstatus.com
+        name: check_github_status
+        description: Check GitHub's operational status.
 ```
 
-UC and Genie tools are the most governed (typed parameters, audit trail in UC). MCP gives you schema-wide discovery without re-listing every function. Factory tools are how vector search, reranking, Genie caching, etc. plug in. REST is the escape hatch for anything outside Databricks.
+UC and Genie tools are the most governed (typed parameters, audit trail in UC). MCP gives you schema-wide discovery without re-listing every function. `type: vector_search` is the first-class form for retriever-backed tools. `type: app` and `type: serving_endpoint` let one agent delegate to another deployed agent or LLM endpoint. `type: factory` remains the escape hatch for anything dao-ai doesn't yet model first-class (REST is the canonical case).
 
 ## 6. `retrievers:` -- the search pipelines behind tools
 
-A retriever is a multi-stage search recipe: ANN search, optional cross-encoder rerank, optional LLM-based instruction rerank, optional query decomposition. The factory tool above (`dao_ai.tools.create_vector_search_tool`) just wraps a retriever.
+A retriever is a multi-stage search recipe: ANN search, optional cross-encoder rerank, optional LLM-based instruction rerank, optional query decomposition. The `type: vector_search` tool above just wraps a retriever.
 
 ```yaml
 retrievers:

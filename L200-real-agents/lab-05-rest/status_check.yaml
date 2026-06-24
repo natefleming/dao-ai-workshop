@@ -9,9 +9,11 @@
 #
 # Builds on:
 #   - Lab 1: parameters / resources.llms / agents / app baseline.
-#   - Lab 3: `type: factory` tools (Lab 3 used create_genie_tool; here
-#     we use create_rest_api_tool). The factory pattern is a generic
-#     escape hatch for any tool dao-ai doesn't model directly.
+#   - Lab 3 / Lab 6: first-class tool types (`type: genie`,
+#     `type: vector_search`). This lab uses `type: factory` -- the
+#     generic escape hatch for tool kinds dao-ai doesn't model
+#     first-class. REST is the canonical factory case: any HTTP
+#     endpoint, no domain-specific dispatcher needed.
 #
 # What's new vs prior labs:
 #   - First L200 lab -- switches use case from `hardware_store`

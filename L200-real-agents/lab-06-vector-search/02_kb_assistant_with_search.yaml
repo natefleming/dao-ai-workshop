@@ -8,7 +8,7 @@
 #   - resources.llms.embedding_model
 #   - resources.vector_stores.kb_vs
 #   - retrievers.kb_retriever
-#   - tools.kb_search via create_vector_search_tool
+#   - tools.kb_search as a first-class `type: vector_search` tool
 #   - datasets seed for kb_articles
 
 parameters:
@@ -82,9 +82,9 @@ retrievers:
       num_results: 5
       query_type: ANN
 
-# NEW in step 2: tools block. `factory` tools call a Python factory
-# (here `create_vector_search_tool`) that builds a LangChain tool
-# from the retriever above.
+# NEW in step 2: tools block. `type: vector_search` is a first-class
+# tool kind (dao-ai >= 0.1.94) -- dao-ai resolves the retriever
+# reference and builds the LangChain search tool for you.
 tools:
   kb_search: &kb_search
     name: kb_search

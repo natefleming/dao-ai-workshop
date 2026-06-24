@@ -9,12 +9,14 @@
 # Builds on Lab 2's pattern (parameters → resources → tools → agent.tools)
 # but introduces two new building blocks:
 #   - resources.genie_rooms:   Genie Space registered as a dao-ai resource
-#   - tools.<name>.function.type: factory   (vs Lab 2's `unity_catalog`)
+#   - tools.<name>.function.type: genie   (vs Lab 2's `unity_catalog`)
 #
-# `factory` tools call a Python factory function (here
-# `dao_ai.tools.create_genie_tool`) that builds the LangChain tool at
-# load time. The same `factory` shape is reused by Lab 5 (REST), Lab 6
-# (vector search), and Lab 12 (cached Genie).
+# `type: genie` is a first-class tool kind (dao-ai >= 0.1.94). dao-ai
+# resolves the genie_room reference at config-load time and builds the
+# Genie tool for you — no factory function call needed. Other first-class
+# kinds you'll meet later: `vector_search` (Lab 6), `mcp` (Lab 4),
+# `app` / `serving_endpoint` (Lab 25). A `type: factory` escape hatch
+# still exists for things dao-ai doesn't model directly (e.g. REST, Lab 5).
 #
 # Prereq: create a Genie Space in the UI, give it access to the tables
 # you want it to answer over, and pass its ID via the genie_space_id
@@ -54,8 +56,8 @@ resources:
       space_id: ${var.genie_space_id}
 
 # Tool wrapper: the LLM sees `ask_genie` as a callable; under the hood
-# `create_genie_tool` builds a LangChain tool that POSTs to the Genie
-# space's API on each call.
+# the first-class `type: genie` dispatcher builds a LangChain tool that
+# POSTs to the Genie space's API on each call.
 tools:
   genie_tool: &genie_tool
     name: ask_genie

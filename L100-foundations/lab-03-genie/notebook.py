@@ -7,7 +7,7 @@
 # MAGIC ## Goals
 # MAGIC
 # MAGIC - Add a `genie_rooms:` resource pointing at a Databricks Genie Space.
-# MAGIC - Wrap the room as a `factory` tool via `dao_ai.tools.create_genie_tool`.
+# MAGIC - Wrap the room as a first-class `type: genie` tool.
 # MAGIC - See the agent delegate open-ended analytical questions to Genie instead of needing a hand-written UC function.
 # MAGIC
 # MAGIC ## Deliverable
@@ -21,7 +21,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "dao-ai>=0.1.94"
+# MAGIC %pip install "dao-ai>=0.1.98"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -133,25 +133,23 @@ params: dict[str, str] = {
 # MAGIC %md
 # MAGIC ### 3c. Wrap the Genie room as a tool
 # MAGIC
-# MAGIC Unlike lab 2's `type: unity_catalog` tools, Genie tools are
-# MAGIC `type: factory` -- dao-ai calls a Python factory function at
-# MAGIC build time, passes the `args:`, and gets back a tool. The
-# MAGIC `description:` here is what the LLM sees when it decides
-# MAGIC whether to use the tool.
+# MAGIC Like lab 2's `type: unity_catalog` tools, Genie tools are
+# MAGIC declared with a first-class type -- `type: genie`. dao-ai
+# MAGIC resolves the `genie_room:` reference and builds the tool
+# MAGIC for you at config-load time. The `description:` here is
+# MAGIC what the LLM sees when it decides whether to use the tool.
 # MAGIC
 # MAGIC ```yaml
 # MAGIC tools:
 # MAGIC   genie_tool: &genie_tool
 # MAGIC     name: ask_genie
 # MAGIC     function:
-# MAGIC       type: factory
-# MAGIC       name: dao_ai.tools.create_genie_tool
-# MAGIC       args:
-# MAGIC         name: ask_genie
-# MAGIC         description: >
-# MAGIC           Ask a Genie Space a natural-language question about products,
-# MAGIC           inventory, or sales.
-# MAGIC         genie_room: *workshop_genie
+# MAGIC       type: genie
+# MAGIC       name: ask_genie
+# MAGIC       description: >
+# MAGIC         Ask a Genie Space a natural-language question about products,
+# MAGIC         inventory, or sales.
+# MAGIC       genie_room: *workshop_genie
 # MAGIC ```
 
 # COMMAND ----------

@@ -17,7 +17,7 @@ A `hardware-store-<your-username>` agent where the same analytical question runs
 
 **Use case:** `hardware_store` -- a products analyst over Lab 2's catalog. The DAO-AI concept is what's interesting here, not the data.
 
-**DAO-AI concept:** **Two-layer caching** over a Genie tool, configured entirely via the `args:` block of `dao_ai.tools.create_genie_toolkit`.
+**DAO-AI concept:** **Two-layer caching** over a Genie tool, configured entirely via `lru_cache:` and `in_memory_context_aware_cache:` blocks nested inside the first-class `type: genie` tool.
 
 ```
 user question

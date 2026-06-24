@@ -5,7 +5,7 @@
 ## Goals
 
 - Add a `genie_rooms:` resource pointing at a Databricks Genie Space.
-- Wrap the room as a `factory` tool via `dao_ai.tools.create_genie_tool`.
+- Wrap the room as a first-class `type: genie` tool.
 - See the agent delegate open-ended analytical questions to Genie instead of needing a hand-written UC function.
 
 ## Deliverable
@@ -16,12 +16,12 @@ An `analyst` agent that answers `"How many products do we have per category?"` b
 
 **Use case:** `hardware_store` -- the `product_assistant` from lab 2 promotes to an `analyst` that answers ad-hoc analytical questions via Databricks Genie.
 
-**DAO-AI concept:** **Genie Space as a factory tool.** Instead of writing a UC function for every analytical question, point the agent at a Genie Space and let Genie generate the SQL on the fly.
+**DAO-AI concept:** **Genie Space as a first-class tool.** Instead of writing a UC function for every analytical question, point the agent at a Genie Space and let Genie generate the SQL on the fly.
 
 ## What you'll learn
 
-- The `resources.genie_rooms:` block and the `factory` tool type.
-- How `dao_ai.tools.create_genie_tool` wraps a Genie Space as a callable.
+- The `resources.genie_rooms:` block and the first-class `type: genie` tool kind.
+- How dao-ai resolves a `genie_room:` reference and builds the Genie tool at config-load time.
 - When Genie wins (open-ended analytics, broad schema) vs. when UC functions win (latency, determinism, audit).
 
 ## Files

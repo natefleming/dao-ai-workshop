@@ -1,0 +1,123 @@
+# yaml-language-server: $schema=../../schemas/model_config_schema.json
+#
+# Lab 25 -- Agent B: the Greeter.
+# -------------------------------
+# Demonstrates dao-ai 0.1.98's two new first-class tool types side-by-side:
+#
+#   1. type: app
+#        Call another deployed Databricks App as a tool. Wire-shape
+#        auto-discovery: the dispatcher hits `<app_url>/agent/info`
+#        on the FIRST invocation, finds `agent_api: "responses"`,
+#        caches the result, and skips the probe on every subsequent
+#        call. Setting `api:` explicitly skips the probe entirely.
+#
+#   2. type: serving_endpoint
+#        Call a Model Serving endpoint as a tool. Covers BOTH FMAPI
+#        endpoints (Chat Completions wire) and UC-registered agent
+#        endpoints (Responses wire). Auto-discovery uses
+#        `WorkspaceClient.serving_endpoints.get(name).task`.
+#
+# Both replace older `type: factory` shapes
+# (create_responses_agent_tool / create_chat_completions_agent_tool /
+#  create_agent_endpoint_tool) -- those still work, but the first-class
+# forms are simpler, type-checked, and offline-safe at config-load time.
+
+parameters:
+  username:
+    description: Per-student username for unique deployment names. Auto-set by the notebook.
+    # No default => required.
+  llm_endpoint:
+    description: Databricks LLM serving endpoint name for the Greeter itself.
+    default: databricks-claude-sonnet-4-5
+  fancy_endpoint:
+    description: A second Model Serving endpoint the Greeter can delegate to for richer outputs.
+    default: databricks-claude-sonnet-4-5
+
+resources:
+  models:
+    default_llm: &default_llm
+      name: ${var.llm_endpoint}
+      temperature: 0.2
+      max_tokens: 1024
+      on_behalf_of_user: true   # propagates user identity to both tools
+
+  # NEW in dao-ai 0.1.98: resources.apps holds Databricks-App references.
+  # The Greeter's `type: app` tool below resolves this by name at runtime
+  # via WorkspaceClient.apps.get(<name>) -- no URL hardcoded, no probe at
+  # config-load time.
+  #
+  # KNOWN BROKEN in dao-ai 0.1.98 -- see README.md "Regression test" section.
+  # `on_behalf_of_user: true` is INTENTIONAL here so the lab exercises the
+  # OBO path that currently fails the DatabricksOpenAI OAuth gate
+  # (dispatcher uses PAT-auth WC; clients.py:150 requires oauth_token()).
+  # When dao-ai ships the fix, this lab should pass end-to-end. Until
+  # then, expect 6b (the type: app tool call) to fail with
+  # `ValueError: Querying Databricks Apps requires OAuth authentication`.
+  apps:
+    translator_app: &translator_app
+      name: translator-${var.username}
+      on_behalf_of_user: true   # exercises the broken OBO path
+
+tools:
+  # First-class tool #1: type: app -- delegates to the deployed Translator.
+  # `api:` deliberately unset so we exercise the lazy /agent/info probe.
+  translate: &translate
+    name: translate
+    function:
+      type: app
+      app: *translator_app
+      description: >
+        Translate text to a requested language. Input must be a single
+        string of the form "<language>: <text>", e.g.
+        "Spanish: Hello, welcome to our store!".
+
+  # First-class tool #2: type: serving_endpoint -- direct FMAPI call to
+  # Sonnet. Sugar form: `endpoint:` is just the endpoint name; dao-ai
+  # promotes it to an InferenceEndpointModel internally.
+  fancy_rewrite: &fancy_rewrite
+    name: fancy_rewrite
+    function:
+      type: serving_endpoint
+      endpoint: ${var.fancy_endpoint}
+      description: >
+        Rewrite a plain greeting into a richer, more elaborate one.
+        Pass the plain greeting as the prompt; receive a richer
+        version back.
+
+agents:
+  greeter: &greeter
+    name: greeter
+    description: Friendly store greeter that delegates to a translator app and a fancy-rewrite endpoint.
+    model: *default_llm
+    tools:
+      - *translate
+      - *fancy_rewrite
+    prompt: |
+      You are a friendly store greeter. When a user says hello, greet
+      them back in English in one or two sentences.
+
+      - If the user asks to be greeted in a non-English language, call
+        `translate` with input "<language>: <english greeting>" and
+        return ONLY the translation.
+      - If the user asks for a richer / more elaborate greeting, call
+        `fancy_rewrite` with the English greeting and return what comes
+        back unchanged.
+      - For mixed requests ("greet me fancy in Spanish"), call
+        `fancy_rewrite` first, then pass the fancy version through
+        `translate`.
+
+      Always call exactly the tools required; never invent translations
+      or rewrites yourself.
+
+app:
+  name: greeter-${var.username}
+  description: Lab 25 -- Greeter with first-class type:app + type:serving_endpoint tools.
+  log_level: INFO
+  deployment_target: apps
+  agents:
+    - *greeter
+
+  input_example:
+    messages:
+      - role: user
+        content: "Hi there, can you greet me in Spanish?"

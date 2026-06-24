@@ -22,7 +22,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "dao-ai>=0.1.94"
+# MAGIC %pip install "dao-ai>=0.1.98"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -72,35 +72,34 @@ params: dict[str, str] = {
 # MAGIC %md
 # MAGIC ## Step 3 -- Two cache layers in one tool block
 # MAGIC
-# MAGIC The interesting bit in `cached_analyst.yaml` is the
-# MAGIC `args:` block of the Genie tool factory:
+# MAGIC The interesting bit in `cached_analyst.yaml` is that the
+# MAGIC first-class `type: genie` tool accepts `lru_cache:` and
+# MAGIC `in_memory_context_aware_cache:` blocks directly:
 # MAGIC
 # MAGIC ```yaml
 # MAGIC tools:
 # MAGIC   cached_genie:
 # MAGIC     function:
-# MAGIC       type: factory
-# MAGIC       name: dao_ai.tools.create_genie_toolkit
-# MAGIC       args:
-# MAGIC         genie_room: *products_genie
+# MAGIC       type: genie
+# MAGIC       genie_room: *products_genie
 # MAGIC
-# MAGIC         # ---- L1: LRU exact-match cache ----
-# MAGIC         lru_cache_parameters:
-# MAGIC           warehouse: *cache_warehouse
-# MAGIC           capacity: 100
-# MAGIC           time_to_live_seconds: 3600
+# MAGIC       # ---- L1: LRU exact-match cache ----
+# MAGIC       lru_cache:
+# MAGIC         warehouse: *cache_warehouse
+# MAGIC         capacity: 100
+# MAGIC         time_to_live_seconds: 3600
 # MAGIC
-# MAGIC         # ---- L2: in-memory context-aware similarity cache ----
-# MAGIC         in_memory_context_aware_cache_parameters:
-# MAGIC           warehouse: *cache_warehouse
-# MAGIC           embedding_model: *embedding_model
-# MAGIC           similarity_threshold: 0.85
-# MAGIC           context_similarity_threshold: 0.80
-# MAGIC           context_window_size: 3
+# MAGIC       # ---- L2: in-memory context-aware similarity cache ----
+# MAGIC       in_memory_context_aware_cache:
+# MAGIC         warehouse: *cache_warehouse
+# MAGIC         embedding_model: *embedding_model
+# MAGIC         similarity_threshold: 0.85
+# MAGIC         context_similarity_threshold: 0.80
+# MAGIC         context_window_size: 3
 # MAGIC ```
 # MAGIC
-# MAGIC The factory is `create_genie_toolkit` (not `create_genie_tool`)
-# MAGIC -- the toolkit factory is what enables the cache parameters.
+# MAGIC Same `type: genie` tool kind as Lab 3 -- the caching just nests
+# MAGIC under it. No separate factory function needed.
 # MAGIC
 # MAGIC **Important:** the cache stores the generated **SQL**, not the
 # MAGIC answer. On a cache hit the SQL is re-executed against the
