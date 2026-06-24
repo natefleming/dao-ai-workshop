@@ -46,17 +46,15 @@ resources:
   # via WorkspaceClient.apps.get(<name>) -- no URL hardcoded, no probe at
   # config-load time.
   #
-  # KNOWN BROKEN in dao-ai 0.1.98 -- see README.md "Regression test" section.
-  # `on_behalf_of_user: true` is INTENTIONAL here so the lab exercises the
-  # OBO path that currently fails the DatabricksOpenAI OAuth gate
-  # (dispatcher uses PAT-auth WC; clients.py:150 requires oauth_token()).
-  # When dao-ai ships the fix, this lab should pass end-to-end. Until
-  # then, expect 6b (the type: app tool call) to fail with
-  # `ValueError: Querying Databricks Apps requires OAuth authentication`.
+  # `on_behalf_of_user: true` forwards the calling user's identity to the
+  # Translator app (via x-forwarded-access-token). The Translator then
+  # acts as the user when calling its own LLM. With `false`, the call
+  # uses the calling App's service-principal identity instead (auto-
+  # granted CAN_USE on the Translator by dao-ai's bundle generator).
   apps:
     translator_app: &translator_app
       name: translator-${var.username}
-      on_behalf_of_user: true   # exercises the broken OBO path
+      on_behalf_of_user: true
 
 tools:
   # First-class tool #1: type: app -- delegates to the deployed Translator.
