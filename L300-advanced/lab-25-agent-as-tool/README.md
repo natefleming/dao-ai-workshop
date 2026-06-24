@@ -2,29 +2,6 @@
 
 **Level:** L300 (advanced)
 
-> **⚠️ Regression test — known broken in dao-ai 0.1.98.** Step 6b of the
-> notebook (the `type: app` tool call from Greeter → Translator) FAILS
-> today because of two real bugs in the headline 0.1.98 feature:
->
-> 1. `app_agent_dispatcher.py:181` wraps the workspace client in
->    `DatabricksOpenAI(workspace_client=ws)`. Its
->    `_validate_oauth_for_apps` gate (databricks_openai
->    `clients.py:150`) requires `oauth_token()` to succeed.
-> 2. When the calling agent has `on_behalf_of_user: true` on the
->    `resources.apps.<name>` reference, `workspace_client_from`
->    (`config.py:562`) builds the WC with `auth_type="pat"` from the
->    forwarded user token. PAT-auth WCs fail the OAuth gate → the
->    tool errors with `ValueError: Querying Databricks Apps requires
->    OAuth authentication`.
->
-> The Translator (the leaf agent) and Step 6a (direct LLM reply) and
-> 6c (`type: serving_endpoint` via Sonnet) work fine. Only Step 6b is
-> blocked. When dao-ai ships the fix (either: build the OBO WC with
-> an OAuth strategy so `oauth_token()` works, or use the WC's
-> existing auth headers directly instead of routing through
-> `DatabricksOpenAI`), this lab should pass end-to-end and graduate
-> from "regression repro" to "standard L300 lab".
-
 ## Goals
 
 - Deploy TWO dao-ai apps and wire one to call the other as a tool.
