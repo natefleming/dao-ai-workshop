@@ -17,7 +17,7 @@
 #     -- the same provisioning blocks. The difference is no `tools:` entry
 #     per function; MCP discovers them all at once.
 #   - Lab 3: tool indirection (`function: { type: ... }`). Lab 3 used
-#     `type: factory` to build a Genie tool; this lab uses `type: mcp`.
+#     `type: genie` (first-class); this lab uses `type: mcp`.
 #
 # What's new vs prior labs:
 #   - tools.<name>.function.type: mcp                -- the MCP tool kind

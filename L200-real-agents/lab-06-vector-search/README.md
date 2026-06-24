@@ -18,11 +18,11 @@ A `kb-search` agent that answers `"How do I rotate my API keys without downtime?
 
 **Use case:** `saas_helpdesk` -- a `kb_assistant` that answers customer questions by retrieving the relevant KB articles via semantic similarity, then reranking for precision.
 
-**DAO-AI concept:** **Vector store + retriever + factory tool.** Plus a **cross-encoder reranker** layered on top for precision.
+**DAO-AI concept:** **Vector store + retriever + first-class `type: vector_search` tool.** Plus a **cross-encoder reranker** layered on top for precision.
 
 ## What you'll learn
 
-- The `resources.vector_stores:`, `retrievers:`, and `tools.<name>.function.type: factory` (with `dao_ai.tools.create_vector_search_tool`) blocks.
+- The `resources.vector_stores:`, `retrievers:`, and `tools.<name>.function.type: vector_search` blocks.
 - How `retriever.rerank:` wires a FlashRank cross-encoder on top of ANN. Pattern: ANN gives **recall** (50 candidates), rerank gives **precision** (top 5).
 - Delta Sync vector indexes -- the index auto-rebuilds when the source table changes.
 

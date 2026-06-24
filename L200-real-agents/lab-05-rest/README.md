@@ -4,7 +4,7 @@
 
 ## Goals
 
-- Use `dao_ai.tools.create_rest_api_tool` to wrap a public HTTP endpoint as an agent tool.
+- Use `dao_ai.tools.create_rest_api_tool` (via `type: factory`) to wrap a public HTTP endpoint as an agent tool.
 - Switch domain framing from hardware-store retail to a SaaS support helpdesk.
 - See how a support agent can triage upstream-vendor outages by calling a real status API.
 
@@ -18,7 +18,7 @@ A `status-check` agent that answers `"Is GitHub having an outage right now?"` by
 
 > Why switch use cases? The hardware-store retail story is great for product lookups (chapters 1-4). The remaining DAO-AI features -- vector search over knowledge bases, customer history memory, accuracy guardrails, tier-escalation orchestration -- are most natural in an internal-ops context. We start fresh so each chapter's config stays small and focused on the new feature.
 
-**DAO-AI concept:** **REST tools via factory.** `dao_ai.tools.create_rest_api_tool` wraps any HTTP endpoint as a callable tool the agent can invoke.
+**DAO-AI concept:** **REST tools via the `type: factory` escape hatch.** Most domain-specific tool kinds in dao-ai are first-class (`type: genie`, `type: vector_search`, `type: mcp`, `type: app`, `type: serving_endpoint`). REST isn't -- so we drop down to `type: factory` and point at `dao_ai.tools.create_rest_api_tool`, which wraps any HTTP endpoint as a callable tool.
 
 ## What you'll learn
 

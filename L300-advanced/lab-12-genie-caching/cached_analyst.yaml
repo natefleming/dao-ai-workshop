@@ -7,10 +7,10 @@
 # cache instead of paying for another Genie API round-trip.
 #
 # Builds on:
-#   - Lab 3: resources.genie_rooms, factory tools wrapping a Genie space.
-#     The `cached_genie` tool here uses `dao_ai.tools.create_genie_toolkit`
-#     -- a richer factory than Lab 3's `create_genie_tool` -- but the
-#     same Genie-as-a-tool concept.
+#   - Lab 3: resources.genie_rooms + first-class `type: genie` tool.
+#     This lab uses the SAME `type: genie` tool kind -- the caching
+#     just nests under it (`lru_cache:` + `in_memory_context_aware_cache:`
+#     blocks below). One declaration, two cache layers wired through it.
 #   - Lab 6: introduces `resources.llms.embedding_model` and
 #     `resources.warehouses` (here the warehouse re-executes cached SQL
 #     on hits, and the embedding model powers L2 similarity matching).
