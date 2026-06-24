@@ -107,10 +107,19 @@ app:
   # ``mlflow.set_experiment(trace_location=UnityCatalog(...))`` automatically
   # at startup; for in-process notebook usage, the notebook does the same
   # call explicitly.
+  #
+  # ``table_prefix`` is set explicitly here so the verification queries in
+  # Step 5 / Step 8 / Step 9 of the notebook know the exact table names.
+  # Without an explicit prefix, MLflow's default is ``mlflow_experiment_trace``
+  # (NOT the experiment_id, despite older docstrings) — and if you re-run
+  # the lab against a different schema than the first run, the experiment
+  # stays bound to the original location and the query targets the wrong
+  # path. An explicit prefix sidesteps both gotchas.
   # -------------------------------------------------------------------------
   trace_location:
     schema: *workshop_schema
     warehouse: ${var.warehouse_id}
+    table_prefix: lab24_traces
 
   # Layer monitoring on top -- assessments now land alongside trace spans in UC.
   monitoring:
