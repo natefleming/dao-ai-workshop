@@ -38,7 +38,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "dao-ai>=0.1.99"
+# MAGIC %pip install "dao-ai>=0.1.100"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -234,8 +234,30 @@ for tier, content in prompts:
     trace_ids.append(tid)
     print(f"[{tier}] trace_id={tid}")
 
-print("\nGiving the OTEL writer ~15s to flush spans to UC...")
-time.sleep(15)
+print("\nWaiting for the OTEL writer to flush spans to UC...")
+# The OTEL exporter creates <schema>.<prefix>_otel_spans lazily on the
+# first flush. A fixed sleep is fragile because first-time table
+# creation on a cold OTEL pipeline can take several minutes. Force any
+# buffered MLflow trace exports out first, then poll for the table.
+try:
+    mlflow.flush_trace_async_logging()
+except Exception:
+    pass  # older mlflow versions or non-async paths -- ignore
+
+_spans_fqn = f"{schema_fqn}.{table_prefix}_otel_spans"
+_deadline = time.time() + 600  # 10 min hard cap
+while time.time() < _deadline:
+    try:
+        # Fully qualified reference forces table resolution; if the table
+        # doesn't exist yet, this raises TABLE_OR_VIEW_NOT_FOUND. If it
+        # does exist but is empty, the query returns 0 rows immediately.
+        spark.sql(f"SELECT 1 FROM {_spans_fqn} LIMIT 1").collect()
+        print(f"OTEL table ready: {_spans_fqn}")
+        break
+    except Exception as _e:
+        time.sleep(10)
+else:
+    print(f"Timed out waiting for {_spans_fqn} to be created by the OTEL exporter.")
 
 # COMMAND ----------
 

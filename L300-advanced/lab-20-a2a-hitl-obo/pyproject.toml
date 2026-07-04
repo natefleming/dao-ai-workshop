@@ -4,7 +4,7 @@ version = "0.0.1"
 description = "Lab 20 — A2A + HITL + OBO — auto-derived OAuth2 scheme, resume via DataPart decisions"
 requires-python = ">=3.11"
 dependencies = [
-    "dao-ai>=0.1.99",
+    "dao-ai>=0.1.100",
     # a2a-sdk ships as a transitive dep of dao-ai (>=0.3.0,<1.0.0).
     # nest-asyncio is workshop-only: Databricks serverless notebooks run
     # cells inside an active asyncio loop, so bare asyncio.run() raises
