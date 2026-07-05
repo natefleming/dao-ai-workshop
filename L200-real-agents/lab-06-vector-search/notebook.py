@@ -22,7 +22,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "/Workspace/Users/nate.fleming@databricks.com/dao-ai-wheels/dao_ai-0.1.101-py3-none-any.whl" databricks-vectorsearch
+# MAGIC %pip install "dao-ai>=0.1.101" databricks-vectorsearch
 # MAGIC %restart_python
 
 # COMMAND ----------
