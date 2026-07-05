@@ -111,8 +111,16 @@ print(params)
 import mlflow
 
 from dao_ai.config import AppConfig
+from dao_ai.logging import suppress_autolog_context_warnings
 
-mlflow.langchain.autolog()
+# Parity with dao_ai/apps/handlers.py:100 + apps/model_serving.py:59 —
+# the deployed-App runtime does exactly these two calls automatically.
+# In-notebook usage must do them explicitly; without ``run_tracer_inline=True``
+# LangChain callbacks fire on thread-pool workers and MLflow's active-span
+# ContextVar is lost across threads, so OTEL spans never finalize and
+# ``<prefix>_otel_spans`` never gets materialized by the exporter.
+mlflow.langchain.autolog(run_tracer_inline=True)
+suppress_autolog_context_warnings()
 
 experiment = mlflow.set_experiment(f"/Users/{USER}/Lab24-trace-location")
 experiment_id: str = experiment.experiment_id
