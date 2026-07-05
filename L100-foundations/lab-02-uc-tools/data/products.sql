@@ -1,12 +1,18 @@
 USE IDENTIFIER(:database);
 
+-- Shared 8-column `products` schema used by Labs 2, 4, 13, 14, 16. Later
+-- labs (11, 16) extend it via ALTER ADD COLUMNS IF NOT EXISTS. `status`
+-- and `internal_notes` are declared nullable so this 6-column INSERT
+-- succeeds regardless of which lab created the table first.
 CREATE TABLE IF NOT EXISTS products (
   sku STRING NOT NULL,
   product_name STRING NOT NULL,
   category STRING NOT NULL,
   description STRING,
   price DOUBLE,
-  in_stock BOOLEAN
+  in_stock BOOLEAN,
+  status STRING,
+  internal_notes STRING
 ) USING DELTA
 TBLPROPERTIES (delta.enableChangeDataFeed = true);
 
