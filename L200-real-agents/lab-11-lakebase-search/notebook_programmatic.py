@@ -10,15 +10,16 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "dao-ai>=0.1.106"
+# MAGIC %pip install "dao-ai>=0.1.107"
 # MAGIC %restart_python
 
 # COMMAND ----------
 
 import re
+
 from databricks.sdk import WorkspaceClient
 
-w = WorkspaceClient()
+w: WorkspaceClient = WorkspaceClient()
 short_name: str = w.current_user.me().user_name.split("@")[0].lower()
 username: str = re.sub(r"[^a-z0-9]+", "-", short_name).strip("-")[:13]
 
@@ -38,6 +39,7 @@ sp_secret_scope: str = dbutils.widgets.get("sp_secret_scope").strip()
 from dao_ai.config import (
     AgentModel,
     AppConfig,
+    AppModel,
     DatabaseModel,
     InferenceEndpointModel,
     LakebaseRetrieverModel,
@@ -49,51 +51,82 @@ from dao_ai.config import (
     ToolModel,
 )
 
-retriever = LakebaseRetrieverModel(
-    vector_store=LakebaseVectorStoreModel(
-        database=DatabaseModel(
-            project=lakebase_project,
-            client_id=SecretVariableModel(scope=sp_secret_scope, secret="DAO_AI_SP_CLIENT_ID"),
-            client_secret=SecretVariableModel(scope=sp_secret_scope, secret="DAO_AI_SP_CLIENT_SECRET"),
-        ),
-        table="kb_articles",
-        content_column="passage",
-        embedding_column="embedding",
-        tsvector_column="passage_tsv",
-        embedding_model="databricks-gte-large-en",
-        metadata_columns=["category", "priority"],
-    ),
+database: DatabaseModel = DatabaseModel(
+    project=lakebase_project,
+    client_id=SecretVariableModel(scope=sp_secret_scope, secret="DAO_AI_SP_CLIENT_ID"),
+    client_secret=SecretVariableModel(scope=sp_secret_scope, secret="DAO_AI_SP_CLIENT_SECRET"),
+)
+
+vector_store: LakebaseVectorStoreModel = LakebaseVectorStoreModel(
+    database=database,
+    table="kb_articles",
+    content_column="passage",
+    embedding_column="embedding",
+    tsvector_column="passage_tsv",
+    embedding_model="databricks-gte-large-en",
+    metadata_columns=["category", "priority"],
+)
+
+retriever: LakebaseRetrieverModel = LakebaseRetrieverModel(
+    vector_store=vector_store,
     search_parameters=SearchParametersModel(query_type="HYBRID", num_results=20),
     rerank=RerankParametersModel(model="ms-marco-MiniLM-L-12-v2", top_n=5),
 )
 
-tool = ToolModel(name="kb_search", function=LakebaseSearchToolModel(retriever=retriever))
-agent = AgentModel(
+tool: ToolModel = ToolModel(
+    name="kb_search",
+    function=LakebaseSearchToolModel(retriever=retriever),
+)
+
+agent: AgentModel = AgentModel(
     name="kb_assistant",
     model=InferenceEndpointModel(name="databricks-claude-sonnet-4-5", temperature=0.1, max_tokens=4096),
     tools=[tool],
     prompt="You are a knowledge-base assistant. Always call `kb_search` before answering. Cite [d##] after each fact.",
 )
 
-config = AppConfig(
+config: AppConfig = AppConfig(
     retrievers={"kb_retriever": retriever},
     tools={"kb_search": tool},
     agents={"kb_assistant": agent},
+    app=AppModel(name=f"kb-assistant-{username}", agents=[agent]),
 )
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Provision
-# MAGIC
-# MAGIC Assumes `notebook.py` has already been run once to seed the rows.
+# MAGIC ## Provision the Lakebase table
 
 # COMMAND ----------
 
-retriever.vector_store.provision(
+vector_store.provision(
     dimension=1024,
     metadata_column_types={"priority": "int"},
 )
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Seed the KB rows
+
+# COMMAND ----------
+
+from pathlib import Path
+
+seed_sql: str = Path("data/kb_articles.sql").read_text()
+database.execute_update(seed_sql)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Backfill embeddings
+
+# COMMAND ----------
+
+from dao_ai.lakebase import backfill_embeddings
+
+n_backfilled: int = backfill_embeddings(vector_store)
+print(f"backfilled {n_backfilled} embeddings")
 
 # COMMAND ----------
 
@@ -105,6 +138,49 @@ retriever.vector_store.provision(
 import json
 
 kb_tool = tool.function.as_tools()[0]
-docs = json.loads(kb_tool.invoke({"query": "How do I reset my password?"}))
-for d in docs:
-    print(f"[{d['metadata']['id']}] priority={d['metadata']['priority']} :: {d['page_content']}")
+docs: list[dict] = json.loads(kb_tool.invoke({"query": "How do I reset my password?"}))
+for doc in docs:
+    meta: dict = doc["metadata"]
+    print(f"[{meta['id']}] priority={meta['priority']} :: {doc['page_content']}")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Run inference against the agent
+
+# COMMAND ----------
+
+from typing import Any
+
+import mlflow
+from langgraph.graph.state import CompiledStateGraph
+
+mlflow.langchain.autolog()
+
+graph: CompiledStateGraph = config.as_graph()
+
+response: dict[str, Any] = await graph.ainvoke(
+    {"messages": [{"role": "user", "content": "How do I reset my password?"}]},
+)
+print(response["messages"][-1].content)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Deploy as a Databricks App
+
+# COMMAND ----------
+
+from dao_ai.config import DeploymentTarget
+
+config.deploy_agent(target=DeploymentTarget.APPS)
+print(f"Deployed app: {config.app.name}")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Cleanup (optional)
+
+# COMMAND ----------
+
+# database.execute_update("DROP TABLE IF EXISTS kb_articles;")

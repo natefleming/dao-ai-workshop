@@ -10,7 +10,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "dao-ai>=0.1.106"
+# MAGIC %pip install "dao-ai>=0.1.107"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -75,8 +75,8 @@ vector_store.provision(
 
 from pathlib import Path
 
-seed_sql: str = Path("data/kb_articles.seed.sql").read_text()
-database.execute_sql(seed_sql)
+seed_sql: str = Path("data/kb_articles.sql").read_text()
+database.execute_update(seed_sql)
 
 # COMMAND ----------
 
@@ -88,24 +88,10 @@ database.execute_sql(seed_sql)
 
 # COMMAND ----------
 
-from databricks_langchain import DatabricksEmbeddings
-from dao_ai.memory.postgres import PostgresPoolManager
+from dao_ai.lakebase import backfill_embeddings
 
-embedder: DatabricksEmbeddings = DatabricksEmbeddings(endpoint="databricks-gte-large-en")
-pool = PostgresPoolManager.get_pool(database)
-
-with pool.connection() as conn, conn.cursor() as cur:
-    cur.execute("SELECT id, passage FROM kb_articles WHERE embedding IS NULL")
-    rows: list[dict] = cur.fetchall()
-    if rows:
-        vectors: list[list[float]] = embedder.embed_documents([r["passage"] for r in rows])
-        for row, vec in zip(rows, vectors):
-            cur.execute(
-                "UPDATE kb_articles SET embedding = %s::vector WHERE id = %s",
-                (vec, row["id"]),
-            )
-        conn.commit()
-    print(f"backfilled {len(rows)} embeddings")
+n_backfilled: int = backfill_embeddings(vector_store)
+print(f"backfilled {n_backfilled} embeddings")
 
 # COMMAND ----------
 
@@ -125,8 +111,45 @@ for doc in docs:
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC ## Run inference against the agent
+# MAGIC
+# MAGIC `config.as_graph()` compiles the retriever + tool + agent into a
+# MAGIC LangGraph. The agent decides when to call `kb_search` and answers
+# MAGIC with citations.
+
+# COMMAND ----------
+
+from typing import Any
+
+import mlflow
+from langgraph.graph.state import CompiledStateGraph
+
+mlflow.langchain.autolog()
+
+agent: CompiledStateGraph = config.as_graph()
+
+response: dict[str, Any] = await agent.ainvoke(
+    {"messages": [{"role": "user", "content": "How do I reset my password?"}]},
+)
+print(response["messages"][-1].content)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Deploy as a Databricks App
+
+# COMMAND ----------
+
+from dao_ai.config import DeploymentTarget
+
+config.deploy_agent(target=DeploymentTarget.APPS)
+print(f"Deployed app: {config.app.name}")
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC ## Cleanup (optional)
 
 # COMMAND ----------
 
-# database.execute_sql("DROP TABLE IF EXISTS kb_articles;")
+# database.execute_update("DROP TABLE IF EXISTS kb_articles;")

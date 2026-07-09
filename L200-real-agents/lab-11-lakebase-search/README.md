@@ -24,7 +24,7 @@ A `kb_assistant` agent that answers `"How do I reset my password?"` by retrievin
 | File | Purpose |
 |---|---|
 | `kb_assistant.yaml` | Retriever + agent config (HYBRID + FlashRank rerank). |
-| `data/kb_articles.seed.sql` | 10 seed rows across three categories. Schema is created by `provision()` in the notebook. |
+| `data/kb_articles.sql` | 10 seed rows across three categories. Schema is created by `provision()` in the notebook. |
 | `notebook.py` | The lab -- provision, seed, backfill embeddings, retrieve. |
 | `notebook_programmatic.py` | Bonus -- same agent built from Python (no YAML). |
 
