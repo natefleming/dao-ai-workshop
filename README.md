@@ -18,7 +18,7 @@ The workshop is organized as **L100 → L200 → L300**, mirroring the level sys
 | Section | Path | Use case | Labs |
 |---|---|---|---|
 | **L100 Foundations** | [`L100-foundations/`](L100-foundations/) | hardware_store (consumer retail) | 4 labs |
-| **L200 Building Real Agents** | [`L200-real-agents/`](L200-real-agents/) | saas_helpdesk (support ops) | 6 labs |
+| **L200 Building Real Agents** | [`L200-real-agents/`](L200-real-agents/) | saas_helpdesk (support ops) | 7 labs |
 | **L300 Advanced** | [`L300-advanced/`](L300-advanced/) | hardware_store++ + standalone patterns | 14 labs |
 
 ## Lab index
@@ -44,6 +44,7 @@ L100 also ships two **lectures** before the labs: [Setting the Stage](L100-found
 | **Lab 8** | Production Prompts and Guardrails | Prompt Registry + judge guardrail | [`L200-real-agents/lab-08-prompts-guardrails/`](L200-real-agents/lab-08-prompts-guardrails/) |
 | **Lab 9** | Multi-agent Orchestration | Supervisor + swarm | [`L200-real-agents/lab-09-orchestration/`](L200-real-agents/lab-09-orchestration/) |
 | **Lab 10** | Human in the Loop | Tool-level approval gating with `human_in_the_loop:` (approve / edit / reject) | [`L200-real-agents/lab-10-hitl/`](L200-real-agents/lab-10-hitl/) |
+| **Lab 11** | Lakebase Search Retrieval | Postgres-native vector + BM25 hybrid retrieval via `type: lakebase_search` (parity with `ai_search`); bonus programmatic-config notebook | [`L200-real-agents/lab-11-lakebase-search/`](L200-real-agents/lab-11-lakebase-search/) |
 
 L200 starts with the [Building Real Agents](L200-real-agents/building-real-agents.md) lecture.
 
