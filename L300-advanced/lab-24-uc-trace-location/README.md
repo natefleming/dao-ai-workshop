@@ -69,7 +69,8 @@ spans) is unchanged.
 | File | Purpose |
 |---|---|
 | `notebook.py` | The lab notebook. |
-| `otel_agent.yaml` | Same two-tier supervisor as Lab 21/22/23 plus an `app.trace_location` block and an `app.monitoring` block. |
+| `otel_agent.yaml` | Same two-tier supervisor as Lab 21/22/23 plus an `app.trace_location` block and an `app.monitoring` block. Runs in-process. |
+| `otel_agent_model_serving.yaml` | Same agents, deployed to Model Serving. Adds `registered_model` + `service_principal` blocks; distinct `table_prefix: lab24_ms_traces`. |
 | `pyproject.toml` | dao-ai version pin (`>=0.1.92`). |
 
 ## Prerequisites
@@ -88,6 +89,41 @@ spans) is unchanged.
 
 Open `notebook.py` in Databricks and Run All. The notebook will fail
 fast (a `ValueError`) if you don't fill the `warehouse_id` widget.
+
+## Model Serving variant
+
+The tail of the notebook (Step 11) redeploys the same two-tier
+supervisor to Databricks Model Serving using
+`otel_agent_model_serving.yaml`. Key differences from the Apps /
+in-process demo:
+
+- **No manual GRANT SQL.** Because `app.service_principal` is declared,
+  dao-ai auto-grants CAN_EDIT on the experiment and USE_SCHEMA/MODIFY
+  on the trace UC schema at deploy time (see
+  `_grant_experiment_permissions_to_principal` +
+  `_grant_uc_trace_table_permissions_to_principal` in
+  `dao_ai/providers/databricks.py`). Contrast the "Post-deploy grants"
+  section above, which applies to the Apps path.
+- **Container no longer touches MLflow config.** The recent `d035c13`
+  fix removed `mlflow.set_experiment` from the MS entrypoint. Trace
+  routing is driven entirely by env vars (`MLFLOW_EXPERIMENT_ID`,
+  `MLFLOW_TRACING_DESTINATION`, `MLFLOW_TRACING_SQL_WAREHOUSE_ID`) set
+  on the endpoint config by `agents.deploy()`. The experiment link
+  happens on the notebook side inside `_link_experiment_trace_location`
+  before deploy.
+- **Distinct `table_prefix`.** The MS variant writes to
+  `<schema>.lab24_ms_traces_otel_spans`; the Apps/in-process demo
+  writes to `<schema>.lab24_traces_otel_spans`. Same schema, distinct
+  tables -- easy to verify each path independently.
+
+### Prereq
+
+The shared workshop service principal must exist. Run
+`setup/create_service_principal.py` once per workspace before Step 11.
+This provisions the `dao-ai-workshop-sp` SP and populates
+`dao_ai_workshop`/`DAO_AI_SP_CLIENT_ID` +
+`DAO_AI_SP_CLIENT_SECRET`. The YAML pulls those secrets via the same
+composite-variable pattern lab-07 / lab-15 use for Lakebase.
 
 ## Next
 

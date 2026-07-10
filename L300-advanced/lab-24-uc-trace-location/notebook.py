@@ -403,3 +403,266 @@ spark.sql(f"""
 # MAGIC lifecycle simply by reading the Delta table directly. For a
 # MAGIC deployed app, dao-ai calls Step 4 automatically inside
 # MAGIC `_link_experiment_trace_location` -- you just write the YAML.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Step 11 -- Deploy the same agent to Model Serving with `trace_location` + SP
+# MAGIC
+# MAGIC Everything above ran in-process. Now ship the same two-tier
+# MAGIC supervisor to Databricks Model Serving with UC OTEL traces enabled
+# MAGIC end-to-end. The delta config is `otel_agent_model_serving.yaml`:
+# MAGIC
+# MAGIC 1. `deployment_target: model_serving`
+# MAGIC 2. `registered_model:` block (MS logs + registers in UC before
+# MAGIC    creating the endpoint).
+# MAGIC 3. `service_principal:` block wired to the shared workshop scope
+# MAGIC    (populated by `setup/create_service_principal.py`). Declaring
+# MAGIC    the SP here is what lets dao-ai **auto-grant** CAN_EDIT on the
+# MAGIC    experiment and USE_SCHEMA/MODIFY on the UC trace schema --
+# MAGIC    no manual GRANT SQL required (contrast the Apps variant in
+# MAGIC    Lab 24's README).
+# MAGIC 4. `table_prefix: lab24_ms_traces` -- distinct from the in-process
+# MAGIC    `lab24_traces` prefix so MS spans land in their own OTEL tables
+# MAGIC    (trivial to verify below).
+# MAGIC
+# MAGIC dao-ai's Model Serving deploy path calls
+# MAGIC `_link_experiment_trace_location` from the notebook side (not the
+# MAGIC container) before `agents.deploy()`. The container itself no
+# MAGIC longer touches MLflow config -- the recent `d035c13` fix removed
+# MAGIC `mlflow.set_experiment` from the MS entrypoint because it hit an
+# MAGIC OAuth path the container can't satisfy. Trace routing is driven
+# MAGIC entirely by env vars (`MLFLOW_EXPERIMENT_ID`,
+# MAGIC `MLFLOW_TRACING_DESTINATION`, `MLFLOW_TRACING_SQL_WAREHOUSE_ID`)
+# MAGIC that `agents.deploy()` sets on the endpoint config.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### 11a. Prereq check -- the shared workshop SP secrets must be readable
+
+# COMMAND ----------
+
+try:
+    _sp_id = dbutils.secrets.get(scope="dao_ai_workshop", key="DAO_AI_SP_CLIENT_ID")
+    _sp_secret = dbutils.secrets.get(scope="dao_ai_workshop", key="DAO_AI_SP_CLIENT_SECRET")
+    if not _sp_id or not _sp_secret:
+        raise ValueError("Empty SP credentials")
+    print(f"SP credentials present in scope 'dao_ai_workshop' (client_id={_sp_id[:8]}...)")
+except Exception as e:
+    raise RuntimeError(
+        "Model Serving variant requires the shared workshop service principal.\n"
+        "Run setup/create_service_principal.py once per workspace before this step.\n"
+        f"Underlying error: {e}"
+    )
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### 11b. Load the Model Serving config
+
+# COMMAND ----------
+
+from dao_ai.config import DeploymentTarget
+
+ms_config: AppConfig = AppConfig.from_file("otel_agent_model_serving.yaml", params=params)
+
+for schema in ms_config.schemas.values():
+    schema.create()
+
+print(f"Model Serving endpoint name: {ms_config.app.name}")
+print(f"Registered model: {ms_config.app.registered_model.full_name}")
+print(f"Trace location: {ms_config.app.trace_location.catalog_name}.{ms_config.app.trace_location.schema_name}")
+print(f"Trace table prefix: {ms_config.app.trace_location.resolved_table_prefix}")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### 11c. Deploy
+# MAGIC
+# MAGIC `create_agent()` logs the ResponsesAgent to MLflow and registers a
+# MAGIC new model version in UC. `deploy_agent(target=MODEL_SERVING)` then
+# MAGIC calls the Databricks Agents `deploy` API. First-time builds are
+# MAGIC typically 5-15 minutes; subsequent redeploys reuse the container
+# MAGIC and finish in ~2-5 minutes.
+
+# COMMAND ----------
+
+ms_config.create_agent()
+ms_config.deploy_agent(target=DeploymentTarget.MODEL_SERVING)
+print(f"Deployed endpoint: {ms_config.app.name}")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### 11d. Wait for the endpoint to reach READY
+
+# COMMAND ----------
+
+import time
+
+endpoint_name: str = ms_config.app.name
+_deadline = time.time() + 30 * 60  # 30 min hard cap
+while time.time() < _deadline:
+    ep = w.serving_endpoints.get(name=endpoint_name)
+    state = ep.state
+    ready = state.ready.value if state and state.ready else "UNKNOWN"
+    update = state.config_update.value if state and state.config_update else "UNKNOWN"
+    print(f"  ready={ready}  config_update={update}")
+    if ready == "READY" and update == "NOT_UPDATING":
+        break
+    if update == "UPDATE_FAILED":
+        raise RuntimeError(f"Endpoint {endpoint_name} update failed. Check service logs.")
+    time.sleep(30)
+else:
+    raise TimeoutError(f"Endpoint {endpoint_name} did not reach READY within 30 minutes.")
+
+print(f"\nEndpoint {endpoint_name} is READY")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### 11e. Live inference -- hit the endpoint with a real user turn
+# MAGIC
+# MAGIC ResponsesAgent endpoints take a raw `{"input": [{"role":..., "content":...}]}`
+# MAGIC request body. We use the SDK's api client for direct POST access;
+# MAGIC the response is the standard `ResponsesAgentResponse` shape with
+# MAGIC `output` and `custom_outputs.trace_id`.
+
+# COMMAND ----------
+
+ms_prompts: list[tuple[str, str]] = [
+    ("tier1", "How do I change my account display name?"),
+    ("tier2", "Webhook deliveries are failing with HTTP 500. Where do I start?"),
+]
+
+ms_trace_ids: list[str] = []
+for tier, content in ms_prompts:
+    resp = w.api_client.do(
+        method="POST",
+        path=f"/serving-endpoints/{endpoint_name}/invocations",
+        body={"input": [{"role": "user", "content": content}]},
+    )
+    output_texts: list[str] = []
+    for item in resp.get("output", []):
+        for part in item.get("content", []) or []:
+            text = part.get("text")
+            if text:
+                output_texts.append(text)
+    trace_id = (resp.get("custom_outputs") or {}).get("trace_id", "")
+    ms_trace_ids.append(trace_id)
+    joined = " | ".join(output_texts)[:200] or "<no output text>"
+    print(f"[{tier}] trace_id={trace_id}")
+    print(f"       response={joined}")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### 11f. Inspect the MLflow traces
+# MAGIC
+# MAGIC Every span should be OK or UNSET (no ERROR). This lab's agents are
+# MAGIC pure LLM -- no tools registered -- so no tool-call spans are
+# MAGIC expected. If any tool span appears, that's a bug.
+
+# COMMAND ----------
+
+for tid in ms_trace_ids:
+    if not tid:
+        print("trace_id missing on a response -- skipping inspection")
+        continue
+    trace = mlflow.get_trace(tid)
+    if trace is None:
+        print(f"trace {tid} not found yet (async writer may still be flushing)")
+        continue
+    spans = trace.data.spans
+    error_spans = [s for s in spans if s.status.status_code == "ERROR"]
+    tool_spans = [s for s in spans if (s.span_type or "").upper() == "TOOL"]
+    span_names = [s.name for s in spans]
+    print(f"trace_id={tid}")
+    print(f"  status         = {trace.info.status}")
+    print(f"  span_count     = {len(spans)}")
+    print(f"  error_spans    = {len(error_spans)}")
+    print(f"  tool_spans     = {len(tool_spans)}  (expected 0 for this lab)")
+    print(f"  first 8 spans  = {span_names[:8]}")
+    assert len(error_spans) == 0, f"Trace {tid} has ERROR spans: {[s.name for s in error_spans]}"
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### 11g. Verify OTEL tables populated with MS spans
+# MAGIC
+# MAGIC The MS variant writes to `<catalog>.<schema>.lab24_ms_traces_otel_spans`
+# MAGIC (distinct prefix from the in-process demo's `lab24_traces_otel_spans`).
+# MAGIC Poll until the table exists, then confirm row counts and zero
+# MAGIC ERROR-status spans.
+
+# COMMAND ----------
+
+ms_prefix = ms_config.app.trace_location.resolved_table_prefix
+ms_schema_fqn: str = f"{ms_config.app.trace_location.catalog_name}.{ms_config.app.trace_location.schema_name}"
+ms_spans_fqn = f"{ms_schema_fqn}.{ms_prefix}_otel_spans"
+print(f"Polling {ms_spans_fqn} for MS trace spans...")
+
+try:
+    mlflow.flush_trace_async_logging()
+except Exception:
+    pass
+
+_deadline = time.time() + 600  # 10 min
+while time.time() < _deadline:
+    try:
+        row_count = spark.sql(f"SELECT COUNT(*) FROM {ms_spans_fqn}").first()[0]
+        if row_count > 0:
+            print(f"OTEL table ready: {ms_spans_fqn} ({row_count} rows)")
+            break
+    except Exception:
+        pass
+    time.sleep(15)
+else:
+    raise TimeoutError(f"{ms_spans_fqn} was not populated within 10 minutes.")
+
+# COMMAND ----------
+
+# Per-trace rollup + error check on the MS OTEL table.
+spark.sql(f"""
+    SELECT
+      trace_id,
+      MIN_BY(name, start_time_unix_nano)                                AS root_span_name,
+      COUNT(*)                                                           AS span_count,
+      (MAX(end_time_unix_nano) - MIN(start_time_unix_nano)) / 1e6        AS duration_ms,
+      SUM(CASE WHEN status.code = 'STATUS_CODE_ERROR' THEN 1 ELSE 0 END) AS error_spans
+    FROM {ms_spans_fqn}
+    WHERE trace_id IS NOT NULL
+    GROUP BY trace_id
+    ORDER BY MIN(start_time_unix_nano) DESC
+    LIMIT 10
+""").display()
+
+# COMMAND ----------
+
+# Global error-span check across the MS spans table -- expect 0.
+error_row_count = spark.sql(
+    f"SELECT COUNT(*) FROM {ms_spans_fqn} WHERE status.code = 'STATUS_CODE_ERROR'"
+).first()[0]
+print(f"MS OTEL error-status spans in {ms_spans_fqn}: {error_row_count}")
+assert error_row_count == 0, f"Expected 0 error spans, found {error_row_count}"
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Step 12 -- What Model Serving added
+# MAGIC
+# MAGIC | Step | Action |
+# MAGIC |---|---|
+# MAGIC | 11a | Verified the shared workshop SP secrets are readable from the notebook |
+# MAGIC | 11b | Loaded `otel_agent_model_serving.yaml` -- same agents, MS `deployment_target`, `registered_model`, `service_principal` |
+# MAGIC | 11c | `create_agent()` + `deploy_agent(MODEL_SERVING)` -- dao-ai auto-called `_link_experiment_trace_location` + auto-granted the SP on the experiment + trace schema |
+# MAGIC | 11d | Waited for the endpoint to reach READY / NOT_UPDATING |
+# MAGIC | 11e | Live inference via `POST /serving-endpoints/<name>/invocations` -- got responses + trace_ids back |
+# MAGIC | 11f | Fetched each trace, confirmed zero ERROR spans, confirmed zero tool spans (this lab has no tools) |
+# MAGIC | 11g | Verified `<schema>.lab24_ms_traces_otel_spans` populated with MS trace spans, zero error-status spans |
+# MAGIC
+# MAGIC The Apps/in-process demo above and the MS deploy here share the
+# MAGIC same UC schema for OTEL tables; the `table_prefix` field on
+# MAGIC `app.trace_location` is how you keep multiple agents' traces
+# MAGIC separable in a shared schema.
