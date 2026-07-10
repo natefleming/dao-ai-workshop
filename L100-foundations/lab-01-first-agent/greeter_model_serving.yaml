@@ -1,0 +1,74 @@
+# yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
+#
+# Lab 1 -- Hello World (Model Serving variant)
+# ----------------------------------------------
+# Same greeter agent as ``greeter.yaml``, but deploys to Databricks
+# Model Serving instead of Databricks Apps.
+#
+# Key delta vs. the Apps variant:
+#
+#   1. ``deployment_target: model_serving``
+#   2. ``registered_model:`` block -- required for Model Serving. dao-ai
+#      logs the model to MLflow and registers it in Unity Catalog before
+#      creating the serving endpoint.
+#
+# Model Serving deploys the agent as an MLflow ResponsesAgent behind a
+# ``/serving-endpoints/<endpoint_name>/invocations`` URL. No trace_location
+# is configured here -- traces land in the deployer's default MLflow
+# experiment. See Lab 8 (or later) for adding UC trace_location + a
+# service principal.
+
+parameters:
+  username:
+    description: >
+      Per-student username appended to the deployed endpoint name to keep
+      multiple student deployments unique in a shared workspace. Auto-set
+      by the notebook from the current user's short name.
+    # No default => required.
+  llm_endpoint:
+    description: Databricks LLM serving endpoint name.
+    default: databricks-claude-sonnet-4-5
+  catalog:
+    description: Unity Catalog catalog where the registered model is created.
+    default: main
+  schema:
+    description: Schema within the catalog for the registered model.
+    default: default
+
+schemas:
+  greeter_schema: &greeter_schema
+    catalog_name: ${var.catalog}
+    schema_name: ${var.schema}
+
+resources:
+  models:
+    default_llm: &default_llm
+      name: ${var.llm_endpoint}
+      temperature: 0.1
+      max_tokens: 2048
+
+agents:
+  greeter: &greeter
+    name: greeter
+    description: A friendly assistant that introduces itself and the workshop.
+    model: *default_llm
+    prompt: |
+      You are the welcome agent for the dao-ai workshop. Be brief,
+      friendly, and encouraging. When someone says hello, greet them
+      and tell them they have successfully run a dao-ai agent.
+
+app:
+  name: hardware-store-ms-${var.username}
+  description: "Workshop lab 1 (hardware_store): greeter deployed to Model Serving"
+  log_level: INFO
+  deployment_target: model_serving
+
+  # Required for Model Serving: dao-ai logs + registers the model in UC
+  # before creating the serving endpoint. Endpoint name defaults to
+  # ``app.name`` (``hardware-store-ms-<username>``).
+  registered_model:
+    schema: *greeter_schema
+    name: hardware_store_ms_${var.username}
+
+  agents:
+  - *greeter
