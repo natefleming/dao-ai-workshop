@@ -1,0 +1,162 @@
+# yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
+#
+# Lab 24 - UC OTEL Trace Tables (Model Serving variant)
+# ------------------------------------------------------
+# Same two-tier supervisor as ``otel_agent.yaml``, but deploys to
+# Databricks Model Serving instead of running in-process.
+#
+# Deltas vs. ``otel_agent.yaml``:
+#
+#   1. ``deployment_target: model_serving``
+#   2. ``registered_model:`` block -- required so dao-ai can log +
+#      register the model in Unity Catalog before creating the serving
+#      endpoint.
+#   3. ``service_principal:`` block wired to the shared workshop scope
+#      (populated by ``setup/create_service_principal.py``). The
+#      Model Serving container runs as this SP; declaring it here lets
+#      dao-ai auto-grant CAN_EDIT on the experiment and
+#      USE_SCHEMA/MODIFY on the UC trace schema before ``agents.deploy()``.
+#      This is the payoff of the ``d035c13`` fix -- traces route via
+#      env vars set on the endpoint config, no manual GRANT SQL required.
+#   4. ``table_prefix: lab24_ms_traces`` -- distinct from the Apps/in-
+#      process demo (``lab24_traces``) so MS spans land in their own
+#      OTEL tables and are trivial to verify.
+
+parameters:
+  username:
+    description: Per-student username for unique deployment names. Auto-set by the notebook.
+  catalog:
+    description: Unity Catalog catalog for the OTEL trace tables + registered model.
+    default: main
+  schema:
+    description: Unity Catalog schema for the OTEL trace tables + registered model.
+    default: dao_ai_workshop
+  warehouse_id:
+    description: SQL warehouse ID. Required by ``app.trace_location`` -- the OTEL writer queries it during table provisioning.
+    # No default; the notebook widget supplies this.
+  llm_endpoint:
+    description: Primary LLM endpoint (supervisor + escalation tier).
+    default: databricks-claude-sonnet-4-5
+  fast_llm_endpoint:
+    description: Faster/smaller LLM endpoint for the front-line tier.
+    default: databricks-claude-haiku-4-5
+  # Shared workshop SP -- provisioned by setup/create_service_principal.py.
+  # Defaults match that notebook's defaults; override per-student only
+  # if you ran the setup with per-student sp_name / scope_name.
+  sp_secret_scope:
+    description: Databricks secret scope holding the workshop SP credentials.
+    default: dao_ai_workshop
+  sp_client_id_secret:
+    description: Secret key within the scope for the SP client_id.
+    default: DAO_AI_SP_CLIENT_ID
+  sp_client_secret_secret:
+    description: Secret key within the scope for the SP client_secret.
+    default: DAO_AI_SP_CLIENT_SECRET
+
+variables:
+  # Composite variables try sources in order, return the first non-None.
+  # Secret scope wins; env-var fallback lets local runs work without
+  # workspace secret access.
+  client_id: &client_id
+    options:
+    - scope: ${var.sp_secret_scope}
+      secret: ${var.sp_client_id_secret}
+    - env: DAO_AI_SP_CLIENT_ID
+
+  client_secret: &client_secret
+    options:
+    - scope: ${var.sp_secret_scope}
+      secret: ${var.sp_client_secret_secret}
+    - env: DAO_AI_SP_CLIENT_SECRET
+
+resources:
+  models:
+    default_llm: &default_llm
+      name: ${var.llm_endpoint}
+      temperature: 0.2
+      max_tokens: 4096
+
+    fast_llm: &fast_llm
+      name: ${var.fast_llm_endpoint}
+      temperature: 0.2
+      max_tokens: 2048
+
+schemas:
+  workshop_schema: &workshop_schema
+    catalog_name: ${var.catalog}
+    schema_name: ${var.schema}
+
+agents:
+  tier1_support: &tier1_support
+    name: tier1_support
+    description: Front-line agent for how-to and policy questions.
+    model: *fast_llm
+    prompt: |
+      You are tier-1 support for a SaaS product. Answer how-to and
+      policy questions concisely.
+    handoff_prompt: |
+      How-to questions, account questions, simple policy lookups.
+
+  tier2_engineer: &tier2_engineer
+    name: tier2_engineer
+    description: Technical specialist for bugs and integration issues.
+    model: *default_llm
+    prompt: |
+      You are tier-2 technical support. Handle reported bugs, error
+      messages, integration failures. Provide concrete diagnostic
+      steps and reference logs or error-correlation IDs.
+    handoff_prompt: |
+      Technical issues: bugs, errors, broken integrations.
+
+app:
+  name: trace-loc-ms-demo-${var.username}
+  description: "Workshop lab 24: UC OTEL trace tables via Model Serving + app.trace_location"
+  log_level: INFO
+  deployment_target: model_serving
+
+  agents:
+  - *tier1_support
+  - *tier2_engineer
+
+  orchestration:
+    supervisor:
+      model: *default_llm
+      prompt: |
+        Route the customer to the right specialist:
+          - tier1_support  : how-to, policy lookups, account questions
+          - tier2_engineer : bugs, errors, broken integrations
+
+  # Required for Model Serving: dao-ai logs + registers the model in UC
+  # before creating the serving endpoint. Endpoint name defaults to
+  # ``app.name`` (``trace-loc-ms-demo-<username>``).
+  registered_model:
+    schema: *workshop_schema
+    name: trace_loc_ms_${var.username}
+
+  # Model-Serving-only. The container runs as this SP; declaring it here
+  # lets dao-ai auto-grant the SP CAN_EDIT on the experiment and
+  # USE_SCHEMA/MODIFY on the trace UC schema at deploy time.
+  service_principal:
+    client_id: *client_id
+    client_secret: *client_secret
+
+  # UC trace location -- same schema as the Apps demo but a distinct
+  # table_prefix so MS spans and Apps/in-process spans stay separable.
+  trace_location:
+    schema: *workshop_schema
+    warehouse: ${var.warehouse_id}
+    table_prefix: lab24_ms_traces
+
+  # Layer monitoring on top -- assessments now land alongside trace spans in UC.
+  monitoring:
+    sample_rate: 1.0
+    scorers:
+    - safety
+    - relevance_to_query
+    - tool_call_efficiency
+    guidelines_sample_rate: 0.5
+    guidelines:
+    - name: routing_quality
+      guidelines:
+      - How-to and policy questions should be answered by tier1_support
+      - Bug reports and HTTP error messages should route to tier2_engineer
