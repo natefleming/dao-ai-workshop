@@ -248,6 +248,64 @@ print(f"Deployed app: {config.app.name}")
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC ## Step 6 -- Deploy the same agent to Model Serving
+# MAGIC
+# MAGIC The same greeter can ship as a Model Serving endpoint instead of a
+# MAGIC Databricks App. The workflow is identical -- the only difference
+# MAGIC is the config: `greeter_model_serving.yaml` changes
+# MAGIC `deployment_target` to `model_serving` and adds a `registered_model:`
+# MAGIC block (required so dao-ai can log + register the model in Unity
+# MAGIC Catalog before creating the serving endpoint).
+# MAGIC
+# MAGIC ```yaml
+# MAGIC app:
+# MAGIC   deployment_target: model_serving
+# MAGIC   registered_model:
+# MAGIC     schema:
+# MAGIC       catalog_name: ${var.catalog}
+# MAGIC       schema_name: ${var.schema}
+# MAGIC     name: hardware_store_ms_${var.username}
+# MAGIC ```
+# MAGIC
+# MAGIC Set the catalog + schema widgets to a UC location where you can
+# MAGIC create tables. dao-ai reuses the same notebook flow -- load the
+# MAGIC config, then `deploy_agent(target=DeploymentTarget.MODEL_SERVING)`.
+
+# COMMAND ----------
+
+dbutils.widgets.text("catalog", "main", "UC catalog for registered model")
+dbutils.widgets.text("schema", "default", "UC schema for registered model")
+
+ms_params: dict[str, str] = {
+    **params,
+    "catalog": dbutils.widgets.get("catalog").strip(),
+    "schema": dbutils.widgets.get("schema").strip(),
+}
+
+ms_config: AppConfig = AppConfig.from_file(
+    "greeter_model_serving.yaml", params=ms_params
+)
+print(f"Model Serving endpoint name: {ms_config.app.name}")
+print(f"Registered model: {ms_config.app.registered_model.full_name}")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### 6a. Deploy
+# MAGIC
+# MAGIC `create_agent()` logs the model to MLflow and registers it in UC.
+# MAGIC `deploy_agent(target=DeploymentTarget.MODEL_SERVING)` then creates
+# MAGIC the serving endpoint. Build time is typically 5-15 minutes.
+
+# COMMAND ----------
+
+ms_config.create_agent()
+ms_config.deploy_agent(target=DeploymentTarget.MODEL_SERVING)
+print(f"Deployed endpoint: {ms_config.app.name}")
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC ## Next
 # MAGIC
 # MAGIC [Lab 2](../lab-02-uc-tools/) -- give the agent
