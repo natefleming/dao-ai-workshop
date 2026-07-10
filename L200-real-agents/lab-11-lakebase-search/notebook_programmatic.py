@@ -146,7 +146,8 @@ import json
 
 from langchain_core.tools import StructuredTool
 
-kb_tool: StructuredTool = tool.function.as_tools()[0]
+[tool_model] = config.find_tools(lambda t: t.name == "kb_search")
+kb_tool: StructuredTool = tool_model.function.as_tools()[0]
 docs: list[dict] = json.loads(kb_tool.invoke({"query": "How do I reset my password?"}))
 for doc in docs:
     meta: dict = doc["metadata"]

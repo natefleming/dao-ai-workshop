@@ -105,7 +105,7 @@ import json
 from dao_ai.config import ToolModel
 from langchain_core.tools import StructuredTool
 
-tool_model: ToolModel = config.tools["kb_search"]
+[tool_model] = config.find_tools(lambda t: t.name == "kb_search")
 kb_tool: StructuredTool = tool_model.function.as_tools()[0]
 docs: list[dict] = json.loads(kb_tool.invoke({"query": "How do I reset my password?"}))
 for doc in docs:
