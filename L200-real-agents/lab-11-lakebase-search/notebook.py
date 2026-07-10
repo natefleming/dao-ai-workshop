@@ -10,7 +10,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "dao-ai>=0.1.107"
+# MAGIC %pip install "dao-ai>=0.1.108"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -102,8 +102,12 @@ print(f"backfilled {n_backfilled} embeddings")
 
 import json
 
-tool = config.tools["kb_search"].function.as_tools()[0]
-docs: list[dict] = json.loads(tool.invoke({"query": "How do I reset my password?"}))
+from dao_ai.config import ToolModel
+from langchain_core.tools import StructuredTool
+
+tool_model: ToolModel = config.tools["kb_search"]
+kb_tool: StructuredTool = tool_model.function.as_tools()[0]
+docs: list[dict] = json.loads(kb_tool.invoke({"query": "How do I reset my password?"}))
 for doc in docs:
     meta: dict = doc["metadata"]
     print(f"[{meta['id']}] priority={meta['priority']} :: {doc['page_content']}")

@@ -10,7 +10,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "dao-ai>=0.1.107"
+# MAGIC %pip install "dao-ai>=0.1.108"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -89,7 +89,14 @@ config: AppConfig = AppConfig(
     retrievers={"kb_retriever": retriever},
     tools={"kb_search": tool},
     agents={"kb_assistant": agent},
-    app=AppModel(name=f"kb-assistant-{username}", agents=[agent]),
+    # `deployment_target='apps'` skips the `registered_model` requirement —
+    # Databricks Apps deploys don't need an MLflow registered model
+    # (Model Serving deploys do).
+    app=AppModel(
+        name=f"kb-assistant-{username}",
+        deployment_target="apps",
+        agents=[agent],
+    ),
 )
 
 # COMMAND ----------
@@ -137,7 +144,9 @@ print(f"backfilled {n_backfilled} embeddings")
 
 import json
 
-kb_tool = tool.function.as_tools()[0]
+from langchain_core.tools import StructuredTool
+
+kb_tool: StructuredTool = tool.function.as_tools()[0]
 docs: list[dict] = json.loads(kb_tool.invoke({"query": "How do I reset my password?"}))
 for doc in docs:
     meta: dict = doc["metadata"]
