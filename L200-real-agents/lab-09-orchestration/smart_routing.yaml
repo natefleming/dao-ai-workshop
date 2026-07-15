@@ -1,0 +1,121 @@
+# yaml-language-server: $schema=../../../dao-ai/schemas/model_config_schema.json
+#
+# Lab 9 - Smart Model Routing (smart_routing)
+# -------------------------------------------
+# Two specialists, differentiated by model size rather than by domain,
+# plus a tiny supervisor whose only job is to decide which one should
+# answer.
+#
+# Builds on:
+#   - The supervisor variant in this same lab (specialists_with_supervisor.yaml).
+#     Same supervisor pattern; the only difference is that agents are
+#     distinguished by the model they wrap (fast/cheap vs. large/reasoning)
+#     instead of by domain role.
+#
+# What's new vs the supervisor variant:
+#   - Two agents (simple_agent, complex_agent) instead of three tiers.
+#   - The routing signal is prompt complexity, not customer intent.
+#   - The supervisor uses a tiny, cheap model -- routing itself must
+#     not cost more than the answer.
+#   - Every model carries `ai_gateway: true` so calls flow through the
+#     Unity AI Gateway (rate limits, audit, cost tracking).
+#
+# Routing:
+#   - simple_agent  : definitions, quick facts, small talk, one-shot how-tos
+#   - complex_agent : multi-step reasoning, math/logic, code, tradeoffs
+
+parameters:
+  username:
+    description: Per-student username for unique deployment names. Auto-set by the notebook.
+    # No default => required.
+  router_llm_endpoint:
+    description: Tiny/fast LLM endpoint used by the supervisor to pick an agent. Routing must be cheap.
+    default: databricks-claude-haiku-4-5
+  simple_llm_endpoint:
+    description: Fast/cheap LLM endpoint for the simple_agent (everyday questions).
+    default: databricks-claude-haiku-4-5
+  complex_llm_endpoint:
+    description: Larger reasoning LLM endpoint for the complex_agent (multi-step problems).
+    default: databricks-claude-sonnet-4-5
+
+resources:
+  models:
+    router_llm: &router_llm
+      name: ${var.router_llm_endpoint}
+      ai_gateway: true
+      temperature: 0.0
+      max_tokens: 512
+
+    simple_llm: &simple_llm
+      name: ${var.simple_llm_endpoint}
+      ai_gateway: true
+      temperature: 0.2
+      max_tokens: 1024
+
+    complex_llm: &complex_llm
+      name: ${var.complex_llm_endpoint}
+      ai_gateway: true
+      temperature: 0.2
+      max_tokens: 4096
+
+  # tools:
+  #   estimate_prompt_complexity: &estimate_prompt_complexity
+  #     name: estimate_prompt_complexity
+  #     function:
+  #       type: factory
+  #       name: dao_ai.tools.example.create_tool
+  #       args:
+  #         # Would call a scoring model or a UC function that returns a
+  #         # 0.0-1.0 complexity score; supervisor uses that to route
+  #         # instead of relying purely on the router LLM's judgment.
+
+agents:
+  simple_agent: &simple_agent
+    name: simple_agent
+    description: Fast, low-cost agent for everyday questions and quick facts.
+    model: *simple_llm
+    prompt: |
+      You answer everyday questions concisely. One or two short
+      sentences. No preamble, no caveats, no lists unless the user
+      asks for one.
+    handoff_prompt: |
+      Simple questions: definitions, quick facts, small talk, and
+      one-shot how-tos that a competent generalist can answer in a
+      sentence or two.
+      Example: "What is the capital of France?" or "Convert 5 miles
+      to kilometers."
+
+  complex_agent: &complex_agent
+    name: complex_agent
+    description: Larger reasoning agent for multi-step problems that reward extra thinking.
+    model: *complex_llm
+    prompt: |
+      You handle questions that need careful, multi-step reasoning.
+      Think step by step, show your work briefly, and state the
+      final answer clearly at the end.
+    handoff_prompt: |
+      Complex questions: multi-step reasoning, math or logic word
+      problems, code that has to be correct on the first try, design
+      tradeoffs, or ambiguous open-ended prompts.
+      Example: "Two trains leave stations 300 miles apart..." or
+      "Compare snapshot isolation vs. serializable for a payments
+      ledger."
+
+app:
+  name: smart-routing-${var.username}
+  description: "Workshop lab 9: smart model routing (small vs. large LLM)"
+  log_level: INFO
+  deployment_target: apps
+  agents:
+  - *simple_agent
+  - *complex_agent
+
+  orchestration:
+    supervisor:
+      model: *router_llm
+      # tools:
+      # - *estimate_prompt_complexity   # Uncomment once the tool is defined above
+      prompt: |
+        Pick one agent to answer:
+          - simple_agent  : straightforward, one-shot questions
+          - complex_agent : anything needing multi-step reasoning
