@@ -14,7 +14,7 @@ The second level of the DAO-AI workshop. Goal: by the end you'll have built a Sa
 | 2 | [lab-05-rest/](lab-05-rest/) | Lab | **Lab 5 -- External Integrations via REST.** Wrap a public HTTP API as a tool. |
 | 3 | [lab-06-vector-search/](lab-06-vector-search/) | Lab | **Lab 6 -- Knowledge-base Retrieval with Vector Search.** ANN + cross-encoder reranking. |
 | 4 | [lab-07-memory/](lab-07-memory/) | Lab | **Lab 7 -- Persistent Memory + Chat Summarization.** Lakebase checkpointer + long-term store + extraction, plus `app.chat_history` auto-summarization for long conversations. |
-| 5 | [lab-08-prompts-guardrails/](lab-08-prompts-guardrails/) | Lab | **Lab 8 -- Production Prompts and Guardrails.** Prompt Registry + judge LLM. |
+| 5 | [lab-08-prompts-guardrails/](lab-08-prompts-guardrails/) | Lab | **Lab 8 -- Production Prompts and Guardrails.** Reusable prompts + judge LLM. |
 | 6 | [lab-09-orchestration/](lab-09-orchestration/) | Lab | **Lab 9 -- Multi-agent Orchestration.** Tier-1 / tier-2 / escalation specialists. |
 | 7 | [lab-10-hitl/](lab-10-hitl/) | Lab | **Lab 10 -- Human in the Loop.** Tool-level approval gating: agent pauses, surfaces an interrupt, resumes on approve / edit / reject. |
 | 8 | [debrief.md](debrief.md) | Debrief | Reflection on production patterns; pointer to L300. |
@@ -27,7 +27,7 @@ Per-lab additional requirements:
 - **Lab 5**: outbound HTTPS to `githubstatus.com` from Serverless compute.
 - **Lab 6**: Vector Search endpoint, `databricks-gte-large-en` embedding endpoint.
 - **Lab 7**: Lakebase access (or use the in-memory fallback).
-- **Lab 8**: Unity Catalog catalog (Prompt Registry entries are scoped to UC).
+- **Lab 8**: Unity Catalog catalog (prompt objects can be namespaced into a UC schema).
 - **Lab 9**: no external resources -- pure prompt-driven specialists.
 
 ## When to move on

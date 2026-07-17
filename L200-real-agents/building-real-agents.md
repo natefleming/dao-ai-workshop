@@ -49,7 +49,7 @@ Both layers run on Databricks **Lakebase** (managed Postgres). Lab 7 walks all t
 
 Two production problems with one chapter:
 
-- **Prompt drift.** Prompts hard-coded in YAML force a redeploy to change. **MLflow Prompt Registry** decouples them -- prompt engineers edit in the UI, the agent picks up the new version on next load.
+- **Prompt reuse.** A prompt hard-coded on one agent can't be shared. **Reusable prompt objects** let you define a prompt once in the `prompts:` block and reference it from any agent via a YAML anchor.
 - **Quality variance.** A judge LLM evaluates each response against a rubric. If it fails (the response invents a specific SLA, makes up a policy), the agent retries with the critique. For support, **accuracy** matters more than tone.
 
 ### 5. "How does one agent become a team?" (Lab 9 -- Orchestration)

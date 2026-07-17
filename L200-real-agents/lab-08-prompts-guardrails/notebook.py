@@ -6,8 +6,8 @@
 # MAGIC
 # MAGIC ## Goals
 # MAGIC
-# MAGIC - Move an inline prompt into MLflow Prompt Registry via the `prompts:` block.
-# MAGIC - Edit the prompt in the MLflow UI and watch the agent pick up the new version on next load.
+# MAGIC - Move an inline prompt into a reusable `PromptModel` via the `prompts:` block.
+# MAGIC - Reference the shared prompt from the agent so the prompt text lives in one place.
 # MAGIC - Add a `guardrails:` block with a judge LLM that evaluates response **accuracy** and retries on failure.
 # MAGIC - Inspect nested guardrail spans in the MLflow trace.
 # MAGIC
@@ -123,8 +123,8 @@ print(response["messages"][-1].content)
 # MAGIC %md
 # MAGIC ### 4b. `02_support_with_managed_prompts.yaml`
 # MAGIC
-# MAGIC `as_graph()` auto-registers the prompt as version 1 the first
-# MAGIC time it runs. Open the **Prompts** tab in MLflow to confirm.
+# MAGIC The agent now references a shared `PromptModel` from the `prompts:`
+# MAGIC block instead of carrying the prompt text inline.
 
 # COMMAND ----------
 

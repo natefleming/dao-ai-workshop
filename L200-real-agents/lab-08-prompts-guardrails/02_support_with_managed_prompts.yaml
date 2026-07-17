@@ -2,16 +2,16 @@
 #
 # Lab 8 - Step 2: support_with_managed_prompts
 # ------------------------------------------------
-# Capability: prompt lives in MLflow Prompt Registry. Edit the prompt
-# in the UI and the agent picks up the latest version on next load --
-# no code change.
+# Capability: the prompt is extracted into a reusable prompt object in
+# the top-level prompts: block, then referenced by the agent via a YAML
+# anchor -- defined once, reusable across agents.
 
 parameters:
   username:
     description: Per-student username for unique deployment names. Auto-set by the notebook.
     # No default => required.
   catalog:
-    description: Unity Catalog catalog where Prompt Registry entries live.
+    description: Unity Catalog catalog for workshop assets.
     # No default => required.
   schema:
     description: Schema within the catalog for workshop assets.
@@ -23,8 +23,8 @@ parameters:
     description: Judge LLM endpoint (declared for parity with step 3; unused here).
     default: databricks-claude-sonnet-4-5
 
-# NEW in step 2 (vs step 1): schemas block. Required because the
-# Prompt Registry entry below is namespaced into a UC schema.
+# NEW in step 2 (vs step 1): schemas block. The prompt object below can
+# be namespaced into a UC schema for organization.
 schemas:
   workshop_schema: &workshop_schema
     catalog_name: ${var.catalog}
@@ -37,17 +37,16 @@ resources:
       temperature: 0.2
       max_tokens: 4096
 
-# NEW in step 2: prompts block. The agent now references a registry-
-# managed prompt via *support_prompt rather than carrying the prompt
-# text inline. dao-ai will create the prompt entry on first deploy
-# using `default_template` and re-fetch the latest version on
-# subsequent loads.
+# NEW in step 2: prompts block. The agent now references a reusable
+# prompt object via *support_prompt rather than carrying the prompt
+# text inline in the agent. The prompt is defined once here and can be
+# shared across agents.
 prompts:
   support_prompt: &support_prompt
     schema: *workshop_schema
     name: support_prompt
     description: Main prompt for the workshop SaaS support agent.
-    default_template: |
+    template: |
       You are a tier-1 SaaS support assistant. Be accurate and concise.
       If you don't know an answer, say so honestly rather than guessing.
       Reference KB articles or ticket numbers when relevant.
@@ -55,15 +54,15 @@ prompts:
 agents:
   support_agent: &support_agent
     name: support_agent
-    description: A support assistant with a registry-managed prompt.
+    description: A support assistant with a reusable, shared prompt.
     model: *default_llm
-    # NEW in step 2: prompt is now a *support_prompt alias (a
-    # registry reference) rather than an inline string.
+    # NEW in step 2: prompt is now a *support_prompt alias (a reference
+    # to the shared prompt object) rather than an inline string.
     prompt: *support_prompt
 
 app:
   name: saas-helpdesk-${var.username}
-  description: "Workshop lab 8 - step 2: support with managed prompts"
+  description: "Workshop lab 8 - step 2: support with a reusable prompt"
   log_level: INFO
   deployment_target: apps
   agents:

@@ -3,13 +3,13 @@
 # Lab 8 - Step 1: inline_support
 # ------------------------------
 # Capability: a SaaS support assistant with an inline prompt.
-# Demonstrates: how prompts normally live -- hard-coded in YAML,
-# requiring a redeploy to change. Steps 2 and 3 add Prompt Registry
-# and a guardrail.
+# Demonstrates: the simplest way to give an agent a prompt -- a string
+# written directly on the agent. Steps 2 and 3 extract it into a
+# reusable prompt object and add a guardrail.
 #
 # Builds on Lab 1's baseline structure (parameters / resources.llms /
 # agents / app). Same shape as the greeter; the prompt is the only
-# meaningful difference. Step 2 (managed prompts) and step 3
+# meaningful difference. Step 2 (reusable prompts) and step 3
 # (guardrails) layer new building blocks on top of this baseline.
 
 parameters:

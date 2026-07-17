@@ -4,8 +4,8 @@
 
 ## Goals
 
-- Move an inline prompt into MLflow Prompt Registry via the `prompts:` block.
-- Edit the prompt in the MLflow UI and watch the agent pick up the new version on next load.
+- Move an inline prompt into a reusable `PromptModel` via the `prompts:` block.
+- Reference the shared prompt from the agent so the prompt text lives in one place.
 - Add a `guardrails:` block with a judge LLM that evaluates response **accuracy** and retries on failure.
 - Inspect nested guardrail spans in the MLflow trace.
 
@@ -15,15 +15,15 @@ A `safe-support` agent that, when asked for a critical-ticket SLA it doesn't kno
 
 ---
 
-**Use case:** `saas_helpdesk` -- a `safe_support` agent whose prompt lives in MLflow Prompt Registry and whose responses are evaluated for **accuracy** by a judge LLM.
+**Use case:** `saas_helpdesk` -- a `safe_support` agent whose prompt is defined as a reusable object and whose responses are evaluated for **accuracy** by a judge LLM.
 
 **DAO-AI concept:** Two production capabilities, one chapter:
-1. **MLflow Prompt Registry** -- prompts auto-register on first load and can be edited in the UI without redeploying.
+1. **Reusable Prompts** -- define a prompt once in the `prompts:` block and reference it from any agent, keeping long prompt bodies out of the agent definition.
 2. **Guardrails** -- a judge LLM evaluates each response and the agent retries on failure. For SaaS support, accuracy matters more than tone -- making up an SLA is worse than being a little dry.
 
 ## What you'll learn
 
-- The `prompts:` top-level block and how `default_template:` bootstraps version 1.
+- The `prompts:` top-level block and the `template:` field.
 - The `guardrails:` top-level block (`model`, `prompt`, `num_retries`).
 - How an accuracy-focused guardrail differs from a tone-focused one.
 - Cost implications: at `num_retries: 2` a single user message can trigger up to 3 main LLM calls + 3 judge LLM calls.
@@ -33,18 +33,17 @@ A `safe-support` agent that, when asked for a critical-ticket SLA it doesn't kno
 | File | Purpose |
 |---|---|
 | `01_inline_support.yaml` | Step 1 -- inline prompt, no guardrail. |
-| `02_support_with_managed_prompts.yaml` | Step 2 -- prompt in MLflow Registry. |
+| `02_support_with_managed_prompts.yaml` | Step 2 -- prompt as a reusable `PromptModel`. |
 | `03_support_with_guardrails.yaml` | Step 3 (final / deploy) -- + accuracy guardrail. |
-| `notebook.py` | Walk steps; observe registry + guardrail behavior. |
+| `notebook.py` | Walk steps; observe reusable-prompt + guardrail behavior. |
 
 ## Prerequisites
 
-- A Unity Catalog catalog (Prompt Registry entries are scoped to UC).
 - `databricks-claude-sonnet-4-5` foundation-model endpoint enabled.
 
 ## Run
 
-Open `notebook.py`. Set `catalog` widget. After step 2 runs, open the **Prompts** tab in MLflow to see your auto-registered prompts.
+Open `notebook.py`. Set `catalog` widget. Step 2 shows the agent referencing a shared prompt object.
 
 Deployed app name: `saas-helpdesk-<your-username>`.
 

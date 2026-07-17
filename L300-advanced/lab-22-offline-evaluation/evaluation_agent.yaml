@@ -138,9 +138,8 @@ evaluation:
 # Inline evaluation dataset.
 #
 # ``optimizations.training_datasets`` is dao-ai's validated registry for
-# inline ``EvaluationDatasetModel`` instances. The name is historical
-# (originally for GEPA prompt optimization) but the model is the same one
-# used for offline evaluation -- ``as_dataset()`` returns an
+# inline ``EvaluationDatasetModel`` instances, used here for offline
+# evaluation -- ``as_dataset()`` returns an
 # ``mlflow.genai.datasets.EvaluationDataset``.
 # ---------------------------------------------------------------------------
 optimizations:

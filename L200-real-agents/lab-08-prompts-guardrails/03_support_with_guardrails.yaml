@@ -2,7 +2,7 @@
 #
 # Lab 8 - Step 3: support_with_guardrails (FINAL)
 # ---------------------------------------------------
-# Capability: managed prompt + a judge-evaluated **accuracy
+# Capability: reusable prompt + a judge-evaluated **accuracy
 # guardrail** that retries on factual hallucination. For a support
 # agent, accuracy matters more than tone -- the judge checks whether
 # the response makes claims the agent can actually back up.
@@ -12,7 +12,7 @@ parameters:
     description: Per-student username for unique deployment names. Auto-set by the notebook.
     # No default => required.
   catalog:
-    description: Unity Catalog catalog where Prompt Registry entries live.
+    description: Unity Catalog catalog for workshop assets.
     # No default => required.
   schema:
     description: Schema within the catalog for workshop assets.
@@ -50,18 +50,18 @@ prompts:
     schema: *workshop_schema
     name: support_prompt
     description: Main prompt for the workshop SaaS support agent.
-    default_template: |
+    template: |
       You are a tier-1 SaaS support assistant. Be accurate and concise.
       If you don't know an answer, say so honestly rather than guessing.
       Reference KB articles or ticket numbers when relevant.
 
-  # NEW in step 3: a second registry-managed prompt used by the
-  # accuracy guardrail's judge. Editable in MLflow without redeploying.
+  # NEW in step 3: a second reusable prompt used by the accuracy
+  # guardrail's judge.
   accuracy_guardrail_prompt: &accuracy_guardrail_prompt
     schema: *workshop_schema
     name: accuracy_guardrail_prompt
     description: Evaluates whether agent responses make verifiable claims.
-    default_template: |
+    template: |
       Evaluate whether the response makes only claims that the agent
       could verify (referenced KB articles, ticket numbers, or stated
       uncertainty). Reject responses that invent specific facts
@@ -86,7 +86,7 @@ guardrails:
 agents:
   support_agent: &support_agent
     name: support_agent
-    description: A guardrailed support assistant using registry prompts.
+    description: A guardrailed support assistant using reusable prompts.
     model: *default_llm
     prompt: *support_prompt
     # NEW in step 3: agent.guardrails list. Step 2's agent had no
@@ -96,7 +96,7 @@ agents:
 
 app:
   name: saas-helpdesk-${var.username}
-  description: "Workshop lab 8: prompt registry + accuracy guardrail"
+  description: "Workshop lab 8: reusable prompts + accuracy guardrail"
   log_level: INFO
   deployment_target: apps
   agents:

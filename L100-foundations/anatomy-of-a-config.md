@@ -11,7 +11,7 @@ schemas:       # 3.  Catalog/schema shorthand reused everywhere.
 resources:     # 4.  Physical things: LLMs, vector stores, warehouses, databases, ...
 tools:         # 5.  Things an agent can call: UC functions, REST APIs, MCP, factory tools.
 retrievers:    # 6.  Vector + rerank pipelines that back search-style tools.
-prompts:       # 7.  Inline strings or MLflow Prompt Registry references.
+prompts:       # 7.  Reusable prompt objects referenced by agents via anchors.
 guardrails:    # 8.  Input/output checks (judge LLM, GuardrailsAI hub).
 memory:        # 9.  Checkpointer + store + extraction for cross-session state.
 agents:        # 10. Agent definitions: model + prompt + tools + handoff hints.
@@ -257,21 +257,22 @@ agents:
       You are tier-1 support. Answer factually...
 ```
 
-Production case: pull from MLflow's Prompt Registry by name + version, so prompt changes ship without redeploying the agent.
+Reusable case: define the prompt once as a first-class object and reference it from any number of agents via a YAML anchor, so the prompt text lives in one place.
 
 ```yaml
 prompts:
   support_v1: &support_v1
-    type: registry
-    name: ${var.catalog}.${var.schema}.support_assistant
-    version: 1
+    schema: *workshop_schema
+    name: support_assistant
+    template: |
+      You are tier-1 support. Answer factually...
 
 agents:
   support_agent:
     prompt: *support_v1
 ```
 
-Lab 8 walks the inline → registry path step by step.
+Lab 8 walks the inline → reusable-prompt path step by step.
 
 ## 8. `guardrails:` -- input/output checks
 
