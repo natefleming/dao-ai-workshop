@@ -41,7 +41,7 @@ L100 also ships two **lectures** before the labs: [Setting the Stage](L100-found
 | **Lab 5** | External Integrations via REST | REST factory tools | [`L200-real-agents/lab-05-rest/`](L200-real-agents/lab-05-rest/) |
 | **Lab 6** | Knowledge-base Retrieval with Vector Search | Vector store + cross-encoder reranker | [`L200-real-agents/lab-06-vector-search/`](L200-real-agents/lab-06-vector-search/) |
 | **Lab 7** | Persistent Memory + Chat Summarization | Lakebase checkpointer + long-term store + extraction, plus `app.chat_history` auto-summarization | [`L200-real-agents/lab-07-memory/`](L200-real-agents/lab-07-memory/) |
-| **Lab 8** | Production Prompts and Guardrails | Prompt Registry + judge guardrail | [`L200-real-agents/lab-08-prompts-guardrails/`](L200-real-agents/lab-08-prompts-guardrails/) |
+| **Lab 8** | Production Prompts and Guardrails | Reusable prompts + judge guardrail | [`L200-real-agents/lab-08-prompts-guardrails/`](L200-real-agents/lab-08-prompts-guardrails/) |
 | **Lab 9** | Multi-agent Orchestration | Supervisor + swarm | [`L200-real-agents/lab-09-orchestration/`](L200-real-agents/lab-09-orchestration/) |
 | **Lab 10** | Human in the Loop | Tool-level approval gating with `human_in_the_loop:` (approve / edit / reject) | [`L200-real-agents/lab-10-hitl/`](L200-real-agents/lab-10-hitl/) |
 | **Lab 11** | Lakebase Search Retrieval | Postgres-native vector + BM25 hybrid retrieval via `type: lakebase_search` (parity with `ai_search`); bonus programmatic-config notebook | [`L200-real-agents/lab-11-lakebase-search/`](L200-real-agents/lab-11-lakebase-search/) |
