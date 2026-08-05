@@ -38,7 +38,7 @@
 
 # COMMAND ----------
 
-# MAGIC %uv pip install "dao-ai==0.2.4"
+# MAGIC %uv pip install "dao-ai==0.2.5"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -481,7 +481,7 @@ print(f"Trace table prefix: {ms_config.app.trace_location.resolved_table_prefix}
 # MAGIC ### 11c. Deploy
 # MAGIC
 # MAGIC `create_agent()` logs the ResponsesAgent to MLflow and registers a
-# MAGIC new model version in UC. `deploy_agent(target=MODEL_SERVING)` then
+# MAGIC new model version in UC. `deploy_agent(mode=MODEL_SERVING)` then
 # MAGIC calls the Databricks Agents `deploy` API. First-time builds are
 # MAGIC typically 5-15 minutes; subsequent redeploys reuse the container
 # MAGIC and finish in ~2-5 minutes.
@@ -489,7 +489,7 @@ print(f"Trace table prefix: {ms_config.app.trace_location.resolved_table_prefix}
 # COMMAND ----------
 
 ms_config.create_agent()
-ms_config.deploy_agent(target=ServingMode.MODEL_SERVING)
+ms_config.deploy_agent(mode=ServingMode.MODEL_SERVING)
 print(f"Deployed endpoint: {ms_config.app.name}")
 
 # COMMAND ----------

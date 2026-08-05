@@ -25,11 +25,6 @@ parameters:
     description: LLM endpoint used by the guardrail judge.
     default: databricks-claude-sonnet-4-5
 
-schemas:
-  workshop_schema: &workshop_schema
-    catalog_name: ${var.catalog}
-    schema_name: ${var.schema}
-
 resources:
   models:
     default_llm: &default_llm
@@ -47,7 +42,6 @@ resources:
 
 prompts:
   support_prompt: &support_prompt
-    schema: *workshop_schema
     name: support_prompt
     description: Main prompt for the workshop SaaS support agent.
     template: |
@@ -58,7 +52,6 @@ prompts:
   # NEW in step 3: a second reusable prompt used by the accuracy
   # guardrail's judge.
   accuracy_guardrail_prompt: &accuracy_guardrail_prompt
-    schema: *workshop_schema
     name: accuracy_guardrail_prompt
     description: Evaluates whether agent responses make verifiable claims.
     template: |

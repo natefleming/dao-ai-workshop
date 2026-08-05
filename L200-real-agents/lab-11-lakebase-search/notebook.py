@@ -10,13 +10,10 @@
 
 # COMMAND ----------
 
-# MAGIC %uv pip install "dao-ai[rerank]==0.2.4"
+# MAGIC %uv pip install "dao-ai[rerank]==0.2.5"
 # MAGIC %restart_python
 
 # COMMAND ----------
-
-import nest_asyncio
-nest_asyncio.apply()
 
 # COMMAND ----------
 
@@ -151,7 +148,7 @@ print(response["messages"][-1].content)
 
 from dao_ai.config import ServingMode
 
-config.deploy_agent(target=ServingMode.APPS)
+config.deploy_agent(mode=ServingMode.APPS)
 print(f"Deployed app: {config.app.name}")
 
 # COMMAND ----------

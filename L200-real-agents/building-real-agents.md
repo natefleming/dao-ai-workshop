@@ -79,7 +79,7 @@ Everything you learned in L100 still holds. You're still:
 
 - Declaring `parameters:`, `resources:`, `agents:`, `app:` in YAML.
 - Loading via `AppConfig.from_file(path, params={...})`.
-- Deploying via `config.deploy_agent(target=ServingMode.APPS)`.
+- Deploying via `config.deploy_agent(mode=ServingMode.APPS)`.
 - Using `${var.username}` to keep deployed names unique per student.
 
 L200 just adds new top-level YAML keys (`memory:`, `prompts:`, `guardrails:`) and new resource types (`databases:`, `vector_stores:`). The composition pattern is identical.

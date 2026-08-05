@@ -29,7 +29,7 @@
 
 # COMMAND ----------
 
-# MAGIC %uv pip install "dao-ai==0.2.4"
+# MAGIC %uv pip install "dao-ai==0.2.5"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -159,7 +159,6 @@ from mlflow.types.responses import ResponsesAgentRequest, ResponsesAgentResponse
 
 _predict_lock = threading.Lock()
 
-
 def _extract_output_text(response: ResponsesAgentResponse) -> str:
     texts: list[str] = []
     for output in response.output:
@@ -175,7 +174,6 @@ def _extract_output_text(response: ResponsesAgentResponse) -> str:
                 elif getattr(content, "type", None) == "output_text":
                     texts.append(content.text)
     return "".join(texts) if texts else str(response.output)
-
 
 def predict_fn(
     messages: list[dict[str, Any]] | None = None,
@@ -198,7 +196,6 @@ def predict_fn(
         )
         response: ResponsesAgentResponse = asyncio.run(agent.apredict(request))
         return _extract_output_text(response)
-
 
 # Smoke-test predict_fn end-to-end before evaluation runs.
 sample_out: str = predict_fn(
@@ -392,7 +389,6 @@ display(prepare_eval_results_for_display(eval_results_b))
 from mlflow.entities import Feedback
 from mlflow.genai.scorers import scorer
 
-
 @scorer
 def includes_concrete_step(outputs: str) -> Feedback:
     """Pass if the response mentions a concrete user-facing action verb."""
@@ -406,7 +402,6 @@ def includes_concrete_step(outputs: str) -> Feedback:
     if matched:
         return Feedback(value=True, rationale=f"matched action verb(s): {matched[:3]}")
     return Feedback(value=False, rationale="no concrete action verb in the response")
-
 
 # Reuses Scenario A's seed_records (same agent will run again per row).
 run_name_c: str = f"lab22_scenario_c_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"

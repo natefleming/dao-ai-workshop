@@ -22,7 +22,7 @@
 
 # COMMAND ----------
 
-# MAGIC %uv pip install "dao-ai==0.2.4"
+# MAGIC %uv pip install "dao-ai==0.2.5"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -30,9 +30,6 @@
 from importlib.metadata import version
 
 print(f"dao-ai={version('dao-ai')}")
-
-import nest_asyncio
-nest_asyncio.apply()
 
 # COMMAND ----------
 
@@ -306,7 +303,7 @@ print()
 
 from dao_ai.config import ServingMode
 
-routing_config.deploy_agent(target=ServingMode.APPS)
+routing_config.deploy_agent(mode=ServingMode.APPS)
 print(f"Deployed app: {routing_config.app.name}")
 
 # COMMAND ----------

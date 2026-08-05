@@ -35,7 +35,7 @@
 
 # COMMAND ----------
 
-# MAGIC %uv pip install "dao-ai==0.2.4" "openai>=1.40"
+# MAGIC %uv pip install "dao-ai==0.2.5" "openai>=1.40"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -155,7 +155,7 @@ print(f"Wrapped class:     {type(agent_lr).__name__}")
 
 from dao_ai.config import ServingMode
 
-config.deploy_agent(target=ServingMode.APPS)
+config.deploy_agent(mode=ServingMode.APPS)
 print(f"Deployed app: {config.app.name}")
 
 # COMMAND ----------

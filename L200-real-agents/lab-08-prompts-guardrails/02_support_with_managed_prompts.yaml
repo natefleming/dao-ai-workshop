@@ -23,13 +23,6 @@ parameters:
     description: Judge LLM endpoint (declared for parity with step 3; unused here).
     default: databricks-claude-sonnet-4-5
 
-# NEW in step 2 (vs step 1): schemas block. The prompt object below can
-# be namespaced into a UC schema for organization.
-schemas:
-  workshop_schema: &workshop_schema
-    catalog_name: ${var.catalog}
-    schema_name: ${var.schema}
-
 resources:
   models:
     default_llm: &default_llm
@@ -43,7 +36,6 @@ resources:
 # shared across agents.
 prompts:
   support_prompt: &support_prompt
-    schema: *workshop_schema
     name: support_prompt
     description: Main prompt for the workshop SaaS support agent.
     template: |

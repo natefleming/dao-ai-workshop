@@ -21,7 +21,7 @@
 
 # COMMAND ----------
 
-# MAGIC %uv pip install "dao-ai==0.2.4"
+# MAGIC %uv pip install "dao-ai==0.2.5"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -29,9 +29,6 @@
 from importlib.metadata import version
 
 print(f"dao-ai={version('dao-ai')}")
-
-import nest_asyncio
-nest_asyncio.apply()
 
 # COMMAND ----------
 
@@ -271,7 +268,7 @@ print(edit_response["messages"][-1].content)
 
 from dao_ai.config import ServingMode
 
-config.deploy_agent(target=ServingMode.APPS)
+config.deploy_agent(mode=ServingMode.APPS)
 print(f"Deployed app: {config.app.name}")
 
 # COMMAND ----------
