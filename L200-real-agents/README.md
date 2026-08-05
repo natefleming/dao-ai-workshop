@@ -31,7 +31,7 @@ Per-lab additional requirements:
 - **Lab 5**: outbound HTTPS to `githubstatus.com` from Serverless compute.
 - **Lab 6**: Vector Search endpoint, `databricks-gte-large-en` embedding endpoint.
 - **Lab 7**: Lakebase access (or use the in-memory fallback).
-- **Lab 8**: Unity Catalog catalog (prompt objects can be namespaced into a UC schema).
+- **Lab 8**: no external resources -- reusable inline prompt objects + guardrails.
 - **Lab 9**: no external resources -- pure prompt-driven specialists.
 
 ## When to move on
