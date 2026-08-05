@@ -20,13 +20,6 @@ CREATE TABLE IF NOT EXISTS products (
 COMMENT 'Product catalog for the hardware store. Each row is one SKU with pricing, stock, and lifecycle status.'
 TBLPROPERTIES (delta.enableChangeDataFeed = true);
 
--- If Lab 11 (or any earlier lab that used a 6-col CREATE) beat us to the
--- table, add the two Lab 16 columns idempotently before MERGE runs.
-ALTER TABLE products ADD COLUMNS IF NOT EXISTS (
-  status STRING COMMENT 'Product lifecycle status: ACTIVE or DISCONTINUED',
-  internal_notes STRING COMMENT 'Internal merchandising notes, not customer-facing'
-);
-
 MERGE INTO products t
 USING (
   SELECT * FROM (VALUES

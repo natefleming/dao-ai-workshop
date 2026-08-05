@@ -15,7 +15,7 @@
 # All persistence is backed by Databricks Lakebase (managed Postgres).
 #
 # Builds on:
-#   - Lab 1: baseline structure (parameters / resources.llms / agents / app).
+#   - Lab 1: baseline structure (parameters / resources.models / agents / app).
 #   - Lab 5: switched to the saas_helpdesk use case.
 #
 # What's new vs prior labs (every block below introduces something):
@@ -156,7 +156,6 @@ app:
   name: saas-helpdesk-${var.username}
   description: "Lab 7: persistent memory + chat-history summarization"
   log_level: INFO
-  deployment_target: apps
 
   agents:
   - *support_agent

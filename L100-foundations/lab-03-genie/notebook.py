@@ -21,7 +21,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "dao-ai>=0.1.101"
+# MAGIC %uv pip install "dao-ai==0.2.4"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -29,6 +29,9 @@
 from importlib.metadata import version
 
 print(f"dao-ai={version('dao-ai')}")
+
+import nest_asyncio
+nest_asyncio.apply()
 
 # COMMAND ----------
 
@@ -108,14 +111,14 @@ params: dict[str, str] = {
 # MAGIC %md
 # MAGIC ### 3b. Declare the LLM and the Genie room
 # MAGIC
-# MAGIC `genie_rooms:` lives under `resources:` alongside `llms:`. Each
+# MAGIC `genie_rooms:` lives under `resources:` alongside `models:`. Each
 # MAGIC entry points at one Genie Space by id. The agent does not need
 # MAGIC the URL, schema, or table list -- Genie already knows those from
 # MAGIC its own configuration.
 # MAGIC
 # MAGIC ```yaml
 # MAGIC resources:
-# MAGIC   llms:
+# MAGIC   models:
 # MAGIC     default_llm: &default_llm
 # MAGIC       name: ${var.llm_endpoint}
 # MAGIC       temperature: 0.1
@@ -252,9 +255,9 @@ print(response["messages"][-1].content)
 
 # COMMAND ----------
 
-from dao_ai.config import DeploymentTarget
+from dao_ai.config import ServingMode
 
-config.deploy_agent(target=DeploymentTarget.APPS)
+config.deploy_agent(target=ServingMode.APPS)
 print(f"Deployed app: {config.app.name}")
 
 # COMMAND ----------

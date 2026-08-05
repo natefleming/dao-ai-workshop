@@ -107,7 +107,6 @@ app:
   name: hardware-store-${var.username}
   description: "Workshop lab 2 - step 2: sku_lookup"
   log_level: INFO
-  deployment_target: apps
   agents:
   - *product_agent
 # NEW in step 2: provisioning blocks.

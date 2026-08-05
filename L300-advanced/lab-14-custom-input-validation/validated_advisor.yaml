@@ -129,7 +129,6 @@ app:
   name: hardware-store-${var.username}
   description: "Lab 14 (hardware_store++): custom-input validation via middleware"
   log_level: INFO
-  deployment_target: apps
 
   agents:
   - *catalog_advisor

@@ -66,7 +66,6 @@ app:
   name: feedback-demo-${var.username}
   description: "Workshop lab 21: user feedback on multi-agent responses"
   log_level: INFO
-  deployment_target: apps
   agents:
   - *tier1_support
   - *tier2_engineer

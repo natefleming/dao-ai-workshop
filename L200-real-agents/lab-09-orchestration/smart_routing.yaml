@@ -105,7 +105,6 @@ app:
   name: smart-routing-${var.username}
   description: "Workshop lab 9: smart model routing (small vs. large LLM)"
   log_level: INFO
-  deployment_target: apps
   agents:
   - *simple_agent
   - *complex_agent

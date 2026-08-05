@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="images/brand/logo-lockup-tagline.png" alt="DAO-AI" width="440">
+</p>
+
 # DAO-AI Workshop
 
 Self-paced, hands-on workshop for building declarative AI agents on Databricks with the [DAO-AI](https://github.com/natefleming/dao-ai) framework. Designed for solution architects, data engineers, and analysts who want to go from zero to a deployed, governed agent. By the end you'll have built, tested, and deployed a multi-agent system that combines tool use, NL-to-SQL, vector search, memory + chat-history summarization, prompts + guardrails, and orchestration -- all defined in YAML and running as a Databricks App.
@@ -6,7 +10,7 @@ Self-paced, hands-on workshop for building declarative AI agents on Databricks w
 
 | Repo | What it is | When to reach for it |
 |---|---|---|
-| **[`dao-ai`](https://github.com/natefleming/dao-ai)** | The DAO-AI framework itself: schema, runtime, deploy primitives. Every lab in this workshop installs it via `pip install "dao-ai>=0.1.92"`. | Read the framework source, file issues, contribute features, or check the canonical examples under [`config/examples/`](https://github.com/natefleming/dao-ai/tree/main/config/examples). |
+| **[`dao-ai`](https://github.com/natefleming/dao-ai)** | The DAO-AI framework itself: schema, runtime, deploy primitives. Every lab in this workshop installs it via `%uv pip install "dao-ai==0.2.4"`. | Read the framework source, file issues, contribute features, or check the canonical examples under [`config/examples/`](https://github.com/natefleming/dao-ai/tree/main/config/examples). |
 | **[`dao-ai-builder`](https://github.com/natefleming/dao-ai-builder)** | Visual builder for DAO-AI configs -- forms and dropdowns instead of hand-written YAML. Exports a ready-to-deploy `dao_ai.yaml`. | Once you've finished L100 and want a faster authoring loop for new agents, or to hand the config surface to non-developer collaborators. |
 
 If you're wondering "where do these agents actually live in code?" the answer is `dao-ai`. If you're wondering "is there a UI for this?" the answer is `dao-ai-builder`.
@@ -122,21 +126,21 @@ All names fit within the 30-character Databricks Apps limit.
 Every lab deploys with one Python call:
 
 ```python
-from dao_ai.config import DeploymentTarget
-config.deploy_agent(target=DeploymentTarget.APPS)
+from dao_ai.config import ServingMode
+config.deploy_agent(target=ServingMode.APPS)
 print(f"Deployed app: {config.app.name}")
 ```
 
-`deploy_agent` generates the Asset Bundle from the DAO-AI config, deploys it, and runs the app. No `databricks bundle` CLI invocations from the notebook.
+`deploy_agent` generates the Asset Bundle from the DAO-AI config, deploys it, and runs the app. No `databricks bundle` CLI invocations from the notebook. On the Apps target, dao-ai 0.2.x packages the bundle with `pyproject.toml` + a portable `uv.lock` (Apps' build phase runs `uv sync --locked`), so the deployed app resolves the same pinned dependency set the lab installs.
 
 ## Setup
 
 | Requirement | Detail |
 |---|---|
 | Python | 3.11+ |
-| DAO-AI | `pip install "dao-ai>=0.1.92"` (the labs install this in the notebook) |
+| DAO-AI | `%uv pip install "dao-ai==0.2.4"` (the labs install this in the notebook; feature labs add extras, e.g. `dao-ai[rerank]`, `dao-ai[memory]`, `dao-ai[deepagents]`, `dao-ai[a2a]`) |
 | Databricks CLI | v0.230+ with a configured profile |
-| Compute | Databricks Serverless v5 |
+| Compute | Databricks Serverless v5 (each install cell runs `%uv pip install ...` then `%restart_python`) |
 | Foundation models | `databricks-claude-sonnet-4-5` (most labs); `databricks-gpt-5-4-mini` (Lab 19 + Lab 20); `databricks-gte-large-en` (Lab 6 + Lab 11 + Lab 12); `databricks-claude-haiku-4-5` and `databricks-meta-llama-3-1-8b-instruct` (Lab 9 + Lab 11); `databricks-gpt-5-nano` (Lab 7 summarization); `databricks-gpt-oss-120b` (Lab 7 memory queries) |
 | Genie Space | One pointed at `products` (Lab 3 + Lab 12); a separate provisioned one for Lab 16 |
 | Vector Search endpoint | Used by Lab 6 + Lab 11 |

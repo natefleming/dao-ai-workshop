@@ -44,7 +44,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "dao-ai>=0.1.101" "openai>=1.40"
+# MAGIC %uv pip install "dao-ai[a2a]==0.2.4" "openai>=1.40"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -53,6 +53,9 @@ from importlib.metadata import version
 
 print(f"dao-ai = {version('dao-ai')}")
 print(f"openai = {version('openai')}")
+
+import nest_asyncio
+nest_asyncio.apply()
 
 # COMMAND ----------
 
@@ -97,12 +100,12 @@ params: dict[str, str] = {
 
 # COMMAND ----------
 
-from dao_ai.config import AppConfig, DeploymentTarget
+from dao_ai.config import AppConfig, ServingMode
 
 translator_config: AppConfig = AppConfig.from_file("translator.yaml", params=params)
 print(f"Translator app name: {translator_config.app.name}")
 
-translator_config.deploy_agent(target=DeploymentTarget.APPS)
+translator_config.deploy_agent(target=ServingMode.APPS)
 print(f"Deployed: {translator_config.app.name}")
 
 # COMMAND ----------
@@ -144,7 +147,7 @@ greeter_config: AppConfig = AppConfig.from_file("greeter.yaml", params=params)
 print(f"Greeter app name: {greeter_config.app.name}")
 print(f"Greeter tools   : {list(greeter_config.tools.keys())}")
 
-greeter_config.deploy_agent(target=DeploymentTarget.APPS)
+greeter_config.deploy_agent(target=ServingMode.APPS)
 print(f"Deployed: {greeter_config.app.name}")
 
 # COMMAND ----------

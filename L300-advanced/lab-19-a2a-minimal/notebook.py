@@ -32,13 +32,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "dao-ai>=0.1.101" "nest-asyncio>=1.5"
-# MAGIC # NOTE: stay on %pip, NOT %uv pip install. The %uv magic works
-# MAGIC # interactively in the notebook UI but fails in the serverless v5
-# MAGIC # jobs runtime (PackageNotFoundError after install completes
-# MAGIC # successfully). For jobs-runtime use, the canonical alternative
-# MAGIC # would be declaring deps in environments.spec.dependencies on
-# MAGIC # the run/job spec.
+# MAGIC %uv pip install "dao-ai[a2a]==0.2.4" "nest-asyncio>=1.5"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -78,21 +72,20 @@ params: dict[str, str] = {
 # MAGIC %md
 # MAGIC ## Step 3 -- Load, compile, deploy
 # MAGIC
-# MAGIC `config.deploy_agent(target=DeploymentTarget.APPS)` packages the dao-ai bundle and triggers a Databricks Asset Bundle deploy + run. The deploy job runs ~5-10 minutes; we poll the Apps API afterward in Step 4 until `compute_status == ACTIVE` and `app_status == RUNNING`.
+# MAGIC `config.deploy_agent(target=ServingMode.APPS)` packages the dao-ai bundle and triggers a Databricks Asset Bundle deploy + run. The deploy job runs ~5-10 minutes; we poll the Apps API afterward in Step 4 until `compute_status == ACTIVE` and `app_status == RUNNING`.
 
 # COMMAND ----------
 
-from dao_ai.config import AppConfig, DeploymentTarget
+from dao_ai.config import AppConfig, ServingMode
 
 config: AppConfig = AppConfig.from_file("greeter.yaml", params=params)
 print(f"App name:        {config.app.name}")
-print(f"Deployment:      {config.app.deployment_target}")
 print(f"A2A enabled?     {config.app.a2a.enabled}")
 print(f"Default scheme:  {(config.app.a2a.task_store.database is None) and 'in-memory task store' or 'Lakebase task store'}")
 
 # COMMAND ----------
 
-config.deploy_agent(target=DeploymentTarget.APPS)
+config.deploy_agent(target=ServingMode.APPS)
 print(f"Deployed app: {config.app.name}")
 
 # COMMAND ----------

@@ -87,7 +87,6 @@ app:
   name: evaluation-demo-${var.username}
   description: "Workshop lab 22: offline evaluation with judges and datasets"
   log_level: INFO
-  deployment_target: apps
   agents:
   - *tier1_support
   - *tier2_engineer

@@ -24,7 +24,7 @@ A `programmatic-<your-username>` agent that does **everything Lab 4's MCP agent 
 |---|---|
 | `parameters: { catalog: ..., schema: ..., llm_endpoint: ... }` | `dbutils.widgets.text(...)` + Python variables resolved before building the config |
 | `schemas: workshop_schema: &workshop_schema` | `workshop_schema = SchemaModel(catalog_name=..., schema_name=...)` |
-| `resources.llms.default_llm: &default_llm` | `default_llm = LLMModel(name=..., temperature=0.1, max_tokens=4096)` |
+| `resources.models.default_llm: &default_llm` | `default_llm = InferenceEndpointModel(name=..., temperature=0.1, max_tokens=4096)` |
 | `resources.functions.find_product_by_sku:` | `find_product_by_sku = FunctionModel(schema=workshop_schema, name="find_product_by_sku")` |
 | `tools.functions_mcp: { function: { type: mcp, functions: *workshop_schema } }` | `ToolModel(name="functions_mcp", function=McpFunctionModel(functions=workshop_schema))` |
 | `tools.sql_mcp: { function: { type: mcp, sql: true } }` | `ToolModel(name="sql_mcp", function=McpFunctionModel(sql=True))` |

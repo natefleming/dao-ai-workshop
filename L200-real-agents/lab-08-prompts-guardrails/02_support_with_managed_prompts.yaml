@@ -64,6 +64,5 @@ app:
   name: saas-helpdesk-${var.username}
   description: "Workshop lab 8 - step 2: support with a reusable prompt"
   log_level: INFO
-  deployment_target: apps
   agents:
   - *support_agent

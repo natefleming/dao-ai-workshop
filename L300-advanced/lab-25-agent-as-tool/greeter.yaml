@@ -111,7 +111,6 @@ app:
   name: greeter-${var.username}
   description: Lab 25 -- Greeter with first-class type:app + type:serving_endpoint tools.
   log_level: INFO
-  deployment_target: apps
   agents:
     - *greeter
 

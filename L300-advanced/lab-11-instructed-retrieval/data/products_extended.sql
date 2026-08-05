@@ -4,12 +4,13 @@ USE IDENTIFIER(:database);
 -- the instructed retriever uses as filter dimensions: brand_name,
 -- price_tier, sku_prefix, weight_lbs.
 --
--- Idempotent DDL: CREATE IF NOT EXISTS + ALTER ADD COLUMNS IF NOT EXISTS
--- + MERGE by primary key `sku`. Rerunning this script does NOT drop the
--- table, so any Vector Search index built off the Change Data Feed
--- continues to sync incrementally instead of being invalidated by a
--- DROP TABLE. Safe whether Lab 2 pre-created the base table or Lab 11
--- is the first to touch it.
+-- Idempotent DDL: CREATE IF NOT EXISTS + MERGE by primary key `sku`.
+-- Rerunning this script does NOT drop the table, so any Vector Search
+-- index built off the Change Data Feed continues to sync incrementally
+-- instead of being invalidated by a DROP TABLE. This lab owns the
+-- extended `products` shape (brand_name / price_tier / sku_prefix /
+-- weight_lbs); run it in a fresh schema (or drop a pre-existing narrower
+-- `products` from Lab 2/4) so the full-width CREATE takes effect.
 
 CREATE TABLE IF NOT EXISTS products (
   sku STRING NOT NULL,
@@ -24,14 +25,6 @@ CREATE TABLE IF NOT EXISTS products (
   weight_lbs DOUBLE COMMENT 'Estimated shipping weight in pounds'
 ) USING DELTA
 TBLPROPERTIES (delta.enableChangeDataFeed = true);
-
--- If Lab 2 created the base table first, add the extended columns.
-ALTER TABLE products ADD COLUMNS IF NOT EXISTS (
-  brand_name STRING COMMENT 'Brand / manufacturer (e.g. MILWAUKEE, DEWALT)',
-  price_tier STRING COMMENT 'budget | mid | premium based on price band',
-  sku_prefix STRING COMMENT 'First 3 characters of SKU (a coarse category bucket)',
-  weight_lbs DOUBLE COMMENT 'Estimated shipping weight in pounds'
-);
 
 MERGE INTO products t
 USING (

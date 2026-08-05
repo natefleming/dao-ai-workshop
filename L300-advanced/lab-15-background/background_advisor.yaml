@@ -140,7 +140,6 @@ app:
   description: "Lab 15 (hardware_store++): background inventory analyst"
   log_level: INFO
 
-  deployment_target: apps
 
   # Headless API endpoint -- skip the chat UI build. The lab exercises
   # the background contract via /invocations + /v1/responses/{id};

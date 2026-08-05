@@ -20,6 +20,10 @@ app:           # 11. Deployable: which agents, orchestration, deployed app name.
 
 Not every config uses all of these. Lab 1 needs only `parameters` + `resources` + `agents` + `app`. Each lab from there adds one or two more sections. By the time you reach the L300 advanced labs, the same shape covers everything from a single LLM up to a multi-agent swarm with vector search, memory, prompts, guardrails, and human-in-the-loop approvals.
 
+<p align="center">
+  <img src="../images/diagrams/architecture-layers.png" alt="DAO-AI architecture layers: config → runtime graph → deployment" width="640">
+</p>
+
 ## 1. `parameters:` -- variables for the YAML
 
 Anything you'd pass at deploy time -- catalog name, username, LLM endpoint, Genie Space ID -- goes here. Each entry has a description and an optional default.
@@ -128,7 +132,7 @@ Resources are the Databricks (or external) objects the agent talks to. Declared 
 
 ```yaml
 resources:
-  llms:
+  models:
     default_llm: &default_llm
       name: ${var.llm_endpoint}
       temperature: 0.1
@@ -149,7 +153,7 @@ Resource types you'll meet across the workshop:
 
 | Resource | First lab | Purpose |
 |---|---|---|
-| `llms` | Lab 1 | Foundation-model serving endpoints |
+| `models` | Lab 1 | Foundation-model serving endpoints |
 | `functions` | Lab 2 | Unity Catalog SQL functions |
 | `genie_rooms` | Lab 3 | Databricks Genie Space |
 | `vector_stores` | Lab 6 | Delta-Sync vector index over a Delta table |
@@ -346,7 +350,6 @@ The deployable shape: which agents are in the deployment, how they're wired toge
 app:
   name: saas-helpdesk-${var.username}
   description: "Multi-tier support routing"
-  deployment_target: apps                  # apps | model_serving
   agents:
     - *tier1_support
     - *tier2_engineer
@@ -387,7 +390,7 @@ parameters:
     default: databricks-claude-sonnet-4-5
 
 resources:
-  llms:
+  models:
     default_llm: &default_llm
       name: ${var.llm_endpoint}
       temperature: 0.1
@@ -403,7 +406,6 @@ agents:
 
 app:
   name: greeter-${var.username}
-  deployment_target: apps
   agents: [*greeter]
   input_example:
     messages:

@@ -29,7 +29,6 @@ app:
   name: a2a-min-${var.username}
   description: Minimal A2A demo (Lab 19) — auto-mounted A2A endpoints on Apps.
   log_level: INFO
-  deployment_target: apps
   agents:
     - *greeter
   a2a:

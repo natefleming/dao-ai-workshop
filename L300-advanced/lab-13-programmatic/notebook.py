@@ -21,7 +21,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "dao-ai>=0.1.101"
+# MAGIC %uv pip install "dao-ai==0.2.4"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -29,6 +29,9 @@
 from importlib.metadata import version
 
 print(f"dao-ai={version('dao-ai')}")
+
+import nest_asyncio
+nest_asyncio.apply()
 
 # COMMAND ----------
 
@@ -75,9 +78,9 @@ from dao_ai.config import (
     AppModel,
     ChatPayload,
     DatasetModel,
-    DeploymentTarget,
+    ServingMode,
     FunctionModel,
-    LLMModel,
+    InferenceEndpointModel,
     McpFunctionModel,
     Message,
     ResourcesModel,
@@ -93,8 +96,8 @@ workshop_schema: SchemaModel = SchemaModel(
     schema_name=schema_name,
 )
 
-# 3b. LLM resource (YAML: resources.llms.default_llm:).
-default_llm: LLMModel = LLMModel(
+# 3b. LLM resource (YAML: resources.models.default_llm:).
+default_llm: InferenceEndpointModel = InferenceEndpointModel(
     name=llm_endpoint,
     temperature=0.1,
     max_tokens=4096,
@@ -166,7 +169,6 @@ app: AppModel = AppModel(
     name=f"hardware-store-{username}",
     description="Lab 13 (hardware_store): Lab 4's MCP agent built in pure Python.",
     log_level="INFO",
-    deployment_target=DeploymentTarget.APPS,
     agents=[mcp_agent],
     # No orchestration: needed -- single-agent apps don't require it.
     input_example=ChatPayload(
@@ -178,7 +180,7 @@ app: AppModel = AppModel(
 config: AppConfig = AppConfig(
     schemas={"workshop_schema": workshop_schema},
     resources=ResourcesModel(
-        llms={"default_llm": default_llm},
+        models={"default_llm": default_llm},
         functions={
             "find_product_by_sku": find_product_by_sku,
             "find_products_by_category": find_products_by_category,
@@ -309,7 +311,7 @@ print()
 
 # COMMAND ----------
 
-config.deploy_agent(target=DeploymentTarget.APPS)
+config.deploy_agent(target=ServingMode.APPS)
 print(f"Deployed app: {config.app.name}")
 
 # COMMAND ----------

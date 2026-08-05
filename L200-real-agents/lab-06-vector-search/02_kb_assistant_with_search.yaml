@@ -5,7 +5,7 @@
 # Capability: a support assistant that retrieves real KB articles by
 # semantic similarity. Adds (vs step 1):
 #   - schemas: workshop_schema
-#   - resources.llms.embedding_model
+#   - resources.models.embedding_model
 #   - resources.vector_stores.kb_vs
 #   - retrievers.kb_retriever
 #   - tools.kb_search as a first-class `type: vector_search` tool
@@ -114,7 +114,6 @@ app:
   name: saas-helpdesk-${var.username}
   description: "Workshop lab 6 - step 2: kb_assistant_with_search"
   log_level: INFO
-  deployment_target: apps
   agents:
   - *kb_assistant
 # NEW in step 2: datasets block seeds the kb_articles table dao-ai

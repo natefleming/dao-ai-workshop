@@ -9,7 +9,7 @@
 # MAGIC - Read a 30-line `greeter.yaml` and understand each top-level section.
 # MAGIC - Auto-derive a per-student `username` and inject it via `params={...}`.
 # MAGIC - Compile the YAML to a runnable agent with `AppConfig.from_file(...).as_graph()`.
-# MAGIC - Deploy as a Databricks App with one call: `config.deploy_agent(target=DeploymentTarget.APPS)`.
+# MAGIC - Deploy as a Databricks App with one call: `config.deploy_agent(target=ServingMode.APPS)`.
 # MAGIC
 # MAGIC ## Deliverable
 # MAGIC
@@ -22,7 +22,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "dao-ai>=0.1.101"
+# MAGIC %uv pip install "dao-ai==0.2.4"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -30,6 +30,9 @@
 from importlib.metadata import version
 
 print(f"dao-ai={version('dao-ai')}")
+
+import nest_asyncio
+nest_asyncio.apply()
 
 # COMMAND ----------
 
@@ -103,7 +106,7 @@ params: dict[str, str] = {
 # MAGIC
 # MAGIC ```yaml
 # MAGIC resources:
-# MAGIC   llms:
+# MAGIC   models:
 # MAGIC     default_llm: &default_llm
 # MAGIC       name: ${var.llm_endpoint}
 # MAGIC       temperature: 0.1
@@ -234,15 +237,15 @@ print(getattr(block, "text", None) or block["text"])
 # MAGIC %md
 # MAGIC ## Step 5 -- Deploy as a Databricks App
 # MAGIC
-# MAGIC `config.deploy_agent(target=DeploymentTarget.APPS)` generates the
+# MAGIC `config.deploy_agent(target=ServingMode.APPS)` generates the
 # MAGIC Asset Bundle from the dao-ai config and deploys + runs it as a
 # MAGIC Databricks App in one call.
 
 # COMMAND ----------
 
-from dao_ai.config import DeploymentTarget
+from dao_ai.config import ServingMode
 
-config.deploy_agent(target=DeploymentTarget.APPS)
+config.deploy_agent(target=ServingMode.APPS)
 print(f"Deployed app: {config.app.name}")
 
 # COMMAND ----------
@@ -269,7 +272,7 @@ print(f"Deployed app: {config.app.name}")
 # MAGIC
 # MAGIC Set the catalog + schema widgets to a UC location where you can
 # MAGIC create tables. dao-ai reuses the same notebook flow -- load the
-# MAGIC config, then `deploy_agent(target=DeploymentTarget.MODEL_SERVING)`.
+# MAGIC config, then `deploy_agent(target=ServingMode.MODEL_SERVING)`.
 
 # COMMAND ----------
 
@@ -294,13 +297,13 @@ print(f"Registered model: {ms_config.app.registered_model.full_name}")
 # MAGIC ### 6a. Deploy
 # MAGIC
 # MAGIC `create_agent()` logs the model to MLflow and registers it in UC.
-# MAGIC `deploy_agent(target=DeploymentTarget.MODEL_SERVING)` then creates
+# MAGIC `deploy_agent(target=ServingMode.MODEL_SERVING)` then creates
 # MAGIC the serving endpoint. Build time is typically 5-15 minutes.
 
 # COMMAND ----------
 
 ms_config.create_agent()
-ms_config.deploy_agent(target=DeploymentTarget.MODEL_SERVING)
+ms_config.deploy_agent(target=ServingMode.MODEL_SERVING)
 print(f"Deployed endpoint: {ms_config.app.name}")
 
 # COMMAND ----------

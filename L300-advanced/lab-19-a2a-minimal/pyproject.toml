@@ -4,7 +4,7 @@ version = "0.0.1"
 description = "Lab 19 — A2A Protocol (Minimal) — deploy + probe via a2a-sdk client"
 requires-python = ">=3.11"
 dependencies = [
-    "dao-ai>=0.1.101",
+    "dao-ai[a2a]==0.2.4",
     # a2a-sdk ships as a transitive dep of dao-ai (>=0.3.0,<1.0.0).
     # nest-asyncio is workshop-only: Databricks serverless notebooks run
     # cells inside an active asyncio loop, so bare asyncio.run() raises

@@ -1,5 +1,7 @@
 # L200 Debrief
 
+<img src="../images/mascots/heart-thumbs-up.png" alt="" width="90" align="right">
+
 > Reflection · L200 Building Real Agents
 
 You've finished L200. Take a few minutes to consolidate.

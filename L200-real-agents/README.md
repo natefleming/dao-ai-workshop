@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="../images/brand/logo-lockup-tagline.png" alt="DAO-AI" width="360">
+</p>
+
 # L200 -- Building Real Agents
 
 The second level of the DAO-AI workshop. Goal: by the end you'll have built a SaaS support coordinator that integrates external services, retrieves from a knowledge base, remembers customers across sessions, has quality guardrails, and routes between specialist agents.

@@ -7,13 +7,13 @@
 # customer's message and picks the right tier.
 #
 # Builds on:
-#   - Lab 1: parameters / resources.llms / agents / app baseline.
+#   - Lab 1: parameters / resources.models / agents / app baseline.
 #   - Every prior L200 lab: agents in those labs were always single. This
 #     is the first lab where `app.agents` is a LIST of multiple agents
 #     and the orchestration layer matters.
 #
 # What's new vs prior labs:
-#   - resources.llms: multiple LLM endpoints (one per agent's role,
+#   - resources.models: multiple LLM endpoints (one per agent's role,
 #     so a fast/cheap model handles tier-1 and a stronger model
 #     handles escalation).
 #   - agents:                           three named agents, each with a
@@ -109,7 +109,6 @@ app:
   name: saas-helpdesk-${var.username}
   description: "Workshop lab 9: tier-1 / tier-2 / escalation supervisor"
   log_level: INFO
-  deployment_target: apps
   agents:
   - *tier1_support
   - *tier2_engineer

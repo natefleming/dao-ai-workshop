@@ -86,7 +86,6 @@ app:
   description: "Workshop module 3: Genie Space as a tool"
   log_level: INFO
 
-  deployment_target: apps
 
   agents:
   - *analyst
