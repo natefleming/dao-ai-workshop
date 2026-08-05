@@ -1,18 +1,17 @@
 USE IDENTIFIER(:database);
 
--- Lab 11's products table extends Lab 2's schema with metadata columns
--- the instructed retriever uses as filter dimensions: brand_name,
--- price_tier, sku_prefix, weight_lbs.
+-- Lab 11's own `products_extended` table: Lab 2's product columns plus the
+-- metadata dimensions the instructed retriever filters on -- brand_name,
+-- price_tier, sku_prefix, weight_lbs. It is a SEPARATE table from the shared
+-- 8-column `products` (Labs 2/4/13/14/16), so this lab coexists with them in
+-- one schema regardless of run order -- no collision, no drop-first caveat.
 --
 -- Idempotent DDL: CREATE IF NOT EXISTS + MERGE by primary key `sku`.
 -- Rerunning this script does NOT drop the table, so any Vector Search
 -- index built off the Change Data Feed continues to sync incrementally
--- instead of being invalidated by a DROP TABLE. This lab owns the
--- extended `products` shape (brand_name / price_tier / sku_prefix /
--- weight_lbs); run it in a fresh schema (or drop a pre-existing narrower
--- `products` from Lab 2/4) so the full-width CREATE takes effect.
+-- instead of being invalidated by a DROP TABLE.
 
-CREATE TABLE IF NOT EXISTS products (
+CREATE TABLE IF NOT EXISTS products_extended (
   sku STRING NOT NULL,
   product_name STRING NOT NULL,
   category STRING NOT NULL,
@@ -26,7 +25,7 @@ CREATE TABLE IF NOT EXISTS products (
 ) USING DELTA
 TBLPROPERTIES (delta.enableChangeDataFeed = true);
 
-MERGE INTO products t
+MERGE INTO products_extended t
 USING (
   SELECT * FROM (VALUES
     ('SKU-0001', 'Cordless Drill 20V', 'Power Tools', 'Compact cordless drill with 20V lithium battery, variable speed trigger, and LED light.', 49.99, true, 'MILWAUKEE', 'mid', 'SKU', 4.5),

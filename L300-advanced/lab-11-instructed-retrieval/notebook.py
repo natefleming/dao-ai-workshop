@@ -78,13 +78,15 @@ params: dict[str, str] = {
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Step 3 -- Provision (products table, extend it, build vector index)
+# MAGIC ## Step 3 -- Provision (products_extended table, build vector index)
 # MAGIC
-# MAGIC The lab is self-contained: `data/products.sql` creates the base
-# MAGIC products table (same DDL as Lab 2), then `data/products_extended.sql`
-# MAGIC adds the `brand_name`, `price_tier`, `sku_prefix`, and `weight_lbs`
-# MAGIC columns the instructed retriever uses as filter dimensions. Both
-# MAGIC DDLs are idempotent.
+# MAGIC The lab is self-contained: `data/products_extended.sql` creates this
+# MAGIC lab's own `products_extended` table -- Lab 2's product columns plus
+# MAGIC the `brand_name`, `price_tier`, `sku_prefix`, and `weight_lbs`
+# MAGIC columns the instructed retriever uses as filter dimensions. It's a
+# MAGIC separate table from the shared 8-column `products`, so this lab
+# MAGIC coexists with Labs 2/4/13/14/16 in one schema, any order. The DDL
+# MAGIC is idempotent (CREATE IF NOT EXISTS + MERGE by `sku`).
 
 # COMMAND ----------
 

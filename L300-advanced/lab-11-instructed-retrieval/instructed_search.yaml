@@ -89,10 +89,10 @@ resources:
         name: ${var.vector_search_endpoint}
       index:
         schema: *workshop_schema
-        name: products_index
+        name: products_extended_index
       source_table:
         schema: *workshop_schema
-        name: products
+        name: products_extended
       primary_key: sku
       embedding_source_column: description
       columns:
@@ -203,10 +203,11 @@ app:
   - *catalog_advisor
 
 datasets:
-  # Self-contained: DROP + CREATE + INSERT in one DDL with the full
-  # 10-column extended schema. Idempotent on re-runs.
+  # Self-contained: CREATE + MERGE in one DDL with the full 10-column
+  # extended schema, into this lab's own `products_extended` table
+  # (separate from the shared 8-column `products`). Idempotent on re-runs.
 - table:
     schema: *workshop_schema
-    name: products
+    name: products_extended
   ddl: ./data/products_extended.sql
   format: sql
