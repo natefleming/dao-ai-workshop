@@ -10,13 +10,10 @@
 
 # COMMAND ----------
 
-# MAGIC %uv pip install "dao-ai[rerank]==0.2.4"
+# MAGIC %uv pip install "dao-ai[rerank]==0.2.5"
 # MAGIC %restart_python
 
 # COMMAND ----------
-
-import nest_asyncio
-nest_asyncio.apply()
 
 # COMMAND ----------
 

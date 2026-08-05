@@ -28,7 +28,7 @@
 
 # COMMAND ----------
 
-# MAGIC %uv pip install "dao-ai==0.2.4"
+# MAGIC %uv pip install "dao-ai==0.2.5"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -36,9 +36,6 @@
 from importlib.metadata import version
 
 print(f"dao-ai={version('dao-ai')}")
-
-import nest_asyncio
-nest_asyncio.apply()
 
 # COMMAND ----------
 

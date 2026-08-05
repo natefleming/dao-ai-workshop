@@ -54,9 +54,6 @@ from importlib.metadata import version
 print(f"dao-ai = {version('dao-ai')}")
 print(f"openai = {version('openai')}")
 
-import nest_asyncio
-nest_asyncio.apply()
-
 # COMMAND ----------
 
 # MAGIC %md
@@ -126,7 +123,6 @@ def wait_for_app(app_name: str, timeout_attempts: int = 40, sleep_seconds: int =
             return info
         time.sleep(sleep_seconds)
     raise TimeoutError(f"{app_name} never reached ACTIVE/RUNNING; last status: {info}")
-
 
 translator_info = wait_for_app(translator_config.app.name)
 translator_app = w.apps.get(translator_config.app.name)
@@ -206,7 +202,6 @@ print(f"Minted app-scoped bearer (len={len(app_token)})")
 
 invocations_url: str = f"{greeter_app.url.rstrip('/')}/invocations"
 
-
 def ask_greeter(prompt: str, *, thread_id: str) -> dict[str, Any]:
     body: dict[str, Any] = {
         "input": [{"role": "user", "content": prompt}],
@@ -221,7 +216,6 @@ def ask_greeter(prompt: str, *, thread_id: str) -> dict[str, Any]:
     r.raise_for_status()
     return r.json()
 
-
 def ask_with_retry(prompt: str, *, thread_id: str, attempts: int = 8) -> dict[str, Any]:
     last_err: Exception | None = None
     for attempt in range(attempts):
@@ -235,7 +229,6 @@ def ask_with_retry(prompt: str, *, thread_id: str, attempts: int = 8) -> dict[st
                 continue
             raise
     raise RuntimeError(f"never succeeded after {attempts} attempts: {last_err}")
-
 
 def extract_text(envelope: dict[str, Any]) -> str:
     """Pull the assistant's reply text from a ResponsesAgentResponse envelope."""
@@ -345,7 +338,6 @@ def dump_trace(label: str, trace_id: str) -> list[str]:
     for s in spans:
         print(f"  {s.name:<48s}  span_type={s.span_type}  status={s.status}")
     return span_names
-
 
 direct_spans = dump_trace("6a direct", direct_trace_id)
 app_spans = dump_trace("6b type:app", app_trace_id)

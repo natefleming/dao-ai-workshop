@@ -51,7 +51,7 @@
 
 # COMMAND ----------
 
-# MAGIC %uv pip install "dao-ai[deepagents]==0.2.4"
+# MAGIC %uv pip install "dao-ai[deepagents]==0.2.5"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -59,9 +59,6 @@
 from importlib.metadata import version
 
 print(f"dao-ai={version('dao-ai')}")
-
-import nest_asyncio
-nest_asyncio.apply()
 
 # COMMAND ----------
 
@@ -174,7 +171,6 @@ def divide(a, b):
     """Divide a by b and return the result."""
     result = a / b
     return result
-
 
 def parse_user_id(text):
     # Extract a numeric user_id from a free-form string like "user 42 logged in"
