@@ -8,7 +8,7 @@
 # this baseline shows what "ungrounded" looks like before we add tools
 # in step 2.
 #
-# Builds on Lab 1's structure (parameters / resources.llms / agents / app).
+# Builds on Lab 1's structure (parameters / resources.models / agents / app).
 # Same shape as the greeter, just a different prompt.
 
 parameters:
@@ -48,6 +48,5 @@ app:
   name: hardware-store-${var.username}
   description: "Workshop lab 2 - step 1: product_chat (no tools)"
   log_level: INFO
-  deployment_target: apps
   agents:
   - *product_agent

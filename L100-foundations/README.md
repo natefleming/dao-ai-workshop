@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="../images/brand/logo-lockup-tagline.png" alt="DAO-AI" width="360">
+</p>
+
 # L100 -- Foundations
 
 The first level of the DAO-AI workshop. Goal: by the end you'll have built four working agents -- each demonstrating one new DAO-AI concept on top of the last -- and you'll be comfortable with the declarative YAML approach.

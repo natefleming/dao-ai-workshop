@@ -7,7 +7,7 @@
 # written directly on the agent. Steps 2 and 3 extract it into a
 # reusable prompt object and add a guardrail.
 #
-# Builds on Lab 1's baseline structure (parameters / resources.llms /
+# Builds on Lab 1's baseline structure (parameters / resources.models /
 # agents / app). Same shape as the greeter; the prompt is the only
 # meaningful difference. Step 2 (reusable prompts) and step 3
 # (guardrails) layer new building blocks on top of this baseline.
@@ -50,6 +50,5 @@ app:
   name: saas-helpdesk-${var.username}
   description: "Workshop lab 8 - step 1: inline support assistant"
   log_level: INFO
-  deployment_target: apps
   agents:
   - *support_agent

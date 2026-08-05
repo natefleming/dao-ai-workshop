@@ -21,3 +21,5 @@ setup/data/*.csv
 # Local IDE/CLI state
 .claude/
 .databricks/
+_wrapper*
+.validation-matrix-0.2.4.md

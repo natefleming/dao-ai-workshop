@@ -49,7 +49,7 @@ You'll send three messages to the Greeter and watch the agent pick the right too
 | `translator.yaml` | The Translator app (Agent A). One LLM, one prompt, no tools. |
 | `greeter.yaml` | The Greeter app (Agent B). One LLM, two tools (one `type: app`, one `type: serving_endpoint`). |
 | `notebook.py` | Deploy both apps, mint an app-scoped bearer for the Greeter, send three inferences, inspect traces and app logs. |
-| `pyproject.toml` | `dao-ai>=0.1.98`, `openai>=1.40`. |
+| `pyproject.toml` | `dao-ai[a2a]==0.2.4`, `openai>=1.40`. |
 
 ## Prerequisites
 

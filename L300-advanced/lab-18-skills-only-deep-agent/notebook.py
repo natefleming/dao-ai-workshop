@@ -51,7 +51,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "dao-ai>=0.1.101"
+# MAGIC %uv pip install "dao-ai[deepagents]==0.2.4"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -59,6 +59,9 @@
 from importlib.metadata import version
 
 print(f"dao-ai={version('dao-ai')}")
+
+import nest_asyncio
+nest_asyncio.apply()
 
 # COMMAND ----------
 
@@ -267,7 +270,7 @@ for k, v in soft_signals.items():
 # MAGIC from dao_ai.config import AppConfig, AppModel, OrchestrationModel
 # MAGIC try:
 # MAGIC     bad_config = AppConfig(
-# MAGIC         app=AppModel(name="negative-test", deployment_target="apps", agents=[]),
+# MAGIC         app=AppModel(name="negative-test", agents=[]),
 # MAGIC     )
 # MAGIC except Exception as e:
 # MAGIC     print(f"Correctly rejected: {type(e).__name__}: {e}")

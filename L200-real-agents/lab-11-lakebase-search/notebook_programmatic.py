@@ -10,8 +10,13 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "dao-ai>=0.1.108"
+# MAGIC %uv pip install "dao-ai[rerank]==0.2.4"
 # MAGIC %restart_python
+
+# COMMAND ----------
+
+import nest_asyncio
+nest_asyncio.apply()
 
 # COMMAND ----------
 
@@ -89,12 +94,11 @@ config: AppConfig = AppConfig(
     retrievers={"kb_retriever": retriever},
     tools={"kb_search": tool},
     agents={"kb_assistant": agent},
-    # `deployment_target='apps'` skips the `registered_model` requirement —
     # Databricks Apps deploys don't need an MLflow registered model
-    # (Model Serving deploys do).
+    # (Model Serving deploys do). The deploy target is passed at deploy
+    # time via `deploy_agent(target=ServingMode.APPS)`, not on the config.
     app=AppModel(
         name=f"kb-assistant-{username}",
-        deployment_target="apps",
         agents=[agent],
     ),
 )
@@ -181,9 +185,9 @@ print(response["messages"][-1].content)
 
 # COMMAND ----------
 
-from dao_ai.config import DeploymentTarget
+from dao_ai.config import ServingMode
 
-config.deploy_agent(target=DeploymentTarget.APPS)
+config.deploy_agent(target=ServingMode.APPS)
 print(f"Deployed app: {config.app.name}")
 
 # COMMAND ----------

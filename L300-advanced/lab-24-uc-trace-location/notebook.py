@@ -38,7 +38,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "dao-ai>=0.1.101"
+# MAGIC %uv pip install "dao-ai==0.2.4"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -463,7 +463,7 @@ except Exception as e:
 
 # COMMAND ----------
 
-from dao_ai.config import DeploymentTarget
+from dao_ai.config import ServingMode
 
 ms_config: AppConfig = AppConfig.from_file("otel_agent_model_serving.yaml", params=params)
 
@@ -489,7 +489,7 @@ print(f"Trace table prefix: {ms_config.app.trace_location.resolved_table_prefix}
 # COMMAND ----------
 
 ms_config.create_agent()
-ms_config.deploy_agent(target=DeploymentTarget.MODEL_SERVING)
+ms_config.deploy_agent(target=ServingMode.MODEL_SERVING)
 print(f"Deployed endpoint: {ms_config.app.name}")
 
 # COMMAND ----------
@@ -640,12 +640,20 @@ spark.sql(f"""
 
 # COMMAND ----------
 
-# Global error-span check across the MS spans table -- expect 0.
+# Global error-span check across the MS spans table -- expect 0 genuine errors.
+# LangGraph emits supervisor/swarm handoffs as `Command(goto=...)` control-flow
+# spans that carry STATUS_CODE_ERROR as a tracing artifact (the routing signal
+# is raised as an exception internally), so exclude those -- they are normal
+# handoff flow, not failures.
 error_row_count = spark.sql(
-    f"SELECT COUNT(*) FROM {ms_spans_fqn} WHERE status.code = 'STATUS_CODE_ERROR'"
+    f"""
+    SELECT COUNT(*) FROM {ms_spans_fqn}
+    WHERE status.code = 'STATUS_CODE_ERROR'
+      AND status.message NOT LIKE '%Command(%goto=%'
+    """
 ).first()[0]
-print(f"MS OTEL error-status spans in {ms_spans_fqn}: {error_row_count}")
-assert error_row_count == 0, f"Expected 0 error spans, found {error_row_count}"
+print(f"MS OTEL genuine error-status spans in {ms_spans_fqn}: {error_row_count}")
+assert error_row_count == 0, f"Expected 0 genuine error spans, found {error_row_count}"
 
 # COMMAND ----------
 

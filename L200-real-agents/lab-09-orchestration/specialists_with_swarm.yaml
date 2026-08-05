@@ -106,7 +106,6 @@ app:
   name: saas-helpdesk-${var.username}
   description: "Workshop lab 9: tier swarm with directed routes"
   log_level: INFO
-  deployment_target: apps
   agents:
   - *tier1_support
   - *tier2_engineer

@@ -11,7 +11,7 @@
 #     This lab uses the SAME `type: genie` tool kind -- the caching
 #     just nests under it (`lru_cache:` + `in_memory_context_aware_cache:`
 #     blocks below). One declaration, two cache layers wired through it.
-#   - Lab 6: introduces `resources.llms.embedding_model` and
+#   - Lab 6: introduces `resources.models.embedding_model` and
 #     `resources.warehouses` (here the warehouse re-executes cached SQL
 #     on hits, and the embedding model powers L2 similarity matching).
 #
@@ -154,7 +154,6 @@ app:
   name: hardware-store-${var.username}
   description: "Lab 12 (L300): Genie with L1 LRU + L2 context-aware caches"
   log_level: INFO
-  deployment_target: apps
 
   agents:
   - *cached_analyst

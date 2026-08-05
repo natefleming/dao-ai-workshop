@@ -103,7 +103,6 @@ app:
   # runtime inside the App container). The lab's primary verification
   # is in-notebook inference; the optional deploy in Step 7 will deploy
   # to Databricks Apps with this target.
-  deployment_target: apps
 
   agents:
   - *researcher

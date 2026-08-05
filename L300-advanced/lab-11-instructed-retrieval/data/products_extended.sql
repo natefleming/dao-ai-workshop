@@ -1,17 +1,17 @@
 USE IDENTIFIER(:database);
 
--- Lab 11's products table extends Lab 2's schema with metadata columns
--- the instructed retriever uses as filter dimensions: brand_name,
--- price_tier, sku_prefix, weight_lbs.
+-- Lab 11's own `products_extended` table: Lab 2's product columns plus the
+-- metadata dimensions the instructed retriever filters on -- brand_name,
+-- price_tier, sku_prefix, weight_lbs. It is a SEPARATE table from the shared
+-- 8-column `products` (Labs 2/4/13/14/16), so this lab coexists with them in
+-- one schema regardless of run order -- no collision, no drop-first caveat.
 --
--- Idempotent DDL: CREATE IF NOT EXISTS + ALTER ADD COLUMNS IF NOT EXISTS
--- + MERGE by primary key `sku`. Rerunning this script does NOT drop the
--- table, so any Vector Search index built off the Change Data Feed
--- continues to sync incrementally instead of being invalidated by a
--- DROP TABLE. Safe whether Lab 2 pre-created the base table or Lab 11
--- is the first to touch it.
+-- Idempotent DDL: CREATE IF NOT EXISTS + MERGE by primary key `sku`.
+-- Rerunning this script does NOT drop the table, so any Vector Search
+-- index built off the Change Data Feed continues to sync incrementally
+-- instead of being invalidated by a DROP TABLE.
 
-CREATE TABLE IF NOT EXISTS products (
+CREATE TABLE IF NOT EXISTS products_extended (
   sku STRING NOT NULL,
   product_name STRING NOT NULL,
   category STRING NOT NULL,
@@ -25,15 +25,7 @@ CREATE TABLE IF NOT EXISTS products (
 ) USING DELTA
 TBLPROPERTIES (delta.enableChangeDataFeed = true);
 
--- If Lab 2 created the base table first, add the extended columns.
-ALTER TABLE products ADD COLUMNS IF NOT EXISTS (
-  brand_name STRING COMMENT 'Brand / manufacturer (e.g. MILWAUKEE, DEWALT)',
-  price_tier STRING COMMENT 'budget | mid | premium based on price band',
-  sku_prefix STRING COMMENT 'First 3 characters of SKU (a coarse category bucket)',
-  weight_lbs DOUBLE COMMENT 'Estimated shipping weight in pounds'
-);
-
-MERGE INTO products t
+MERGE INTO products_extended t
 USING (
   SELECT * FROM (VALUES
     ('SKU-0001', 'Cordless Drill 20V', 'Power Tools', 'Compact cordless drill with 20V lithium battery, variable speed trigger, and LED light.', 49.99, true, 'MILWAUKEE', 'mid', 'SKU', 4.5),

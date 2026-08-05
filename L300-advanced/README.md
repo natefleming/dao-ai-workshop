@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="../images/brand/logo-lockup-tagline.png" alt="DAO-AI" width="360">
+</p>
+
 # L300 -- Advanced
 
 The third level of the DAO-AI workshop. L300 covers production-grade patterns that separate a working agent from a fast, accurate, scalable one, plus alternate construction paths and runtime contracts:
@@ -19,6 +23,16 @@ The third level of the DAO-AI workshop. L300 covers production-grade patterns th
 - **Lab 25 -- Agent-as-Tool (`type: app` + `type: serving_endpoint`).** dao-ai 0.1.98's two new first-class tool kinds. Deploy a Translator app, then deploy a Greeter app whose `translate` tool is `type: app` (delegates to the Translator) and whose `fancy_rewrite` tool is `type: serving_endpoint` (calls Sonnet FMAPI directly). Replaces three legacy factory shapes (`create_responses_agent_tool` / `create_chat_completions_agent_tool` / `create_agent_endpoint_tool`). The dispatcher does lazy wire-shape discovery on the first invocation (`/agent/info` for apps, `serving_endpoints.get().task` for endpoints) and caches the result.
 
 Lab 11 and Lab 12 reuse the products catalog from Lab 2 (extended with metadata for Lab 11) and a Genie Space pointed at it (for Lab 12). Lab 13 is concept-only -- no extra resources required. Lab 14 reuses Lab 2's products table plus a tier-aware UC function. Lab 15 reuses Lab 7's Lakebase wiring. Lab 22 / 23 / 24 reuse Lab 21's two-tier supervisor and progressively layer evaluation, production monitoring, and durable UC-resident traces on top.
+
+A few of the patterns this level introduces:
+
+<p align="center">
+  <img src="../images/diagrams/instructed-retrieval-pipeline.png" alt="Instructed retrieval: decompose a query into filters + residual query, then rerank (Lab 11)" width="340">
+  &nbsp;
+  <img src="../images/diagrams/genie-cache-hierarchy.png" alt="Genie two-layer cache: L1 LRU exact-match over L2 context-aware similarity (Lab 12)" width="340">
+  &nbsp;
+  <img src="../images/diagrams/background-agents.png" alt="Background agents: kickoff returns a response ID, client polls until complete (Lab 15)" width="340">
+</p>
 
 ## Walk this level in order
 
@@ -44,7 +58,7 @@ Lab 11 and Lab 12 reuse the products catalog from Lab 2 (extended with metadata 
 
 L100 + L200 completed. You should be comfortable with:
 - Loading DAO-AI configs with `AppConfig.from_file(path, params={...})`.
-- Per-student deployment via `${var.username}` and `config.deploy_agent(target=DeploymentTarget.APPS)`.
+- Per-student deployment via `${var.username}` and `config.deploy_agent(target=ServingMode.APPS)`.
 - Lab 2 (UC tools) and Lab 6 (vector search + rerank) -- their data structures show up again here.
 - Lab 7 (memory) -- Lakebase wiring is reused by Lab 15.
 

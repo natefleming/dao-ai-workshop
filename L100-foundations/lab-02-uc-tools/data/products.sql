@@ -1,9 +1,10 @@
 USE IDENTIFIER(:database);
 
--- Shared 8-column `products` schema used by Labs 2, 4, 13, 14, 16. Later
--- labs (11, 16) extend it via ALTER ADD COLUMNS IF NOT EXISTS. `status`
--- and `internal_notes` are declared nullable so this 6-column INSERT
--- succeeds regardless of which lab created the table first.
+-- Shared 8-column `products` schema used by Labs 2, 4, 13, 14, 16.
+-- `status` and `internal_notes` are declared nullable so this 6-column
+-- INSERT succeeds regardless of which lab created the table first.
+-- (Lab 11-instructed uses its own wider `products` shape — run it in a
+-- fresh schema or drop this table first.)
 CREATE TABLE IF NOT EXISTS products (
   sku STRING NOT NULL,
   product_name STRING NOT NULL,

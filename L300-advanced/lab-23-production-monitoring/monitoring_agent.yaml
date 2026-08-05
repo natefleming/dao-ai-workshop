@@ -72,7 +72,6 @@ app:
   name: monitoring-demo-${var.username}
   description: "Workshop lab 23: production monitoring with registered scorers"
   log_level: INFO
-  deployment_target: apps
   agents:
   - *tier1_support
   - *tier2_engineer

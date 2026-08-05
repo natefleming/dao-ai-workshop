@@ -1,5 +1,7 @@
 # L100 Debrief
 
+<img src="../images/mascots/wand-thumbs-up.png" alt="" width="90" align="right">
+
 > Reflection · L100 Foundations
 
 You've finished L100. Take a few minutes to consolidate what you've learned before moving to L200.

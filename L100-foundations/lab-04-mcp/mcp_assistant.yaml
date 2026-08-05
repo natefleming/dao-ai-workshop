@@ -12,7 +12,7 @@
 # required in the YAML.
 #
 # Builds on:
-#   - Lab 1: parameters / resources.llms / agents / app baseline structure.
+#   - Lab 1: parameters / resources.models / agents / app baseline structure.
 #   - Lab 2: schemas, resources.functions, datasets, unity_catalog_functions
 #     -- the same provisioning blocks. The difference is no `tools:` entry
 #     per function; MCP discovers them all at once.
@@ -110,7 +110,6 @@ app:
   description: "Workshop lab 4: managed MCP tools"
   log_level: INFO
 
-  deployment_target: apps
 
   agents:
   - *mcp_agent

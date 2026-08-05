@@ -1,6 +1,6 @@
 CREATE OR REPLACE FUNCTION {catalog_name}.{schema_name}.find_orders_in_date_range(
-  start_date DATE COMMENT 'Start of the date range (inclusive)',
-  end_date DATE COMMENT 'End of the date range (inclusive)'
+  start_date STRING COMMENT 'Start of the date range (inclusive), ISO format YYYY-MM-DD',
+  end_date STRING COMMENT 'End of the date range (inclusive), ISO format YYYY-MM-DD'
 )
 RETURNS TABLE (
   order_id STRING COMMENT 'Unique order line identifier',
@@ -15,6 +15,6 @@ COMMENT 'Return orders within a date range. Useful for sales analysis over a spe
 RETURN
   SELECT order_id, sku, qty, amount, order_date, status
   FROM {catalog_name}.{schema_name}.orders
-  WHERE order_date BETWEEN find_orders_in_date_range.start_date
-                       AND find_orders_in_date_range.end_date
+  WHERE order_date BETWEEN CAST(find_orders_in_date_range.start_date AS DATE)
+                       AND CAST(find_orders_in_date_range.end_date AS DATE)
   ORDER BY order_date;

@@ -43,7 +43,6 @@ app:
   name: translator-${var.username}
   description: Lab 25 -- minimal translator app, called as a tool by the Greeter.
   log_level: INFO
-  deployment_target: apps
   agents:
     - *translator
 

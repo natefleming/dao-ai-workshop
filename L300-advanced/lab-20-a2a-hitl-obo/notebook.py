@@ -32,13 +32,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install "dao-ai>=0.1.101" "nest-asyncio>=1.5"
-# MAGIC # NOTE: stay on %pip, NOT %uv pip install. The %uv magic works
-# MAGIC # interactively in the notebook UI but fails in the serverless v5
-# MAGIC # jobs runtime (PackageNotFoundError after install completes
-# MAGIC # successfully). For jobs-runtime use, the canonical alternative
-# MAGIC # would be declaring deps in environments.spec.dependencies on
-# MAGIC # the run/job spec.
+# MAGIC %uv pip install "dao-ai[a2a]==0.2.4" "nest-asyncio>=1.5"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -82,11 +76,10 @@ params: dict[str, str] = {
 
 # COMMAND ----------
 
-from dao_ai.config import AppConfig, DeploymentTarget
+from dao_ai.config import AppConfig, ServingMode
 
 config: AppConfig = AppConfig.from_file("hitl_obo_agent.yaml", params=params)
 print(f"App name:                 {config.app.name}")
-print(f"Deployment target:        {config.app.deployment_target}")
 print(f"a2a.enabled:              {config.app.a2a.enabled}")
 print(f"a2a.on_behalf_of_user:    {config.app.a2a.on_behalf_of_user}  (None => auto-derive)")
 # Inspect the OBO posture across resources:
@@ -95,7 +88,7 @@ for name, m in (config.resources.models or {}).items():
 
 # COMMAND ----------
 
-config.deploy_agent(target=DeploymentTarget.APPS)
+config.deploy_agent(target=ServingMode.APPS)
 print(f"Deployed app: {config.app.name}")
 
 # COMMAND ----------

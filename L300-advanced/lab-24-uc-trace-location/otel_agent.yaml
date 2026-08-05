@@ -86,7 +86,6 @@ app:
   name: trace-loc-demo-${var.username}
   description: "Workshop lab 24: UC OTEL trace tables via app.trace_location"
   log_level: INFO
-  deployment_target: apps
   agents:
   - *tier1_support
   - *tier2_engineer

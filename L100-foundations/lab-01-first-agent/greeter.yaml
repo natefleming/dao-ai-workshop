@@ -8,7 +8,7 @@
 #
 # Concepts introduced here (used by every later lab):
 #   - parameters:    declarative $\{var.NAME} substitution from params={...}
-#   - resources.llms: LLM endpoint registry, anchored with &name for reuse
+#   - resources.models: LLM endpoint registry, anchored with &name for reuse
 #   - agents:        a model + a prompt; tools come in Lab 2
 #   - app:           the deploy target (apps | model_serving)
 
@@ -59,7 +59,6 @@ app:
   name: hardware-store-${var.username}
   description: "Workshop lab 1 (hardware_store): hello world greeter"
   log_level: INFO
-  deployment_target: apps
 
   agents:
   - *greeter

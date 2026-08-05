@@ -112,7 +112,6 @@ app:
   name: trace-loc-ms-demo-${var.username}
   description: "Workshop lab 24: UC OTEL trace tables via Model Serving + app.trace_location"
   log_level: INFO
-  deployment_target: model_serving
 
   agents:
   - *tier1_support

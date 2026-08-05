@@ -96,7 +96,6 @@ app:
   name: hardware-store-${var.username}
   description: "Workshop module 2: declarative UC function tools"
   log_level: INFO
-  deployment_target: apps
   agents:
   - *product_agent
 unity_catalog_functions:

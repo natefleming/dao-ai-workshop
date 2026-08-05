@@ -29,7 +29,7 @@ All four routes share the same compiled LangGraph and the same checkpointer.
 
 ## Steps
 
-1. **Step 1** — install `dao-ai>=0.1.92` (which transitively brings `a2a-sdk`) + `nest-asyncio` (for notebook async).
+1. **Step 1** — install `dao-ai[a2a]==0.2.4` (the `a2a` extra brings `a2a-sdk`) + `nest-asyncio` (for notebook async).
 2. **Step 2** — configure widgets (username, llm_endpoint).
 3. **Step 3** — load `greeter.yaml`, compile, deploy to Apps.
 4. **Step 4** — wait for `compute_status == ACTIVE` and `app_status == RUNNING`.

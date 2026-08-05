@@ -72,7 +72,6 @@ app:
   # Apps deployment doesn't require a registered_model block, so the
   # config compiles for in-notebook inference without any UC catalog /
   # schema setup. Same pattern as Lab 17.
-  deployment_target: apps
 
   # Empty agents list — explicitly allowed under deep_agent.
   agents: []

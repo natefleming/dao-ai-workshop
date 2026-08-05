@@ -61,7 +61,6 @@ app:
   name: hardware-store-ms-${var.username}
   description: "Workshop lab 1 (hardware_store): greeter deployed to Model Serving"
   log_level: INFO
-  deployment_target: model_serving
 
   # Required for Model Serving: dao-ai logs + registers the model in UC
   # before creating the serving endpoint. Endpoint name defaults to

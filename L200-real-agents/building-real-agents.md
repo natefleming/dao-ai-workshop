@@ -34,6 +34,10 @@ Customers don't know your schema. They ask *"how do I rotate my API keys?"* not 
 
 DAO-AI builds a Delta Sync vector index from your YAML, exposes it as a retriever, and wraps the retriever as a factory tool. Lab 6 also adds **cross-encoder reranking** for precision: ANN gives recall (50 candidates), FlashRank promotes the most relevant 5.
 
+<p align="center">
+  <img src="../images/diagrams/vector-search-rerank-funnel.png" alt="Retrieval funnel: wide ANN recall narrowed by a FlashRank cross-encoder to the top results" width="560">
+</p>
+
 ### 3. "Does the agent remember anything?" (Lab 7 -- Memory)
 
 By default an agent treats every turn as the first. That's fine for stateless lookups; it's miserable for support, where customers expect you to remember their last ticket.
@@ -63,13 +67,19 @@ DAO-AI supports two orchestration patterns:
 
 Lab 9 builds both with the same three specialists.
 
+<p align="center">
+  <img src="../images/diagrams/supervisor-pattern.png" alt="Supervisor orchestration: a router LLM dispatches each turn to one specialist" width="520">
+  &nbsp;&nbsp;
+  <img src="../images/diagrams/swarm-pattern.png" alt="Swarm orchestration: specialists hand off to each other along directed routes" width="520">
+</p>
+
 ## What stays the same from L100
 
 Everything you learned in L100 still holds. You're still:
 
 - Declaring `parameters:`, `resources:`, `agents:`, `app:` in YAML.
 - Loading via `AppConfig.from_file(path, params={...})`.
-- Deploying via `config.deploy_agent(target=DeploymentTarget.APPS)`.
+- Deploying via `config.deploy_agent(target=ServingMode.APPS)`.
 - Using `${var.username}` to keep deployed names unique per student.
 
 L200 just adds new top-level YAML keys (`memory:`, `prompts:`, `guardrails:`) and new resource types (`databases:`, `vector_stores:`). The composition pattern is identical.
