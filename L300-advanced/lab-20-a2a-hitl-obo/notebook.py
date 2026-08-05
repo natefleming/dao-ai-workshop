@@ -88,7 +88,7 @@ for name, m in (config.resources.models or {}).items():
 
 # COMMAND ----------
 
-config.deploy_agent(target=ServingMode.APPS)
+config.deploy_agent(mode=ServingMode.APPS)
 print(f"Deployed app: {config.app.name}")
 
 # COMMAND ----------

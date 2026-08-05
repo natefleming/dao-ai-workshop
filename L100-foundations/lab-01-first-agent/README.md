@@ -7,7 +7,7 @@
 - Read a 30-line `greeter.yaml` and understand each top-level section.
 - Auto-derive a per-student `username` and inject it via `params={...}`.
 - Compile the YAML to a runnable agent with `AppConfig.from_file(...).as_graph()`.
-- Deploy as a Databricks App with one call: `config.deploy_agent(target=ServingMode.APPS)`.
+- Deploy as a Databricks App with one call: `config.deploy_agent(mode=ServingMode.APPS)`.
 - Ship the same agent as a Model Serving endpoint with one config change (`greeter_model_serving.yaml` + a `registered_model:` block).
 
 ## Deliverable
@@ -26,7 +26,7 @@
 - The four top-level YAML blocks every DAO-AI config has: `parameters:`, `resources:`, `agents:`, `app:`.
 - How `AppConfig.from_file(path, params={...})` substitutes `${var.NAME}` references at load time.
 - How `username` (auto-derived from your Databricks short name) keeps your deployed app name unique in a shared workspace.
-- The deploy loop: `config.deploy_agent(target=ServingMode.APPS)` -- one call generates the Asset Bundle, deploys it, and runs the app.
+- The deploy loop: `config.deploy_agent(mode=ServingMode.APPS)` -- one call generates the Asset Bundle, deploys it, and runs the app.
 
 ## Files
 

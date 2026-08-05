@@ -58,7 +58,7 @@ A few of the patterns this level introduces:
 
 L100 + L200 completed. You should be comfortable with:
 - Loading DAO-AI configs with `AppConfig.from_file(path, params={...})`.
-- Per-student deployment via `${var.username}` and `config.deploy_agent(target=ServingMode.APPS)`.
+- Per-student deployment via `${var.username}` and `config.deploy_agent(mode=ServingMode.APPS)`.
 - Lab 2 (UC tools) and Lab 6 (vector search + rerank) -- their data structures show up again here.
 - Lab 7 (memory) -- Lakebase wiring is reused by Lab 15.
 

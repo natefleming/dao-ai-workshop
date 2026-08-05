@@ -96,7 +96,7 @@ config: AppConfig = AppConfig(
     agents={"kb_assistant": agent},
     # Databricks Apps deploys don't need an MLflow registered model
     # (Model Serving deploys do). The deploy target is passed at deploy
-    # time via `deploy_agent(target=ServingMode.APPS)`, not on the config.
+    # time via `deploy_agent(mode=ServingMode.APPS)`, not on the config.
     app=AppModel(
         name=f"kb-assistant-{username}",
         agents=[agent],
@@ -187,7 +187,7 @@ print(response["messages"][-1].content)
 
 from dao_ai.config import ServingMode
 
-config.deploy_agent(target=ServingMode.APPS)
+config.deploy_agent(mode=ServingMode.APPS)
 print(f"Deployed app: {config.app.name}")
 
 # COMMAND ----------

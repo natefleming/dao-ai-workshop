@@ -155,7 +155,7 @@ print(f"Wrapped class:     {type(agent_lr).__name__}")
 
 from dao_ai.config import ServingMode
 
-config.deploy_agent(target=ServingMode.APPS)
+config.deploy_agent(mode=ServingMode.APPS)
 print(f"Deployed app: {config.app.name}")
 
 # COMMAND ----------

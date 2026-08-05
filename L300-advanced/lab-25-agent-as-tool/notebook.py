@@ -105,7 +105,7 @@ from dao_ai.config import AppConfig, ServingMode
 translator_config: AppConfig = AppConfig.from_file("translator.yaml", params=params)
 print(f"Translator app name: {translator_config.app.name}")
 
-translator_config.deploy_agent(target=ServingMode.APPS)
+translator_config.deploy_agent(mode=ServingMode.APPS)
 print(f"Deployed: {translator_config.app.name}")
 
 # COMMAND ----------
@@ -147,7 +147,7 @@ greeter_config: AppConfig = AppConfig.from_file("greeter.yaml", params=params)
 print(f"Greeter app name: {greeter_config.app.name}")
 print(f"Greeter tools   : {list(greeter_config.tools.keys())}")
 
-greeter_config.deploy_agent(target=ServingMode.APPS)
+greeter_config.deploy_agent(mode=ServingMode.APPS)
 print(f"Deployed: {greeter_config.app.name}")
 
 # COMMAND ----------

@@ -127,7 +127,7 @@ Every lab deploys with one Python call:
 
 ```python
 from dao_ai.config import ServingMode
-config.deploy_agent(target=ServingMode.APPS)
+config.deploy_agent(mode=ServingMode.APPS)
 print(f"Deployed app: {config.app.name}")
 ```
 

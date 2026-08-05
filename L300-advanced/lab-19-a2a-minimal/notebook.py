@@ -72,7 +72,7 @@ params: dict[str, str] = {
 # MAGIC %md
 # MAGIC ## Step 3 -- Load, compile, deploy
 # MAGIC
-# MAGIC `config.deploy_agent(target=ServingMode.APPS)` packages the dao-ai bundle and triggers a Databricks Asset Bundle deploy + run. The deploy job runs ~5-10 minutes; we poll the Apps API afterward in Step 4 until `compute_status == ACTIVE` and `app_status == RUNNING`.
+# MAGIC `config.deploy_agent(mode=ServingMode.APPS)` packages the dao-ai bundle and triggers a Databricks Asset Bundle deploy + run. The deploy job runs ~5-10 minutes; we poll the Apps API afterward in Step 4 until `compute_status == ACTIVE` and `app_status == RUNNING`.
 
 # COMMAND ----------
 
@@ -85,7 +85,7 @@ print(f"Default scheme:  {(config.app.a2a.task_store.database is None) and 'in-m
 
 # COMMAND ----------
 
-config.deploy_agent(target=ServingMode.APPS)
+config.deploy_agent(mode=ServingMode.APPS)
 print(f"Deployed app: {config.app.name}")
 
 # COMMAND ----------

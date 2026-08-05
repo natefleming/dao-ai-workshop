@@ -306,7 +306,7 @@ print()
 
 from dao_ai.config import ServingMode
 
-routing_config.deploy_agent(target=ServingMode.APPS)
+routing_config.deploy_agent(mode=ServingMode.APPS)
 print(f"Deployed app: {routing_config.app.name}")
 
 # COMMAND ----------
