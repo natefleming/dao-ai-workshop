@@ -44,7 +44,7 @@
 
 # COMMAND ----------
 
-# MAGIC %uv pip install "dao-ai[a2a]==0.2.4" "openai>=1.40"
+# MAGIC %uv pip install "dao-ai[a2a]==0.2.6" "openai>=1.40"
 # MAGIC %restart_python
 
 # COMMAND ----------

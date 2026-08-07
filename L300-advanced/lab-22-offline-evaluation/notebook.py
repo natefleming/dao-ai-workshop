@@ -29,7 +29,7 @@
 
 # COMMAND ----------
 
-# MAGIC %uv pip install "dao-ai==0.2.5"
+# MAGIC %uv pip install "dao-ai==0.2.6"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -102,9 +102,9 @@ from dao_ai.config import AppConfig
 # Autolog opens the langchain root trace. ``run_tracer_inline=True`` makes
 # the autologged trace synchronous with ``mlflow.genai.evaluate``'s harness
 # so the harness reuses the autologged trace instead of creating a 0s
-# placeholder trace alongside it (dao-ai's notebooks/08_run_evaluation.py
-# uses the same pattern). The disable-then-re-enable clears any workspace
-# global autolog that might otherwise stack on top.
+# placeholder trace alongside it (dao-ai's pipeline notebook
+# 09_run_evaluation.py uses the same pattern). The disable-then-re-enable
+# clears any workspace global autolog that might otherwise stack on top.
 mlflow.autolog(disable=True)
 mlflow.langchain.autolog(run_tracer_inline=True)
 
@@ -147,8 +147,8 @@ print(f"Agents: {[a.name for a in config.app.agents]}")
 # MAGIC > the autologged trace synchronous with the harness's row execution
 # MAGIC > so each row gets exactly one trace -- without it the harness can
 # MAGIC > race the trace exporter and emit duplicate (or null-assessment)
-# MAGIC > traces. dao-ai's own `notebooks/08_run_evaluation.py` uses the
-# MAGIC > same pattern.
+# MAGIC > traces. dao-ai's own pipeline notebook `09_run_evaluation.py` uses
+# MAGIC > the same pattern.
 
 # COMMAND ----------
 

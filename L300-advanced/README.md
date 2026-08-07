@@ -85,6 +85,6 @@ Each lab's `app.description` updates so you can see which lab last deployed.
 
 ## Going deeper
 
-- `dao-ai/config/examples/03_reranking/` -- more reranking recipes (instruction-aware reranking, hybrid stages).
-- `dao-ai/config/examples/04_genie/` -- more cache patterns including the database-backed variant for multi-instance deployments, and a recipe for tuning cache hit-rate thresholds.
-- `dao-ai/config/examples/15_complete_applications/` -- end-to-end production examples that combine many of these patterns.
+- `dao-ai/examples/03_reranking/` -- more reranking recipes (instruction-aware reranking, hybrid stages).
+- `dao-ai/examples/04_genie/` -- more cache patterns including the database-backed variant for multi-instance deployments, and a recipe for tuning cache hit-rate thresholds.
+- `dao-ai/examples/99_complete_applications/` -- end-to-end production examples that combine many of these patterns.

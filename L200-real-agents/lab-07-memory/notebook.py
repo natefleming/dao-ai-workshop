@@ -22,7 +22,7 @@
 
 # COMMAND ----------
 
-# MAGIC %uv pip install "dao-ai[memory]==0.2.5"
+# MAGIC %uv pip install "dao-ai[memory]==0.2.6"
 # MAGIC %restart_python
 
 # COMMAND ----------

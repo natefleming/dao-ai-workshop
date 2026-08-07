@@ -60,7 +60,7 @@ Deployed app name: `hardware-store-<your-username>`.
 
 This lab uses DAO-AI's **in-memory** L2 cache variant -- no external database required. Cache state is per-process; in a multi-instance app deployment each replica has its own cache.
 
-For multi-instance deployments where you want a shared cache, swap `in_memory_context_aware_cache_parameters` for `context_aware_cache_parameters` and add a `database:` reference (Lakebase or external Postgres). See `dao-ai/config/examples/04_genie/genie_context_aware_cache.yaml` for the database-backed shape.
+For multi-instance deployments where you want a shared cache, swap `in_memory_context_aware_cache_parameters` for `context_aware_cache_parameters` and add a `database:` reference (Lakebase or external Postgres). See `dao-ai/examples/04_genie/genie_context_aware_cache.yaml` for the database-backed shape.
 
 ## Next
 
