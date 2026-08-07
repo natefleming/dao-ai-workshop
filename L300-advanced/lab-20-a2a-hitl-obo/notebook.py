@@ -32,7 +32,7 @@
 
 # COMMAND ----------
 
-# MAGIC %uv pip install "dao-ai[a2a]==0.2.4" "nest-asyncio>=1.5"
+# MAGIC %uv pip install "dao-ai[a2a]==0.2.6" "nest-asyncio>=1.5"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -375,6 +375,6 @@ for e in stream_events:
 # MAGIC | HITL `input-required` + DataPart resume | Lab 20 (this) |
 # MAGIC | Auto-derived `oauth2 + bearer` from resource OBO | Lab 20 (this) |
 # MAGIC | SSE streaming via `send_message_streaming` | Lab 20 (this) |
-# MAGIC | Lakebase-persistent task store + `tasks/get` round-trip | `dao-ai/config/examples/20_a2a_protocol/a2a_background.yaml` |
+# MAGIC | Lakebase-persistent task store + `tasks/get` round-trip | `dao-ai/examples/19_a2a_protocol/a2a_background.yaml` |
 # MAGIC
 # MAGIC The L300 README's "what's next" section covers production hardening (security scheme overrides via `dao_ai.apps.a2a.security`, custom skills, Lakebase task persistence).

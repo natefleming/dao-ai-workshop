@@ -22,7 +22,7 @@
 
 # COMMAND ----------
 
-# MAGIC %uv pip install "dao-ai==0.2.5"
+# MAGIC %uv pip install "dao-ai==0.2.6"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -201,7 +201,7 @@ for q in rephrasings:
 # MAGIC | `l2_context_window_size` | How many prior turns count as context. **3** is a typical default. |
 # MAGIC
 # MAGIC Tune by watching cache hit rates in production. The dao-ai docs
-# MAGIC reference (`dao-ai/config/examples/04_genie/cache_threshold_optimization.yaml`)
+# MAGIC reference (`dao-ai/examples/04_genie/cache_threshold_optimization.yaml`)
 # MAGIC has a recipe for measuring and adjusting.
 
 # COMMAND ----------

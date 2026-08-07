@@ -4,5 +4,5 @@ version = "0.1.0"
 description = "Lab 11 of the dao-ai workshop -- Lakebase Postgres retrieval."
 requires-python = ">=3.11,<3.12"
 dependencies = [
-    "dao-ai[rerank]==0.2.5",
+    "dao-ai[rerank]==0.2.6",
 ]

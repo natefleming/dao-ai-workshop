@@ -45,7 +45,7 @@ Optionally run `notebook_programmatic.py` to see the same agent built from Pytho
 - [Lab 6](../lab-06-vector-search/) -- the `ai_search` sibling of this lab. Same tool schema, Databricks AI Search backend.
 - [Lab 11 (L300)](../../L300-advanced/lab-11-instructed-retrieval/) -- adds LLM query decomposition + instruction-aware rerank on top of the same retriever (works uniformly on `lakebase_search` and `ai_search` in dao-ai 0.1.106+).
 - [Lab 13 (L300)](../../L300-advanced/lab-13-programmatic/) -- the general treatment of programmatic construction.
-- The full reference config set for `lakebase_search`: [`config/examples/21_lakebase_search/`](https://github.com/natefleming/dao-ai/tree/main/config/examples/21_lakebase_search/).
+- The full reference config set for `lakebase_search`: [`examples/20_lakebase_search/`](https://github.com/natefleming/dao-ai/tree/main/examples/20_lakebase_search/).
 
 ## Back to the workshop
 
