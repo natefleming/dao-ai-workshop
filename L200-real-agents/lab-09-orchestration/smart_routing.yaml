@@ -17,8 +17,10 @@
 #   - The routing signal is prompt complexity, not customer intent.
 #   - The supervisor uses a tiny, cheap model -- routing itself must
 #     not cost more than the answer.
-#   - Every model carries `ai_gateway: true` so calls flow through the
-#     Unity AI Gateway (rate limits, audit, cost tracking).
+#   - Every model is a `system.ai` UC-securable Foundation Model addressed
+#     through the Unity AI Gateway (`use_ai_gateway: true`) for rate limits,
+#     audit, and cost tracking. The reusable `&system_ai` schema anchor
+#     qualifies each short model name to `system.ai.<name>`.
 #
 # Routing:
 #   - simple_agent  : definitions, quick facts, small talk, one-shot how-tos
@@ -29,32 +31,46 @@ parameters:
     description: Per-student username for unique deployment names. Auto-set by the notebook.
     # No default => required.
   router_llm_endpoint:
-    description: Tiny/fast LLM endpoint used by the supervisor to pick an agent. Routing must be cheap.
-    default: databricks-claude-haiku-4-5
+    description: Tiny/fast model (short system.ai name) used by the supervisor to pick an agent. Routing must be cheap.
+    default: claude-haiku-4-5
   simple_llm_endpoint:
-    description: Fast/cheap LLM endpoint for the simple_agent (everyday questions).
-    default: databricks-claude-haiku-4-5
+    description: Fast/cheap model (short system.ai name) for the simple_agent (everyday questions).
+    default: claude-haiku-4-5
   complex_llm_endpoint:
-    description: Larger reasoning LLM endpoint for the complex_agent (multi-step problems).
-    default: databricks-claude-sonnet-4-5
+    description: Larger reasoning model (short system.ai name) for the complex_agent (multi-step problems).
+    default: claude-sonnet-4-5
 
 resources:
   models:
+    # These are Databricks Foundation Models addressed as Unity Catalog
+    # securables under `system.ai`, routed through the Unity AI Gateway.
+    # `use_ai_gateway: true` is required for a UC-securable model name (the
+    # legacy /serving-endpoints/<name>/invocations path 404s on a three-level
+    # name). The `system.ai` schema is defined INLINE and reused across all
+    # three models via the &system_ai anchor -- it is deliberately NOT a
+    # top-level `schemas:` entry, since that map is provisioned + SP-granted
+    # at deploy and the reserved `system` catalog can be neither created nor
+    # granted that way.
     router_llm: &router_llm
+      schema: &system_ai
+        catalog_name: system
+        schema_name: ai
       name: ${var.router_llm_endpoint}
-      ai_gateway: true
+      use_ai_gateway: true
       temperature: 0.0
       max_tokens: 512
 
     simple_llm: &simple_llm
+      schema: *system_ai
       name: ${var.simple_llm_endpoint}
-      ai_gateway: true
+      use_ai_gateway: true
       temperature: 0.2
       max_tokens: 1024
 
     complex_llm: &complex_llm
+      schema: *system_ai
       name: ${var.complex_llm_endpoint}
-      ai_gateway: true
+      use_ai_gateway: true
       temperature: 0.2
       max_tokens: 4096
 

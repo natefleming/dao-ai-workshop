@@ -10,7 +10,7 @@ Self-paced, hands-on workshop for building declarative AI agents on Databricks w
 
 | Repo | What it is | When to reach for it |
 |---|---|---|
-| **[`dao-ai`](https://github.com/natefleming/dao-ai)** | The DAO-AI framework itself: schema, runtime, deploy primitives. Every lab in this workshop installs it via `%uv pip install "dao-ai==0.2.6"`. | Read the framework source, file issues, contribute features, or check the canonical examples under [`examples/`](https://github.com/natefleming/dao-ai/tree/main/examples). |
+| **[`dao-ai`](https://github.com/natefleming/dao-ai)** | The DAO-AI framework itself: schema, runtime, deploy primitives. Every lab in this workshop installs it via `%uv pip install "dao-ai==0.2.9"`. | Read the framework source, file issues, contribute features, or check the canonical examples under [`examples/`](https://github.com/natefleming/dao-ai/tree/main/examples). |
 | **[`dao-ai-builder`](https://github.com/natefleming/dao-ai-builder)** | Visual builder for DAO-AI configs -- forms and dropdowns instead of hand-written YAML. Exports a ready-to-deploy `dao_ai.yaml`. | Once you've finished L100 and want a faster authoring loop for new agents, or to hand the config surface to non-developer collaborators. |
 
 If you're wondering "where do these agents actually live in code?" the answer is `dao-ai`. If you're wondering "is there a UI for this?" the answer is `dao-ai-builder`.
@@ -138,7 +138,7 @@ print(f"Deployed app: {config.app.name}")
 | Requirement | Detail |
 |---|---|
 | Python | 3.11+ |
-| DAO-AI | `%uv pip install "dao-ai==0.2.6"` (the labs install this in the notebook; feature labs add extras, e.g. `dao-ai[rerank]`, `dao-ai[memory]`, `dao-ai[deepagents]`, `dao-ai[a2a]`) |
+| DAO-AI | `%uv pip install "dao-ai==0.2.9"` (the labs install this in the notebook; feature labs add extras, e.g. `dao-ai[rerank]`, `dao-ai[memory]`, `dao-ai[deepagents]`, `dao-ai[a2a]`) |
 | Databricks CLI | v0.230+ with a configured profile |
 | Compute | Databricks Serverless v5 (each install cell runs `%uv pip install ...` then `%restart_python`) |
 | Foundation models | `databricks-claude-sonnet-4-5` (most labs); `databricks-gpt-5-4-mini` (Lab 19 + Lab 20); `databricks-gte-large-en` (Lab 6 + Lab 11 + Lab 12); `databricks-claude-haiku-4-5` and `databricks-meta-llama-3-1-8b-instruct` (Lab 9 + Lab 11); `databricks-gpt-5-nano` (Lab 7 summarization); `databricks-gpt-oss-120b` (Lab 7 memory queries) |

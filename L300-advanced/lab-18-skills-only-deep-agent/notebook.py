@@ -51,7 +51,7 @@
 
 # COMMAND ----------
 
-# MAGIC %uv pip install "dao-ai[deepagents]==0.2.6"
+# MAGIC %uv pip install "dao-ai[deepagents]==0.2.9"
 # MAGIC %restart_python
 
 # COMMAND ----------
