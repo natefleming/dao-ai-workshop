@@ -12,7 +12,13 @@ CREATE TABLE IF NOT EXISTS kb_articles (
   body STRING,
   published_at TIMESTAMP
 ) USING DELTA
-TBLPROPERTIES (delta.enableChangeDataFeed = true);
+TBLPROPERTIES (
+  delta.enableChangeDataFeed = true,
+  -- Raise CDF retention so the Vector Search index can always sync from the
+  -- source's Delta change history. The default 168h (7 days) expires between
+  -- workshop sessions and leaves the index stuck in ONLINE_PIPELINE_FAILED.
+  delta.deletedFileRetentionDuration = 'interval 30 days'
+);
 
 MERGE INTO kb_articles t
 USING (

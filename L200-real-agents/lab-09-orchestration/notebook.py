@@ -22,7 +22,7 @@
 
 # COMMAND ----------
 
-# MAGIC %uv pip install "dao-ai==0.2.6"
+# MAGIC %uv pip install "dao-ai==0.2.9"
 # MAGIC %restart_python
 
 # COMMAND ----------
@@ -54,9 +54,11 @@ dbutils.widgets.text("fast_llm_endpoint", "databricks-claude-haiku-4-5", "Fast L
 dbutils.widgets.text("technical_llm_endpoint", "databricks-meta-llama-3-1-8b-instruct", "Technical LLM (tier2_engineer)")
 
 # Smart-routing variant (Part C) parameters.
-dbutils.widgets.text("router_llm_endpoint", "databricks-claude-haiku-4-5", "Router LLM (smart-routing supervisor)")
-dbutils.widgets.text("simple_llm_endpoint", "databricks-claude-haiku-4-5", "Simple LLM (simple_agent)")
-dbutils.widgets.text("complex_llm_endpoint", "databricks-claude-sonnet-4-5", "Complex LLM (complex_agent)")
+# Part C smart_routing.yaml addresses these as system.ai UC-securable models
+# via the AI Gateway, so they are short model names (no databricks- prefix).
+dbutils.widgets.text("router_llm_endpoint", "claude-haiku-4-5", "Router LLM (smart-routing supervisor)")
+dbutils.widgets.text("simple_llm_endpoint", "claude-haiku-4-5", "Simple LLM (simple_agent)")
+dbutils.widgets.text("complex_llm_endpoint", "claude-sonnet-4-5", "Complex LLM (complex_agent)")
 
 # Spreading agents across multiple endpoints reduces per-endpoint rate-limit
 # pressure when the supervisor or swarm fans out across specialists in one turn.
@@ -214,8 +216,10 @@ print()
 # MAGIC
 # MAGIC This is a common cost-optimization pattern: don't spend
 # MAGIC reasoning-model dollars on questions a small model can answer
-# MAGIC in one shot. Every model call flows through the Unity AI
-# MAGIC Gateway (`ai_gateway: true`) for rate limiting and audit.
+# MAGIC in one shot. Every model is a `system.ai` UC-securable Foundation
+# MAGIC Model routed through the Unity AI Gateway (`use_ai_gateway: true`,
+# MAGIC qualified by a reusable `system_ai` schema anchor) for rate
+# MAGIC limiting and audit.
 
 # COMMAND ----------
 

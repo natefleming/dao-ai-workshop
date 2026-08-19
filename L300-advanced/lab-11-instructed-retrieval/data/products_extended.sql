@@ -23,7 +23,13 @@ CREATE TABLE IF NOT EXISTS products_extended (
   sku_prefix STRING COMMENT 'First 3 characters of SKU (a coarse category bucket)',
   weight_lbs DOUBLE COMMENT 'Estimated shipping weight in pounds'
 ) USING DELTA
-TBLPROPERTIES (delta.enableChangeDataFeed = true);
+TBLPROPERTIES (
+  delta.enableChangeDataFeed = true,
+  -- Raise CDF retention so the Vector Search index can always sync from the
+  -- source's Delta change history. The default 168h (7 days) expires between
+  -- workshop sessions and leaves the index stuck in ONLINE_PIPELINE_FAILED.
+  delta.deletedFileRetentionDuration = 'interval 30 days'
+);
 
 MERGE INTO products_extended t
 USING (
